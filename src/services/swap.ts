@@ -6,7 +6,7 @@ import { JsonRpcProvider, Provider, TransactionReceipt } from '@ethersproject/pr
 import { Profile } from '../profile'
 import { isAddress } from 'ethers/lib/utils'
 import { IDerivableContractAddress, IEngineConfig } from '../utils/configs'
-import { Resource } from './resource'
+import { Q128, Resource } from './resource'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
 import * as OracleSdk from '../utils/OracleSdk'
 
@@ -345,13 +345,22 @@ export class Swap {
           }),
         )
       } else {
+        const OPEN_RATE = bn(98).shl(128).div(100)
+        let amountIn = step.payloadAmountIn ? step.payloadAmountIn : step.amountIn
+        console.log('amountIn', amountIn.toString())
+        console.log('OPEN_RATE',this.RESOURCE.pools[poolOut]?.OPEN_RATE.toString(), idOut.toNumber())
+        // console.log('amountIn1',amountIn.toString())
+        if (idOut.toNumber() === POOL_IDS.A || idOut.toNumber() === POOL_IDS.B) {
+          amountIn = amountIn.mul(OPEN_RATE).div(Q128)
+          console.log('new - amountIn', amountIn.mul(OPEN_RATE).div(Q128).toString())
+        }
         populateTxData.push(
           this.generateSwapParams('swap', {
             sideIn: idIn,
             poolIn: isErc1155Address(step.tokenIn) ? poolIn : poolOut,
             sideOut: idOut,
             poolOut: isErc1155Address(step.tokenOut) ? poolOut : poolIn,
-            amountIn: step.payloadAmountIn ? step.payloadAmountIn : step.amountIn,
+            amountIn,
             maturity: 0,
             payer: this.account,
             recipient: this.account,

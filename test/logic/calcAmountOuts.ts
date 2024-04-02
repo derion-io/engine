@@ -29,7 +29,7 @@ export const calcAmountOuts = async (
     {
       amountIn: bn(numberToWei(amountIn, 6)),
       tokenIn: NATIVE_ADDRESS,
-      tokenOut: poolOut + '-' + POOL_IDS.C,
+      tokenOut: poolOut + '-' + POOL_IDS.A,
       amountOutMin: 0,
       currentBalanceOut,
       useSweep: true,

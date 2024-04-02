@@ -50,6 +50,18 @@ describe('Derivable Tools', () => {
     expect(amountOut.toNumber()).toEqual(99973)
   })
 
+  test('AmountOut-openfee-opbnb', async () => {
+    const [res, gasUsed] = await calcAmountOuts(
+      genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
+      ['0x68b2663e8b566c6ec976b2719ddee750be318647'],
+      0.1
+    )
+    const amountOut = res[res.length - 1].amountOut
+    console.log('amountOut',amountOut.toString())
+    expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
+    expect(amountOut.toNumber()).toBeCloseTo(99965, -3)
+  })
+
   test('BnA-base', async () => {
     const { balances, allowances, maturities } = await getBalanceAndAllowance(
       genConfig(8453, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),

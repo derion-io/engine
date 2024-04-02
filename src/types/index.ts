@@ -91,6 +91,7 @@ export type PoolType = {
   TOKEN_R: string
   FETCHER: string
   MATURITY: BigNumber
+  OPEN_RATE: BigNumber
   pool: string
   logic: string
   k: BigNumber
