@@ -24,7 +24,7 @@ export const calcAmountOuts = async (
   const provider = engine.RESOURCE.provider
 
   const tokenContract = new ethers.Contract(engine.profile.configs.derivable.token, TokenAbi, provider)
-  const currentBalanceOut = await tokenContract.balanceOf(account, packId(POOL_IDS.C.toString(), poolOut))
+  const currentBalanceOut = await tokenContract.balanceOf(account, packId(POOL_IDS.A.toString(), poolOut))
   const steps = [
     {
       amountIn: bn(numberToWei(amountIn, 6)),
