@@ -62,6 +62,29 @@ describe('Derivable Tools', () => {
     expect(amountOut.toNumber()).toBeCloseTo(99965, -3)
   })
 
+  test('AmountOut-closingfee-opbnb', async () => { // 101456
+    const [res, gasUsed] = await calcAmountOuts(
+      genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
+      ['0x63A6eA7677d45d0120ed8C72D55876069f295B95'],
+      0.1
+    )
+    const amountOut = res[res.length - 1].amountOut
+    console.log('amountOut', amountOut.toString())
+    expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
+    expect(amountOut.toNumber()).toBeCloseTo(99965, -3)
+  })
+
+  test('AmountOut-fee-opbnb', async () => { // 97999
+    const [res, gasUsed] = await calcAmountOuts(
+      genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
+      ['0x920A140a3F2c3aE7940A392b51815e273b115A53'],
+      0.1
+    )
+    const amountOut = res[res.length - 1].amountOut
+    console.log('amountOut', amountOut.toString())
+    expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
+    expect(amountOut.toNumber()).toBeCloseTo(99965, -3)
+  })
   test('BnA-base', async () => {
     const { balances, allowances, maturities } = await getBalanceAndAllowance(
       genConfig(8453, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
