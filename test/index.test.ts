@@ -54,7 +54,8 @@ describe('Derivable Tools', () => {
     const [res, gasUsed] = await calcAmountOuts(
       genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
       ['0x68b2663e8b566c6ec976b2719ddee750be318647'],
-      0.1
+      0.1,
+      POOL_IDS.A,
     )
     const amountOut = res[res.length - 1].amountOut
     expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
@@ -65,18 +66,20 @@ describe('Derivable Tools', () => {
     const [res, gasUsed] = await calcAmountOuts(
       genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
       ['0x63A6eA7677d45d0120ed8C72D55876069f295B95'],
-      0.1
+      0.1,
+      POOL_IDS.A,
     )
     const amountOut = res[res.length - 1].amountOut
     expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
-    expect(NUM(IEW(amountOut, 9))).toBeCloseTo(130, -2)
+    expect(NUM(IEW(amountOut, 12))).toBeCloseTo(40, -1)
   })
 
   test('AmountOut-fee-opbnb', async () => { // 97999
     const [res, gasUsed] = await calcAmountOuts(
       genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
       ['0x920A140a3F2c3aE7940A392b51815e273b115A53'],
-      0.1
+      0.1,
+      POOL_IDS.A,
     )
     const amountOut = res[res.length - 1].amountOut
     expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
