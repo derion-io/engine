@@ -11,6 +11,7 @@ import { TestConfiguration } from './shared/configurations/configurations'
 
 import { Interceptor } from './shared/libs/interceptor'
 import { Engine } from '../src/engine'
+import {POOL_IDS} from '../src/utils/constant'
 const interceptor = new Interceptor()
 
 const confs = new TestConfiguration()
@@ -231,6 +232,16 @@ describe('Derivable Tools', () => {
       ['0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'],
       '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96',
       0.1,
+    )
+  })
+
+  test('Swap-fee', async () => {
+    await swap(
+      genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
+      ['0x68b2663e8b566c6ec976b2719ddee750be318647'],
+      '0x68b2663e8b566c6ec976b2719ddee750be318647',
+      0.001,
+      POOL_IDS.A
     )
   })
 })
