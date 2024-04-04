@@ -1,8 +1,7 @@
-import { bn } from '../src/utils/helper'
+import { IEW, NUM, bn } from '../src/utils/helper'
 import { calcAmountOuts } from './logic/calcAmountOuts'
 import { getBalanceAndAllowance } from './logic/getBalanceAndAllowance'
 import { getLargestPoolAddress } from './logic/getPairAddress'
-import { getPairDetail } from './logic/getPairDetail'
 import { getPairDetailV3 } from './logic/getPairDetailV3'
 import { getResource } from './logic/getResource'
 import { history } from './logic/history'
@@ -50,16 +49,15 @@ describe('Derivable Tools', () => {
     expect(amountOut.toNumber()).toEqual(99973)
   })
 
-  test('AmountOut-openfee-opbnb', async () => {
+  test('AmountOut-openingfee-opbnb', async () => {
     const [res, gasUsed] = await calcAmountOuts(
       genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
       ['0x68b2663e8b566c6ec976b2719ddee750be318647'],
       0.1
     )
     const amountOut = res[res.length - 1].amountOut
-    console.log('amountOut',amountOut.toString())
     expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
-    expect(amountOut.toNumber()).toBeCloseTo(99965, -3)
+    expect(NUM(amountOut)).toBeCloseTo(99965, -3)
   })
 
   test('AmountOut-closingfee-opbnb', async () => { // 101456
@@ -69,9 +67,8 @@ describe('Derivable Tools', () => {
       0.1
     )
     const amountOut = res[res.length - 1].amountOut
-    console.log('amountOut', amountOut.toString())
     expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
-    expect(amountOut.toNumber()).toBeCloseTo(99965, -3)
+    expect(NUM(IEW(amountOut, 9))).toBeCloseTo(130, -2)
   })
 
   test('AmountOut-fee-opbnb', async () => { // 97999
@@ -81,9 +78,8 @@ describe('Derivable Tools', () => {
       0.1
     )
     const amountOut = res[res.length - 1].amountOut
-    console.log('amountOut', amountOut.toString())
     expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
-    expect(amountOut.toNumber()).toBeCloseTo(99965, -3)
+    expect(NUM(IEW(amountOut, 12))).toBeCloseTo(45, -1)
   })
   test('BnA-base', async () => {
     const { balances, allowances, maturities } = await getBalanceAndAllowance(

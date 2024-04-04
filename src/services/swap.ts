@@ -347,12 +347,8 @@ export class Swap {
       } else {
         const OPEN_RATE = bn(98).shl(128).div(100)
         let amountIn = step.payloadAmountIn ? step.payloadAmountIn : step.amountIn
-        console.log('amountIn', amountIn.toString())
-        console.log('OPEN_RATE',this.RESOURCE.pools[poolOut]?.OPEN_RATE.toString(), idOut.toNumber())
-        // console.log('amountIn1',amountIn.toString())
         if (idOut.toNumber() === POOL_IDS.A || idOut.toNumber() === POOL_IDS.B) {
           amountIn = amountIn.mul(OPEN_RATE).div(Q128)
-          console.log('new - amountIn', amountIn.mul(OPEN_RATE).div(Q128).toString())
         }
         populateTxData.push(
           this.generateSwapParams('swap', {
