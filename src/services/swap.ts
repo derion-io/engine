@@ -345,9 +345,10 @@ export class Swap {
           }),
         )
       } else {
-        const OPEN_RATE = bn(98).shl(128).div(100)
+        const OPEN_RATE = this.RESOURCE.pools[poolOut].OPEN_RATE
         let amountIn = step.payloadAmountIn ? step.payloadAmountIn : step.amountIn
-        if (idOut.toNumber() === POOL_IDS.A || idOut.toNumber() === POOL_IDS.B) {
+        console.log('OPEN_RATE',OPEN_RATE)
+        if (OPEN_RATE && (idOut.toNumber() === POOL_IDS.A || idOut.toNumber() === POOL_IDS.B)) {
           amountIn = amountIn.mul(OPEN_RATE).div(Q128)
         }
         populateTxData.push(

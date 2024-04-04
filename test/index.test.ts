@@ -59,7 +59,7 @@ describe('Derivable Tools', () => {
     )
     const amountOut = res[res.length - 1].amountOut
     expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
-    expect(NUM(amountOut)).toBeCloseTo(99965, -3)
+    expect(NUM(amountOut)).toBeCloseTo(100870, -3)
   })
 
   test('AmountOut-closingfee-opbnb', async () => { // 101456
@@ -71,7 +71,7 @@ describe('Derivable Tools', () => {
     )
     const amountOut = res[res.length - 1].amountOut
     expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
-    expect(NUM(IEW(amountOut, 12))).toBeCloseTo(40, -1)
+    expect(NUM(IEW(amountOut, 12))).toBeCloseTo(28985, -1)
   })
 
   test('AmountOut-fee-opbnb', async () => { // 97999
@@ -83,7 +83,7 @@ describe('Derivable Tools', () => {
     )
     const amountOut = res[res.length - 1].amountOut
     expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
-    expect(NUM(IEW(amountOut, 12))).toBeCloseTo(45, -1)
+    expect(NUM(IEW(amountOut, 12))).toBeCloseTo(3299966, -1)
   })
   test('BnA-base', async () => {
     const { balances, allowances, maturities } = await getBalanceAndAllowance(
