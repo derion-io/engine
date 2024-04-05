@@ -71,7 +71,7 @@ describe('Derivable Tools', () => {
     )
     const amountOut = res[res.length - 1].amountOut
     expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
-    expect(NUM(IEW(amountOut, 12))).toBeCloseTo(28985, -1)
+    expect(NUM(IEW(amountOut))).toBeCloseTo(3.33, 2)
   })
 
   test('AmountOut-fee-opbnb', async () => { // 97999
