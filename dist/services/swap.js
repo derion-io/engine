@@ -29,6 +29,7 @@ const helper_1 = require("../utils/helper");
 const constant_1 = require("../utils/constant");
 const providers_1 = require("@ethersproject/providers");
 const utils_1 = require("ethers/lib/utils");
+const resource_1 = require("./resource");
 const OracleSdkAdapter = __importStar(require("../utils/OracleSdkAdapter"));
 const OracleSdk = __importStar(require("../utils/OracleSdk"));
 const PAYMENT = 0;
@@ -224,13 +225,18 @@ class Swap {
                     },
                 ];
             const populateTxData = [];
+            let amountIn = step.payloadAmountIn ? step.payloadAmountIn : step.amountIn;
+            const OPEN_RATE = this.RESOURCE.pools[poolOut]?.OPEN_RATE;
+            if (OPEN_RATE && [constant_1.POOL_IDS.A, constant_1.POOL_IDS.B].includes(idOut.toNumber())) {
+                amountIn = amountIn.mul(OPEN_RATE).div(resource_1.Q128);
+            }
             if ((0, utils_1.isAddress)(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R) {
                 populateTxData.push(this.generateSwapParams('swapAndOpen', {
                     side: idOut,
                     deriPool: poolOut,
                     uniPool: this.getUniPool(step.tokenIn, poolGroup.TOKEN_R),
                     token: step.tokenIn,
-                    amount: step.payloadAmountIn ? step.payloadAmountIn : step.amountIn,
+                    amount: amountIn,
                     payer: this.account,
                     recipient: this.account,
                     INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
@@ -254,7 +260,7 @@ class Swap {
                     poolIn: (0, helper_1.isErc1155Address)(step.tokenIn) ? poolIn : poolOut,
                     sideOut: idOut,
                     poolOut: (0, helper_1.isErc1155Address)(step.tokenOut) ? poolOut : poolIn,
-                    amountIn: step.payloadAmountIn ? step.payloadAmountIn : step.amountIn,
+                    amountIn,
                     maturity: 0,
                     payer: this.account,
                     recipient: this.account,
