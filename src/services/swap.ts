@@ -6,7 +6,7 @@ import { JsonRpcProvider, Provider, TransactionReceipt } from '@ethersproject/pr
 import { Profile } from '../profile'
 import { isAddress } from 'ethers/lib/utils'
 import { IDerivableContractAddress, IEngineConfig } from '../utils/configs'
-import { Resource } from './resource'
+import { Q128, Resource } from './resource'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
 import * as OracleSdk from '../utils/OracleSdk'
 
@@ -317,6 +317,12 @@ export class Swap {
             ]
 
       const populateTxData = []
+      
+      let amountIn = step.payloadAmountIn ? step.payloadAmountIn : step.amountIn
+      const OPEN_RATE = this.RESOURCE.pools[poolOut]?.OPEN_RATE
+      if (OPEN_RATE && [POOL_IDS.A, POOL_IDS.B].includes(idOut.toNumber())) {
+        amountIn = amountIn.mul(OPEN_RATE).div(Q128)
+      }
 
       if (isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R) {
         populateTxData.push(
@@ -325,7 +331,7 @@ export class Swap {
             deriPool: poolOut,
             uniPool: this.getUniPool(step.tokenIn, poolGroup.TOKEN_R),
             token: step.tokenIn,
-            amount: step.payloadAmountIn ? step.payloadAmountIn : step.amountIn,
+            amount: amountIn,
             payer: this.account,
             recipient: this.account,
             INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
@@ -351,7 +357,7 @@ export class Swap {
             poolIn: isErc1155Address(step.tokenIn) ? poolIn : poolOut,
             sideOut: idOut,
             poolOut: isErc1155Address(step.tokenOut) ? poolOut : poolIn,
-            amountIn: step.payloadAmountIn ? step.payloadAmountIn : step.amountIn,
+            amountIn,
             maturity: 0,
             payer: this.account,
             recipient: this.account,

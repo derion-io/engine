@@ -4,12 +4,14 @@ import TokenAbi from '../../src/abi/Token.json'
 import { bn, numberToWei, packId } from '../../src/utils/helper'
 import { NATIVE_ADDRESS, POOL_IDS } from '../../src/utils/constant'
 import { IEngineConfig } from '../../src/utils/configs'
+import {PoolType} from '../../src/types'
 
 export const swap = async (
   configs: IEngineConfig,
   poolAddresses: Array<string>,
   poolAddress: string,
   amount: number,
+  poolSide:number =  POOL_IDS.C
 ): Promise<any> => {
   const engine = new Engine(configs)
   await engine.initServices()
@@ -24,7 +26,7 @@ export const swap = async (
   const provider = new ethers.providers.JsonRpcProvider(engine.profile.configs.rpc)
 
   const tokenContract = new ethers.Contract(engine.profile.configs.derivable.token, TokenAbi, provider)
-  const currentBalanceOut = await tokenContract.balanceOf(configs.account, packId(POOL_IDS.C.toString(), poolOut))
+  const currentBalanceOut = await tokenContract.balanceOf(configs.account, packId(poolSide.toString(), poolOut))
   const steps = [
     {
       amountIn: bn(numberToWei(amount, 6)),

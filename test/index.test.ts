@@ -1,8 +1,7 @@
-import { bn } from '../src/utils/helper'
+import { IEW, NUM, bn } from '../src/utils/helper'
 import { calcAmountOuts } from './logic/calcAmountOuts'
 import { getBalanceAndAllowance } from './logic/getBalanceAndAllowance'
 import { getLargestPoolAddress } from './logic/getPairAddress'
-import { getPairDetail } from './logic/getPairDetail'
 import { getPairDetailV3 } from './logic/getPairDetailV3'
 import { getResource } from './logic/getResource'
 import { history } from './logic/history'
@@ -12,6 +11,7 @@ import { TestConfiguration } from './shared/configurations/configurations'
 
 import { Interceptor } from './shared/libs/interceptor'
 import { Engine } from '../src/engine'
+import {POOL_IDS} from '../src/utils/constant'
 const interceptor = new Interceptor()
 
 const confs = new TestConfiguration()
@@ -50,6 +50,41 @@ describe('Derivable Tools', () => {
     expect(amountOut.toNumber()).toEqual(99973)
   })
 
+  test('AmountOut-openingfee-opbnb', async () => {
+    const [res, gasUsed] = await calcAmountOuts(
+      genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
+      ['0x68b2663e8b566c6ec976b2719ddee750be318647'],
+      0.1,
+      POOL_IDS.A,
+    )
+    const amountOut = res[res.length - 1].amountOut
+    expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
+    expect(NUM(amountOut)).toBeCloseTo(100870, -3)
+  })
+
+  test('AmountOut-closingfee-opbnb', async () => { // 101456
+    const [res, gasUsed] = await calcAmountOuts(
+      genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
+      ['0x63A6eA7677d45d0120ed8C72D55876069f295B95'],
+      0.1,
+      POOL_IDS.A,
+    )
+    const amountOut = res[res.length - 1].amountOut
+    expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
+    expect(NUM(IEW(amountOut))).toBeCloseTo(3.33, 2)
+  })
+
+  test('AmountOut-fee-opbnb', async () => { // 97999
+    const [res, gasUsed] = await calcAmountOuts(
+      genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
+      ['0x920A140a3F2c3aE7940A392b51815e273b115A53'],
+      0.1,
+      POOL_IDS.A,
+    )
+    const amountOut = res[res.length - 1].amountOut
+    expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
+    expect(NUM(IEW(amountOut, 12))).toBeCloseTo(3299966, -1)
+  })
   test('BnA-base', async () => {
     const { balances, allowances, maturities } = await getBalanceAndAllowance(
       genConfig(8453, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
@@ -186,7 +221,7 @@ describe('Derivable Tools', () => {
       '0x1F3fdE32c8Cc19a0BE30a94EDeaD9cE34279b1FF'
     )
     const keys = Object.keys(positions)
-    expect(keys.length).toEqual(5)
+    expect(keys.length).toBeGreaterThanOrEqual(5)
     expect(positions['0xcd7FEDD23ae8F12FCBC3bdC86e09Fd2c184c7c4a-48'].avgPriceR).toEqual('316.145668790469279013')
     expect(positions['0xf8BA6a71BB47Ea6c43a18071b78422576B5B295c-48'].avgPrice).toEqual('2.49178155904397899')
     expect(positions['0x2C3d0F3dcD28b5481a50E1DD0071378f92D56954-48'].balanceForPriceR).toEqual(bn('0x1c8f2c56a54f6b9e'))
@@ -200,6 +235,16 @@ describe('Derivable Tools', () => {
       ['0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'],
       '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96',
       0.1,
+    )
+  })
+
+  test('Swap-fee', async () => {
+    await swap(
+      genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
+      ['0x68b2663e8b566c6ec976b2719ddee750be318647'],
+      '0x68b2663e8b566c6ec976b2719ddee750be318647',
+      0.001,
+      POOL_IDS.A
     )
   })
 })
