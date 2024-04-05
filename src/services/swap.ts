@@ -317,6 +317,12 @@ export class Swap {
             ]
 
       const populateTxData = []
+      
+      let amountIn = step.payloadAmountIn ? step.payloadAmountIn : step.amountIn
+      const OPEN_RATE = this.RESOURCE.pools[poolOut]?.OPEN_RATE
+      if (OPEN_RATE && [POOL_IDS.A, POOL_IDS.B].includes(idOut.toNumber())) {
+        amountIn = amountIn.mul(OPEN_RATE).div(Q128)
+      }
 
       if (isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R) {
         populateTxData.push(
@@ -325,7 +331,7 @@ export class Swap {
             deriPool: poolOut,
             uniPool: this.getUniPool(step.tokenIn, poolGroup.TOKEN_R),
             token: step.tokenIn,
-            amount: step.payloadAmountIn ? step.payloadAmountIn : step.amountIn,
+            amount: amountIn,
             payer: this.account,
             recipient: this.account,
             INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
@@ -345,11 +351,6 @@ export class Swap {
           }),
         )
       } else {
-        const OPEN_RATE = this.RESOURCE.pools[poolOut].OPEN_RATE
-        let amountIn = step.payloadAmountIn ? step.payloadAmountIn : step.amountIn
-        if (idOut.toNumber() === POOL_IDS.A || idOut.toNumber() === POOL_IDS.B) {
-          amountIn = amountIn.mul(OPEN_RATE).div(Q128)
-        }
         populateTxData.push(
           this.generateSwapParams('swap', {
             sideIn: idIn,
