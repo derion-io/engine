@@ -8,7 +8,8 @@ import { IEngineConfig } from '../../src/utils/configs'
 export const calcAmountOuts = async (
   configs: IEngineConfig,
   poolAddresses: Array<string>,
-  amountIn: number
+  amountIn: number,
+  sideOut: number = POOL_IDS.C,
 ): Promise<[any[], BigNumber]> => {
   const account = configs.account ?? configs.signer?._address
   const engine = new Engine(configs)
@@ -24,12 +25,12 @@ export const calcAmountOuts = async (
   const provider = engine.RESOURCE.provider
 
   const tokenContract = new ethers.Contract(engine.profile.configs.derivable.token, TokenAbi, provider)
-  const currentBalanceOut = await tokenContract.balanceOf(account, packId(POOL_IDS.C.toString(), poolOut))
+  const currentBalanceOut = await tokenContract.balanceOf(account, packId(sideOut.toString(), poolOut))
   const steps = [
     {
       amountIn: bn(numberToWei(amountIn, 6)),
       tokenIn: NATIVE_ADDRESS,
-      tokenOut: poolOut + '-' + POOL_IDS.C,
+      tokenOut: poolOut + '-' + sideOut,
       amountOutMin: 0,
       currentBalanceOut,
       useSweep: true,
