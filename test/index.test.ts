@@ -1,4 +1,4 @@
-import { IEW, NUM, bn } from '../src/utils/helper'
+import { IEW, NUM, bn, provider } from '../src/utils/helper'
 import { calcAmountOuts } from './logic/calcAmountOuts'
 import { getBalanceAndAllowance } from './logic/getBalanceAndAllowance'
 import { getLargestPoolAddress } from './logic/getPairAddress'
@@ -6,7 +6,7 @@ import { getPairDetailV3 } from './logic/getPairDetailV3'
 import { getResource } from './logic/getResource'
 import { history } from './logic/history'
 import { swap } from './logic/swap'
-import _ from "lodash";
+import _, {result} from "lodash";
 import { TestConfiguration } from './shared/configurations/configurations'
 
 import { Interceptor } from './shared/libs/interceptor'
@@ -14,6 +14,7 @@ import { Engine } from '../src/engine'
 import {POOL_IDS} from '../src/utils/constant'
 import { aggregator } from './logic/aggregator'
 import { SwapSide } from '@paraswap/sdk'
+import fetch from 'node-fetch'
 const interceptor = new Interceptor()
 
 const confs = new TestConfiguration()
@@ -250,15 +251,41 @@ describe('Derivable Tools', () => {
     )
   })
 
-  test('Aggregator', async () => {
+  test('Aggregator buy arb', async () => {
+    const configs = genConfig(42161, '0x5555a222c465b1873421d844e5d89ed8eb3E5555')
     const getRateData = {
-      srcToken: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+      srcToken: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
       srcDecimals: 18,
-      amount: '1000000000',
-      destToken: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
+      srcAmount: (0.001 * 1e18).toString(),
+      destToken: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
       destDecimals: 18,
+      partner: "paraswap.io",
       side: SwapSide.SELL,
     }
-    await aggregator(genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'), getRateData)
+    const engine = new Engine(configs)
+    await engine.initServices()
+    const {swapData} = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
+    await engine.RESOURCE.provider.call(swapData.data)
+    console.log('Swap data', swapData)
   })
+
+  test('Aggregator sell arb', async () => {
+    const configs = genConfig(42161, '0x5555a222c465b1873421d844e5d89ed8eb3E5555')
+    const getRateData = {
+      srcToken: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+      srcDecimals: 18,
+      destAmount: (1 * 1e18).toString(),
+      destToken: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+      destDecimals: 18,
+      partner: "paraswap.io",
+      side: SwapSide.BUY,
+    }
+    const engine = new Engine(configs)
+    await engine.initServices()
+    const {swapData} = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
+    await engine.RESOURCE.provider.call(swapData.data)
+    console.log('Swap data', swapData)
+  })
+
+
 })

@@ -1,7 +1,7 @@
 import { Profile } from './../profile'
 import { BigNumber, ethers } from 'ethers'
 import { JsonRpcProvider } from '@ethersproject/providers'
-import { IEngineConfig } from '../utils/configs'
+import { IEngineConfig, INetworkConfig } from '../utils/configs'
 import { constructFullSDK, constructEthersContractCaller, constructFetchFetcher, AllSDKMethods } from '@paraswap/sdk'
 import { GetRateInput } from '@paraswap/sdk/dist/methods/swap/rates'
 
@@ -34,10 +34,10 @@ export class Aggregator {
     })
   }
 
-  async getRateAndBuildTxSwap(getRateData: GetRateInput): Promise<any> {
+  async getRateAndBuildTxSwap(getRateData: any): Promise<any> {
     try {
       const priceRoute = await this.paraSwap.swap.getRate(getRateData)
-
+      console.log(priceRoute)
       const txParams = await this.paraSwap.swap.buildTx({
         srcToken: getRateData.srcToken,
         destToken: getRateData.destToken,
@@ -57,7 +57,42 @@ export class Aggregator {
       throw error
     }
   }
+  async getRateAndBuildTxSwapApi(configs: IEngineConfig, getRateData: any): Promise<any> {
+    try {
+      const amount = getRateData?.srcAmount || getRateData.destAmount
+    const rateData = await (await fetch(
+      `https://api.paraswap.io/prices/?version=5&srcToken=${getRateData.srcToken}&srcDecimals=${getRateData.srcDecimals}&destToken=${getRateData.destToken}&destDecimals=${getRateData.destDecimals}&amount=${amount}&side=${getRateData.side}&excludeDirectContractMethods=false&network=${configs.chainId}&otherExchangePrices=true&partner=${getRateData.partner}&userAddress=${configs.account}`,
+      {
+      method: "GET",
+      redirect: "follow"
+    })).json()
+    const myHeaders: any = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    if(rateData.error) throw rateData.error
 
+    const swapData = await (await fetch(`https://api.paraswap.io/transactions/${configs.chainId}?ignoreGasEstimate=true&ignoreAllowance=false&gasPrice=${rateData.priceRoute.gasCost}`, {
+      method: "POST",
+      headers: myHeaders,
+      body: JSON.stringify({
+        ...getRateData,
+        slippage: 2500, //25%
+        partner: getRateData.partner,
+        priceRoute: rateData.priceRoute,
+        userAddress: configs.account
+      })
+    })).json()
+
+    if(swapData.error) throw rateData.error
+
+    return {
+      rateData,
+      swapData,
+    }
+    } catch (error) {
+      throw error
+    }
+    
+  }
   private generateSigner(): ethers.Wallet {
     const id = crypto.randomBytes(32).toString('hex')
     const privateKey = `0x${id}`
