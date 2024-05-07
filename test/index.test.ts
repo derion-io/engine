@@ -275,61 +275,79 @@ describe('Derivable Tools', () => {
   test('Aggregator buy arb', async () => {
     const configs: IEngineConfig = genConfig(42161, '0x147884b8d540a2b584f9bef43b5bf1596bdf9fbc')
     const poolAddress = '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'
+    const amount = numberToWei(10, 18)
+    console.log(amount)
     const getRateData = {
       srcToken: '0x912CE59144191C1204E64559FE8253a0e49E6548',
       srcDecimals: 18,
-      destAmount: (0.0001 * 1e18).toString(),
-      destToken: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+      destAmount: amount,
+      destToken: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
       destDecimals: 18,
-      partner: "paraswap.io",
-      side: SwapSide.BUY,
+      partner: 'paraswap.io',
+      side: SwapSide.BUY
     }
     const engine = new Engine(configs)
     await engine.initServices()
-    
-    const {rateData, swapData} = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
+
+    const { rateData, swapData } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
     const provider = engine.RESOURCE.provider
     provider.setStateOverride({
       [engine.profile.configs.derivable.stateCalHelper]: {
-        code: jsonHelper.deployedBytecode,
+        code: jsonHelper.deployedBytecode
       }
     })
 
-    console.log('aggregateAndOpen params: ', [
-      getRateData.destToken,
-      swapData.to,
-      swapData.data,
-      {
-        sideIn: POOL_IDS.R,
-        poolIn: poolAddress,
-        sideOut: POOL_IDS.A,
-        poolOut: poolAddress,
-        token: swapData.to,
-        amountIn: numberToWei(5),
-        payer: ZERO_ADDRESS,
-        recipient: swapData.from,
-        INDEX_R: 0,
-      }
-    ])
-
-  
-    const helper =  new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, jsonHelper.abi, provider)
-    await helper.callStatic.aggregateAndOpen(
-      getRateData.destToken,
-      swapData.to,
-      swapData.data,
-      {
-        sideIn: POOL_IDS.R,
-        poolIn: poolAddress,
-        sideOut: POOL_IDS.A,
-        poolOut: poolAddress,
-        token: swapData.to,
-        amountIn: numberToWei(5),
-        payer: ZERO_ADDRESS,
-        recipient: swapData.from,
-        INDEX_R: 0,
-      }
-    )
+    console.log('aggregateAndOpen params: ', rateData, swapData)
+    const utr = new ethers.Contract(engine.profile.configs.helperContract.utr as string, engine.profile.getAbi('UTR'), provider)
+    const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, jsonHelper.abi, provider)
+    const tx = await utr.callStatic.exec(
+      [],
+      [
+        {
+          inputs: [
+            {
+              mode: 1, // TRANSFER
+              eip: 20,
+              token: getRateData.destToken,
+              id: 0,
+              amountIn: amount,
+              recipient: swapData.from
+            }
+          ],
+          code: helper.address,
+          data: (
+            await helper.populateTransaction.aggregateAndOpen(
+              {
+                tokenIn: getRateData.destToken,
+                router: swapData.to,
+                data: swapData.data,
+                pool: poolAddress,
+                side: POOL_IDS.A,
+                payer: swapData.from,
+                recipient: swapData.from,
+                INDEX_R: 0
+              }
+            )
+          ).data
+        }
+      ])
+    console.log('tx', tx)
+    // await helper.callStatic.aggregateAndOpen(
+    //   getRateData.destToken,
+    //   swapData.to,
+    //   swapData.data,
+    //   {
+    //     sideIn: POOL_IDS.R,
+    //     poolIn: poolAddress,
+    //     sideOut: POOL_IDS.A,
+    //     poolOut: poolAddress,
+    //     token: swapData.to,
+    //     amountIn: numberToWei(5),
+    //     payer: ZERO_ADDRESS,
+    //     recipient: swapData.from,
+    //     INDEX_R: 0
+    //   }
+    // )
   })
 
 

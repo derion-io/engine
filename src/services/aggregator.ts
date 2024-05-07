@@ -70,7 +70,7 @@ export class Aggregator {
     myHeaders.append("Content-Type", "application/json");
     if(rateData.error) throw 'Rate data: ' + rateData.error
 
-    const swapData = await (await fetch(`https://api.paraswap.io/transactions/${configs.chainId}?ignoreGasEstimate=true&ignoreAllowance=false&gasPrice=${rateData.priceRoute.gasCost}`, {
+    const swapData = await (await fetch(`https://api.paraswap.io/transactions/${configs.chainId}?ignoreGasEstimate=true&ignoreAllowance=true&gasPrice=${rateData.priceRoute.gasCost}`, {
       method: "POST",
       headers: myHeaders,
       body: JSON.stringify({
