@@ -1,4 +1,3 @@
-import {SwapSide} from '@paraswap/sdk'
 import { BigNumber } from 'ethers'
 
 export type Storage = {
@@ -6,7 +5,11 @@ export type Storage = {
   getItem?: (itemName: string) => string
 }
 
-// export type ParseLogType = {
+export const SwapSide = {
+  BUY: 'BUY',
+  SELL: 'SELL'
+}
+// export type ParseLo gType = {
 //   address: string
 //   contractAddress: string
 //   name: string
@@ -168,7 +171,7 @@ export type SwapStepType = {
   uniPool?: string
 }
 
-export type rateDataAggregatorType = { 
+export type rateDataAggregatorType = {
    userAddress: string
    ignoreChecks: boolean
    srcToken: string
@@ -178,7 +181,7 @@ export type rateDataAggregatorType = {
    destToken: string,
    destDecimals: number,
    partner: string,
-   side: SwapSide,
+   side: string,
    excludeDirectContractMethods?:boolean,
    otherExchangePrices?: boolean,
    ignoreGasEstimate?: boolean
