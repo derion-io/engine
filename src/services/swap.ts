@@ -1,5 +1,5 @@
 import { BigNumber, Contract, Signer, VoidSigner, ethers } from 'ethers'
-import { PoolType, SwapStepType, PendingSwapTransactionType, SwapSide } from '../types'
+import { PoolType, SwapStepType, PendingSwapTransactionType } from '../types'
 import { bn, isErc1155Address, packId } from '../utils/helper'
 import { NATIVE_ADDRESS, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
 import { JsonRpcProvider, Provider, TransactionReceipt } from '@ethersproject/providers'
@@ -337,7 +337,7 @@ export class Swap {
           destToken: poolGroup.TOKEN_R,
           destDecimals: 18,// need to import
           partner: 'derion.io',
-          side: SwapSide.SELL,
+          side: 'SELL',
         }
         const openData = {
           poolAddress: poolOut,
