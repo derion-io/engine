@@ -1,4 +1,4 @@
-import { IEW, NUM, bn, provider } from '../src/utils/helper'
+import { IEW, NUM, bn, numberToWei, provider } from '../src/utils/helper'
 import { calcAmountOuts } from './logic/calcAmountOuts'
 import { getBalanceAndAllowance } from './logic/getBalanceAndAllowance'
 import { getLargestPoolAddress } from './logic/getPairAddress'
@@ -11,10 +11,13 @@ import { TestConfiguration } from './shared/configurations/configurations'
 
 import { Interceptor } from './shared/libs/interceptor'
 import { Engine } from '../src/engine'
-import {POOL_IDS} from '../src/utils/constant'
+import {POOL_IDS, ZERO_ADDRESS} from '../src/utils/constant'
 import { aggregator } from './logic/aggregator'
 import { SwapSide } from '@paraswap/sdk'
 import fetch from 'node-fetch'
+import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
+import {IEngineConfig, INetworkConfig} from '../src/utils/configs'
+import {ethers} from 'ethers'
 const interceptor = new Interceptor()
 
 const confs = new TestConfiguration()
@@ -251,7 +254,7 @@ describe('Derivable Tools', () => {
     )
   })
 
-  test('Aggregator buy arb', async () => {
+  test('Aggregator sell arb', async () => {
     const configs = genConfig(42161, '0x5555a222c465b1873421d844e5d89ed8eb3E5555')
     const getRateData = {
       srcToken: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
@@ -269,12 +272,13 @@ describe('Derivable Tools', () => {
     console.log('Swap data', swapData)
   })
 
-  test('Aggregator sell arb', async () => {
-    const configs = genConfig(42161, '0x5555a222c465b1873421d844e5d89ed8eb3E5555')
+  test('Aggregator buy arb', async () => {
+    const configs: IEngineConfig = genConfig(42161, '0x147884b8d540a2b584f9bef43b5bf1596bdf9fbc')
+    const poolAddress = '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'
     const getRateData = {
-      srcToken: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+      srcToken: '0x912CE59144191C1204E64559FE8253a0e49E6548',
       srcDecimals: 18,
-      destAmount: (1 * 1e18).toString(),
+      destAmount: (0.0001 * 1e18).toString(),
       destToken: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
       destDecimals: 18,
       partner: "paraswap.io",
@@ -282,9 +286,50 @@ describe('Derivable Tools', () => {
     }
     const engine = new Engine(configs)
     await engine.initServices()
-    const {swapData} = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
-    await engine.RESOURCE.provider.call(swapData.data)
-    console.log('Swap data', swapData)
+    
+    const {rateData, swapData} = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
+    const provider = engine.RESOURCE.provider
+    provider.setStateOverride({
+      [engine.profile.configs.derivable.stateCalHelper]: {
+        code: jsonHelper.deployedBytecode,
+      }
+    })
+
+    console.log('aggregateAndOpen params: ', [
+      getRateData.destToken,
+      swapData.to,
+      swapData.data,
+      {
+        sideIn: POOL_IDS.R,
+        poolIn: poolAddress,
+        sideOut: POOL_IDS.A,
+        poolOut: poolAddress,
+        token: swapData.to,
+        amountIn: numberToWei(5),
+        payer: ZERO_ADDRESS,
+        recipient: swapData.from,
+        INDEX_R: 0,
+      }
+    ])
+
+  
+    const helper =  new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, jsonHelper.abi, provider)
+    await helper.callStatic.aggregateAndOpen(
+      getRateData.destToken,
+      swapData.to,
+      swapData.data,
+      {
+        sideIn: POOL_IDS.R,
+        poolIn: poolAddress,
+        sideOut: POOL_IDS.A,
+        poolOut: poolAddress,
+        token: swapData.to,
+        amountIn: numberToWei(5),
+        payer: ZERO_ADDRESS,
+        recipient: swapData.from,
+        INDEX_R: 0,
+      }
+    )
   })
 
 
