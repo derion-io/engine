@@ -100,7 +100,7 @@ export class Aggregator {
     let openTx = null
     if(helperOverride) {
       openTx = await helperOverride.populateTransaction.aggregateAndOpen({
-        tokenIn: getRateData.srcToken,
+        token: getRateData.srcToken,
         tokenOperator: rateData.priceRoute.tokenTransferProxy,
         aggregator: swapData.to,
         aggregatorData: swapData.data,
