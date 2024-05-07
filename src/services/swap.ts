@@ -1,5 +1,5 @@
 import { BigNumber, Contract, Signer, VoidSigner, ethers } from 'ethers'
-import { PoolType, SwapStepType, PendingSwapTransactionType } from '../types'
+import { PoolType, SwapStepType, PendingSwapTransactionType, SwapSide } from '../types'
 import { bn, isErc1155Address, packId } from '../utils/helper'
 import { NATIVE_ADDRESS, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
 import { JsonRpcProvider, Provider, TransactionReceipt } from '@ethersproject/providers'
@@ -9,6 +9,7 @@ import { IDerivableContractAddress, IEngineConfig } from '../utils/configs'
 import { Q128, Resource } from './resource'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
 import * as OracleSdk from '../utils/OracleSdk'
+import {Aggregator} from './aggregator'
 
 const PAYMENT = 0
 const TRANSFER = 1
@@ -66,13 +67,15 @@ export class Swap {
   overrideProvider: JsonRpcProvider
   signer?: Signer
   RESOURCE: Resource
+  AGGREGATOR: Aggregator
   config: IEngineConfig
   profile: Profile
   derivableAdr: IDerivableContractAddress
   pendingTxs: Array<PendingSwapTransactionType>
 
-  constructor(config: IEngineConfig & { RESOURCE: Resource }, profile: Profile) {
+  constructor(config: IEngineConfig & { RESOURCE: Resource, AGGREGATOR: Aggregator }, profile: Profile) {
     this.RESOURCE = config.RESOURCE
+    this.AGGREGATOR = config.AGGREGATOR
     this.config = config
     this.account = config.account ?? config.signer?._address ?? ZERO_ADDRESS
     this.chainId = config.chainId
@@ -325,18 +328,37 @@ export class Swap {
       }
 
       if (isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R) {
-        populateTxData.push(
-          this.generateSwapParams('swapAndOpen', {
-            side: idOut,
-            deriPool: poolOut,
-            uniPool: this.getUniPool(step.tokenIn, poolGroup.TOKEN_R),
-            token: step.tokenIn,
-            amount: amountIn,
-            payer: this.account,
-            recipient: this.account,
-            INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
-          }),
-        )
+        const getRateData = {
+          userAddress: this.getStateCalHelperContract().address,
+          ignoreChecks: true,
+          srcToken: step.tokenIn,
+          srcDecimals: 18, // need to import
+          srcAmount: amountIn.toString(),
+          destToken: poolGroup.TOKEN_R,
+          destDecimals: 18,// need to import
+          partner: 'derion.io',
+          side: SwapSide.SELL,
+        }
+        const openData = {
+          poolAddress: poolOut,
+          poolId: idOut.toNumber()
+        }
+        this.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, this.getStateCalHelperContract()).then(res => {
+          const {openTx} = res
+          populateTxData.push(openTx)
+        })
+        // populateTxData.push(
+        //   this.generateSwapParams('swapAndOpen', {
+        //     side: idOut,
+        //     deriPool: poolOut,
+        //     uniPool: this.getUniPool(step.tokenIn, poolGroup.TOKEN_R),
+        //     token: step.tokenIn,
+        //     amount: amountIn,
+        //     payer: this.account,
+        //     recipient: this.account,
+        //     INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
+        //   }),
+        // )
       } else if (isAddress(step.tokenOut) && this.wrapToken(step.tokenOut) !== poolGroup.TOKEN_R) {
         populateTxData.push(
           this.generateSwapParams('closeAndSwap', {
