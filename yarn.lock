@@ -934,6 +934,20 @@
   resolved "https://registry.yarnpkg.com/@open-draft/until/-/until-2.1.0.tgz#0acf32f470af2ceaf47f095cdecd40d68666efda"
   integrity sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==
 
+"@paraswap/core@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@paraswap/core/-/core-2.0.0.tgz#be62161abec67db3cef22498a1631b12aa2d81e1"
+  integrity sha512-zhXSjX2dbYaRxYZt9LhzOCW/qeP0CLyvaFU7e8MkWahu/IAhyvKc/45/STDgNgTjPw1MHjNHbmi5a5pVqXyXBg==
+
+"@paraswap/sdk@^6.3.0":
+  version "6.6.0"
+  resolved "https://registry.yarnpkg.com/@paraswap/sdk/-/sdk-6.6.0.tgz#96089b35d695d730b3bfb48695177d832907ad7a"
+  integrity sha512-iLsZCbTgnoyYoa3IDCsEEiELKcROuecriruVBM/Uk3XmnJMPPR0VkxU1LIRorce6Wn5KrToWNQYXziPUJN2kjg==
+  dependencies:
+    "@paraswap/core" "2.0.0"
+    bignumber.js "^9.0.2"
+    ts-essentials "^9.1.2"
+
 "@sinclair/typebox@^0.27.8":
   version "0.27.8"
   resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.27.8.tgz#6667fac16c436b5434a387a34dedb013198f6e6e"
@@ -1415,6 +1429,11 @@ bech32@1.1.4:
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/bech32/-/bech32-1.1.4.tgz#e38c9f37bf179b8eb16ae3a772b40c356d4832e9"
   integrity sha512-s0IrSOzLlbvX7yp4WBfPITzpAU8sqQcpsmwXDiKwrG4r491vwCO/XpejasRNl0piBMe/DvP4Tz0mIS/X1DPJBQ==
+
+bignumber.js@^9.0.2:
+  version "9.1.2"
+  resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-9.1.2.tgz#b7c4242259c008903b13707983b5f4bbd31eda0c"
+  integrity sha512-2/mKyZH9K85bzOEfhXDBFZTGd1CTs+5IHpeFQo9luiBG7hghdC851Pj2WAhb6E3R6b9tZj/XKhbg4fum+Kepug==
 
 bn.js@^4.11.9:
   version "4.12.0"
@@ -4248,6 +4267,11 @@ tr46@~0.0.3:
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/tr46/-/tr46-0.0.3.tgz#8184fd347dac9cdc185992f3a6622e14b9d9ab6a"
   integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
+
+ts-essentials@^9.1.2:
+  version "9.4.2"
+  resolved "https://registry.yarnpkg.com/ts-essentials/-/ts-essentials-9.4.2.tgz#6d4bd23b46b61bf3e031816cc887e839eb62c33c"
+  integrity sha512-mB/cDhOvD7pg3YCLk2rOtejHjjdSi9in/IBYE13S+8WA5FBSraYf4V/ws55uvs0IvQ/l0wBOlXy5yBNZ9Bl8ZQ==
 
 ts-jest@^29.1.1:
   version "29.1.2"
