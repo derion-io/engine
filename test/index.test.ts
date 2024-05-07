@@ -1,4 +1,4 @@
-import { IEW, NUM, bn, numberToWei, provider } from '../src/utils/helper'
+import { BIG, IEW, NUM, bn, numberToWei } from '../src/utils/helper'
 import { calcAmountOuts } from './logic/calcAmountOuts'
 import { getBalanceAndAllowance } from './logic/getBalanceAndAllowance'
 import { getLargestPoolAddress } from './logic/getPairAddress'
@@ -6,15 +6,13 @@ import { getPairDetailV3 } from './logic/getPairDetailV3'
 import { getResource } from './logic/getResource'
 import { history } from './logic/history'
 import { swap } from './logic/swap'
-import _, {result} from "lodash";
+import _ from "lodash";
 import { TestConfiguration } from './shared/configurations/configurations'
 
 import { Interceptor } from './shared/libs/interceptor'
 import { Engine } from '../src/engine'
 import {POOL_IDS, ZERO_ADDRESS} from '../src/utils/constant'
-import { aggregator } from './logic/aggregator'
 import { SwapSide } from '@paraswap/sdk'
-import fetch from 'node-fetch'
 import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
 import {IEngineConfig, INetworkConfig} from '../src/utils/configs'
 import {ethers} from 'ethers'
@@ -278,30 +276,76 @@ describe('Derivable Tools', () => {
     const configs: IEngineConfig = genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df')
     const poolAddress = '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'
     const amount = numberToWei(1, 6)
-    console.log(amount)
-    const getRateData = {
-      srcToken: USDC,
-      srcDecimals: 6,
-      destAmount: amount,
-      destToken: WETH,
-      destDecimals: 18,
-      partner: 'derion.io',
-      side: SwapSide.BUY
-    }
+    // console.log(amount)
+
     const engine = new Engine(configs)
     await engine.initServices()
 
-    const { rateData, swapData } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
     const provider = engine.RESOURCE.provider
     provider.setStateOverride({
       [engine.profile.configs.derivable.stateCalHelper]: {
         code: jsonHelper.deployedBytecode
       }
     })
-
-    console.log('aggregateAndOpen params: ', rateData, swapData)
     const utr = new ethers.Contract(engine.profile.configs.helperContract.utr as string, engine.profile.getAbi('UTR'), provider)
     const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, jsonHelper.abi, provider)
+
+    const getRateData = {
+      // txOrigin: configs.account,
+      userAddress: helper.address,
+      // receiver: helper.address,
+      ignoreChecks: true,
+      srcToken: USDC,
+      srcDecimals: 6,
+      srcAmount: amount,
+      destToken: WETH,
+      destDecimals: 18,
+      partner: 'derion.io',
+      side: SwapSide.SELL,
+    }
+
+    const { rateData, swapData } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
+    // console.log('aggregateAndOpen params: ', rateData, swapData)
+
+    const openTx = await helper.populateTransaction.aggregateAndOpen({
+      tokenIn: getRateData.srcToken,
+      tokenTransferProxy: rateData.priceRoute.tokenTransferProxy,
+      router: swapData.to,
+      data: swapData.data,
+      pool: poolAddress,
+      side: POOL_IDS.A,
+      payer: ZERO_ADDRESS,
+      recipient: configs.account,
+      INDEX_R: 0,
+    })
+    // console.log(openTx)
+
+    try {
+      await utr.callStatic.exec(
+        [],
+        [
+          {
+            inputs: [
+              {
+                mode: 1, // TRANSFER
+                eip: 20,
+                token: getRateData.srcToken,
+                id: 0,
+                amountIn: BIG(amount).sub(1),
+                recipient: helper.address,
+              }
+            ],
+            code: helper.address,
+            data: openTx.data,
+          }
+        ],
+        { from: configs.account }
+      )
+      expect(true).toBeFalsy()
+    } catch (err) {
+      expect(String(err)).toContain('ERC20: transfer amount exceeds balance')
+    }
+
     const tx = await utr.callStatic.exec(
       [],
       [
@@ -317,39 +361,12 @@ describe('Derivable Tools', () => {
             }
           ],
           code: helper.address,
-          data: (
-            await helper.populateTransaction.aggregateAndOpen(
-              {
-                tokenIn: getRateData.srcToken,
-                router: swapData.to,
-                data: swapData.data,
-                pool: poolAddress,
-                side: POOL_IDS.A,
-                payer: swapData.from,
-                recipient: configs.account,
-                INDEX_R: 0,
-              }
-            )
-          ).data
+          data: openTx.data,
         }
-      ])
-    console.log('tx', tx)
-    // await helper.callStatic.aggregateAndOpen(
-    //   getRateData.destToken,
-    //   swapData.to,
-    //   swapData.data,
-    //   {
-    //     sideIn: POOL_IDS.R,
-    //     poolIn: poolAddress,
-    //     sideOut: POOL_IDS.A,
-    //     poolOut: poolAddress,
-    //     token: swapData.to,
-    //     amountIn: numberToWei(5),
-    //     payer: ZERO_ADDRESS,
-    //     recipient: swapData.from,
-    //     INDEX_R: 0
-    //   }
-    // )
+      ],
+      { from: configs.account }
+    )
+    // console.log('tx', tx)
   })
 
 

@@ -78,7 +78,6 @@ export class Aggregator {
         slippage: 2500, //25%
         partner: getRateData.partner,
         priceRoute: rateData.priceRoute,
-        userAddress: configs.account
       })
     })).json()
 
