@@ -273,17 +273,19 @@ describe('Derivable Tools', () => {
   })
 
   test('Aggregator buy arb', async () => {
-    const configs: IEngineConfig = genConfig(42161, '0x147884b8d540a2b584f9bef43b5bf1596bdf9fbc')
+    const USDC = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
+    const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
+    const configs: IEngineConfig = genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df')
     const poolAddress = '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'
-    const amount = numberToWei(10, 18)
+    const amount = numberToWei(1, 6)
     console.log(amount)
     const getRateData = {
-      srcToken: '0x912CE59144191C1204E64559FE8253a0e49E6548',
-      srcDecimals: 18,
+      srcToken: USDC,
+      srcDecimals: 6,
       destAmount: amount,
-      destToken: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+      destToken: WETH,
       destDecimals: 18,
-      partner: 'paraswap.io',
+      partner: 'derion.io',
       side: SwapSide.BUY
     }
     const engine = new Engine(configs)
@@ -308,24 +310,24 @@ describe('Derivable Tools', () => {
             {
               mode: 1, // TRANSFER
               eip: 20,
-              token: getRateData.destToken,
+              token: getRateData.srcToken,
               id: 0,
               amountIn: amount,
-              recipient: swapData.from
+              recipient: helper.address,
             }
           ],
           code: helper.address,
           data: (
             await helper.populateTransaction.aggregateAndOpen(
               {
-                tokenIn: getRateData.destToken,
+                tokenIn: getRateData.srcToken,
                 router: swapData.to,
                 data: swapData.data,
                 pool: poolAddress,
                 side: POOL_IDS.A,
                 payer: swapData.from,
-                recipient: swapData.from,
-                INDEX_R: 0
+                recipient: configs.account,
+                INDEX_R: 0,
               }
             )
           ).data
