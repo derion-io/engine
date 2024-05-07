@@ -309,9 +309,9 @@ describe('Derivable Tools', () => {
 
     const openTx = await helper.populateTransaction.aggregateAndOpen({
       tokenIn: getRateData.srcToken,
-      tokenTransferProxy: rateData.priceRoute.tokenTransferProxy,
-      router: swapData.to,
-      data: swapData.data,
+      tokenOperator: rateData.priceRoute.tokenTransferProxy,
+      aggregator: swapData.to,
+      aggregatorData: swapData.data,
       pool: poolAddress,
       side: POOL_IDS.A,
       payer: ZERO_ADDRESS,
