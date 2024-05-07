@@ -23,7 +23,14 @@ export const swap = async (
   })
 
   const poolOut = currentPool.poolAddress
-  const provider = new ethers.providers.JsonRpcProvider(engine.profile.configs.rpc)
+  const provider = engine.RESOURCE.provider
+
+  const jsonHelper = require('../../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json')
+  provider.setStateOverride({
+    [engine.profile.configs.derivable.stateCalHelper]: {
+      code: jsonHelper.deployedBytecode,
+    }
+  })
 
   const tokenContract = new ethers.Contract(engine.profile.configs.derivable.token, TokenAbi, provider)
   const currentBalanceOut = await tokenContract.balanceOf(configs.account, packId(poolSide.toString(), poolOut))
