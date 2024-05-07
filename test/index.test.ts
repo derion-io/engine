@@ -308,7 +308,7 @@ describe('Derivable Tools', () => {
     // console.log('aggregateAndOpen params: ', rateData, swapData)
 
     const openTx = await helper.populateTransaction.aggregateAndOpen({
-      tokenIn: getRateData.srcToken,
+      token: getRateData.srcToken,
       tokenOperator: rateData.priceRoute.tokenTransferProxy,
       aggregator: swapData.to,
       aggregatorData: swapData.data,
@@ -407,7 +407,7 @@ describe('Derivable Tools', () => {
     console.log('aggregateAndOpen params: ', rateData, swapData)
 
     const openTx = await helper.populateTransaction.aggregateAndOpen({
-      tokenIn: getRateData.srcToken,
+      token: getRateData.srcToken,
       tokenOperator: rateData.priceRoute.tokenTransferProxy,
       aggregator: swapData.to,
       aggregatorData: swapData.data,
