@@ -1,7 +1,7 @@
 import { Profile } from './../profile'
-import { BigNumber, Contract, ethers } from 'ethers'
+import { Contract, ethers } from 'ethers'
 import { JsonRpcProvider } from '@ethersproject/providers'
-import { IEngineConfig, INetworkConfig } from '../utils/configs'
+import { IEngineConfig } from '../utils/configs'
 
 import crypto from 'crypto'
 import {PARA_BUILD_TX_BASE_URL, PARA_DATA_BASE_URL, PARA_VERSION, ZERO_ADDRESS} from '../utils/constant'
@@ -13,7 +13,6 @@ export class Aggregator {
   overrideProvider: JsonRpcProvider
   signer?: ethers.providers.JsonRpcSigner
   config: IEngineConfig
-  // paraSwap: AllSDKMethods<any>
   paraDataBaseURL: string
   paraBuildTxBaseURL:string
   paraDataBaseVersion: string
@@ -27,42 +26,8 @@ export class Aggregator {
     this.paraDataBaseURL = paraDataBaseURL || PARA_DATA_BASE_URL
     this.paraBuildTxBaseURL = paraBuildTxBaseURL || PARA_BUILD_TX_BASE_URL
     this.paraDataBaseVersion = paraVersion || PARA_VERSION
-    // this.paraSwap = constructFullSDK({
-    //   chainId: config.chainId,
-    //   fetcher: constructFetchFetcher(fetch),
-    //   contractCaller: constructEthersContractCaller(
-    //     {
-    //       ethersProviderOrSigner: this.signer ?? this.generateSigner(),
-    //       EthersContract: ethers.Contract,
-    //     },
-    //     this.account,
-    //   ),
-    // })
   }
 
-  // async getRateAndBuildTxSwap(getRateData: any): Promise<any> {
-  //   try {
-  //     const priceRoute = await this.paraSwap.swap.getRate(getRateData)
-  //     console.log(priceRoute)
-  //     const txParams = await this.paraSwap.swap.buildTx({
-  //       srcToken: getRateData.srcToken,
-  //       destToken: getRateData.destToken,
-  //       srcAmount: getRateData.amount,
-  //       destAmount: priceRoute.destAmount,
-  //       priceRoute,
-  //       userAddress: this.account ?? '',
-  //     })
-
-  //     return {
-  //       ...txParams,
-  //       gasPrice: BigNumber.from(txParams.gasPrice).toString(),
-  //       gasLimit: BigNumber.from(5000000).toString(),
-  //       value: BigNumber.from(txParams.value).toString(),
-  //     }
-  //   } catch (error) {
-  //     throw error
-  //   }
-  // }
   async getRateAndBuildTxSwapApi(getRateData: rateDataAggregatorType, openData: SwapAndOpenAggregatorType, helperOverride?: Contract): Promise<{
     rateData: any,
     swapData: any,

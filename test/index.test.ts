@@ -11,11 +11,12 @@ import { TestConfiguration } from './shared/configurations/configurations'
 
 import { Interceptor } from './shared/libs/interceptor'
 import { Engine } from '../src/engine'
-import {POOL_IDS, ZERO_ADDRESS} from '../src/utils/constant'
-import { SwapSide } from '../src/types'
-import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
-import {IEngineConfig, INetworkConfig} from '../src/utils/configs'
+import {POOL_IDS} from '../src/utils/constant'
+import {IEngineConfig} from '../src/utils/configs'
 import {ethers} from 'ethers'
+
+// import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
+
 const interceptor = new Interceptor()
 
 const confs = new TestConfiguration()
@@ -252,24 +253,6 @@ describe('Derivable Tools', () => {
     )
   })
 
-  test('Aggregator sell arb', async () => {
-    const configs = genConfig(42161, '0x5555a222c465b1873421d844e5d89ed8eb3E5555')
-    const getRateData = {
-      srcToken: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
-      srcDecimals: 18,
-      srcAmount: (0.001 * 1e18).toString(),
-      destToken: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-      destDecimals: 18,
-      partner: "paraswap.io",
-      side: SwapSide.SELL,
-    }
-    const engine = new Engine(configs)
-    await engine.initServices()
-    const {swapData} = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
-    await engine.RESOURCE.provider.call(swapData.data)
-    console.log('Swap data', swapData)
-  })
-
   test('Aggregator buy arb', async () => {
     const USDC = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
     const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
@@ -282,13 +265,14 @@ describe('Derivable Tools', () => {
     await engine.initServices()
 
     const provider = engine.RESOURCE.provider
-    provider.setStateOverride({
-      [engine.profile.configs.derivable.stateCalHelper]: {
-        code: jsonHelper.deployedBytecode
-      }
-    })
+    // // override the Helper contract
+    // provider.setStateOverride({
+    //   [engine.profile.configs.derivable.stateCalHelper]: {
+    //     code: jsonHelper.deployedBytecode
+    //   }
+    // })
     const utr = new ethers.Contract(engine.profile.configs.helperContract.utr as string, engine.profile.getAbi('UTR'), provider)
-    const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, jsonHelper.abi, provider)
+    const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, engine.profile.getAbi('Helper'), provider)
 
     const getRateData = {
       // txOrigin: configs.account,
@@ -301,7 +285,7 @@ describe('Derivable Tools', () => {
       destToken: WETH,
       destDecimals: 18,
       partner: 'derion.io',
-      side: SwapSide.SELL,
+      side: 'SELL',
     }
     const openData = {
       poolAddress,
@@ -370,13 +354,14 @@ describe('Derivable Tools', () => {
     await engine.initServices()
 
     const provider = engine.RESOURCE.provider
-    provider.setStateOverride({
-      [engine.profile.configs.derivable.stateCalHelper]: {
-        code: jsonHelper.deployedBytecode
-      }
-    })
+    // // override Helper code
+    // provider.setStateOverride({
+    //   [engine.profile.configs.derivable.stateCalHelper]: {
+    //     code: jsonHelper.deployedBytecode
+    //   }
+    // })
     const utr = new ethers.Contract(engine.profile.configs.helperContract.utr as string, engine.profile.getAbi('UTR'), provider)
-    const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, jsonHelper.abi, provider)
+    const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, engine.profile.getAbi('Helper'), provider)
 
     const getRateData = {
       // txOrigin: configs.account,
@@ -389,7 +374,7 @@ describe('Derivable Tools', () => {
       destToken: WETH,
       destDecimals: 18,
       partner: 'derion.io',
-      side: SwapSide.SELL,
+      side: "SELL",
     }
     const openData = {
       poolAddress,

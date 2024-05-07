@@ -5,11 +5,7 @@ export type Storage = {
   getItem?: (itemName: string) => string
 }
 
-export const SwapSide = {
-  BUY: 'BUY',
-  SELL: 'SELL'
-}
-// export type ParseLo gType = {
+// export type ParseLogType = {
 //   address: string
 //   contractAddress: string
 //   name: string

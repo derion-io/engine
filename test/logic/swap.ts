@@ -4,7 +4,6 @@ import TokenAbi from '../../src/abi/Token.json'
 import { bn, numberToWei, packId } from '../../src/utils/helper'
 import { NATIVE_ADDRESS, POOL_IDS } from '../../src/utils/constant'
 import { IEngineConfig } from '../../src/utils/configs'
-import {PoolType} from '../../src/types'
 
 export const swap = async (
   configs: IEngineConfig,
@@ -25,12 +24,13 @@ export const swap = async (
   const poolOut = currentPool.poolAddress
   const provider = engine.RESOURCE.provider
 
-  const jsonHelper = require('../../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json')
-  provider.setStateOverride({
-    [engine.profile.configs.derivable.stateCalHelper]: {
-      code: jsonHelper.deployedBytecode,
-    }
-  })
+  // // override the Helper contract
+  // const jsonHelper = require('../../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json')
+  // provider.setStateOverride({
+  //   [engine.profile.configs.derivable.stateCalHelper]: {
+  //     code: jsonHelper.deployedBytecode,
+  //   }
+  // })
 
   const tokenContract = new ethers.Contract(engine.profile.configs.derivable.token, TokenAbi, provider)
   const currentBalanceOut = await tokenContract.balanceOf(configs.account, packId(poolSide.toString(), poolOut))
