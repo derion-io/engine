@@ -303,28 +303,17 @@ describe('Derivable Tools', () => {
       partner: 'derion.io',
       side: SwapSide.SELL,
     }
-
-    const { rateData, swapData } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
-    // console.log('aggregateAndOpen params: ', rateData, swapData)
-
-    const openTx = await helper.populateTransaction.aggregateAndOpen({
-      token: getRateData.srcToken,
-      tokenOperator: rateData.priceRoute.tokenTransferProxy,
-      aggregator: swapData.to,
-      aggregatorData: swapData.data,
-      pool: poolAddress,
-      side: POOL_IDS.A,
-      payer: ZERO_ADDRESS,
-      recipient: configs.account,
-      INDEX_R: 0,
-    })
-    // console.log(openTx)
+    const openData = {
+      poolAddress,
+      poolId: POOL_IDS.A
+    }
+    const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
 
     try {
       await utr.callStatic.exec(
         [],
         [
-          {
+          { 
             inputs: [
               {
                 mode: 1, // TRANSFER
@@ -402,24 +391,28 @@ describe('Derivable Tools', () => {
       partner: 'derion.io',
       side: SwapSide.SELL,
     }
+    const openData = {
+      poolAddress,
+      poolId: POOL_IDS.A
+    }
+    const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
 
-    const { rateData, swapData } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
-    console.log('aggregateAndOpen params: ', rateData, swapData)
+    // const { rateData, swapData } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
+    // console.log('aggregateAndOpen params: ', rateData, swapData)
 
-    const openTx = await helper.populateTransaction.aggregateAndOpen({
-      token: getRateData.srcToken,
-      tokenOperator: rateData.priceRoute.tokenTransferProxy,
-      aggregator: swapData.to,
-      aggregatorData: swapData.data,
-      pool: poolAddress,
-      side: POOL_IDS.A,
-      payer: ZERO_ADDRESS,
-      recipient: configs.account,
-      INDEX_R: 0,
-    },{
-      value: BIG(amount)
-    })
-    console.log(openTx)
+    // const openTx = await helper.populateTransaction.aggregateAndOpen({
+    //   tokenIn: getRateData.srcToken,
+    //   tokenOperator: rateData.priceRoute.tokenTransferProxy,
+    //   aggregator: swapData.to,
+    //   aggregatorData: swapData.data,
+    //   pool: poolAddress,
+    //   side: POOL_IDS.A,
+    //   payer: ZERO_ADDRESS,
+    //   recipient: configs.account,
+    //   INDEX_R: 0,
+    // },{
+    //   value: BIG(amount)
+    // })
 
     try {
       await utr.callStatic.exec(

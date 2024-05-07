@@ -1,3 +1,4 @@
+import {SwapSide} from '@paraswap/sdk'
 import { BigNumber } from 'ethers'
 
 export type Storage = {
@@ -165,6 +166,28 @@ export type SwapStepType = {
   useSweep?: boolean
   currentBalanceOut?: BigNumber
   uniPool?: string
+}
+
+export type rateDataAggregatorType = { 
+   userAddress: string
+   ignoreChecks: boolean
+   srcToken: string
+   srcDecimals: number
+   srcAmount?: string,
+   destAmount?: string,
+   destToken: string,
+   destDecimals: number,
+   partner: string,
+   side: SwapSide,
+   excludeDirectContractMethods?:boolean,
+   otherExchangePrices?: boolean,
+   ignoreGasEstimate?: boolean
+   ignoreAllowance?: boolean 
+}
+
+export type SwapAndOpenAggregatorType = { 
+  poolAddress: string,
+  poolId: number
 }
 
 export type PendingSwapTransactionType = {
