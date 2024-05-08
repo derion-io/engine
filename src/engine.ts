@@ -57,8 +57,8 @@ export class Engine {
     this.BNA = new BnA(configs, this.profile)
     this.PRICE = new Price(configs, this.profile)
     this.HISTORY = new History(configs, this.profile)
-    this.SWAP = new Swap({ ...configs, AGGREGATOR: this.AGGREGATOR }, this.profile)
     this.AGGREGATOR = new Aggregator(this.enginConfigs, this.profile)
+    this.SWAP = new Swap({ ...configs, AGGREGATOR: this.AGGREGATOR }, this.profile)
   }
 
   setCurrentPool(poolData: any) {
