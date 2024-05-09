@@ -9,8 +9,10 @@ export const swap = async (
   configs: IEngineConfig,
   poolAddresses: Array<string>,
   poolAddress: string,
-  amount: number,
-  poolSide:number =  POOL_IDS.C
+  poolSide:number =  POOL_IDS.C,
+  amountIn: number,
+  tokenIn: string = NATIVE_ADDRESS,
+  tokenInDecimals: number = 18
 ): Promise<any> => {
   const engine = new Engine(configs)
   await engine.initServices()
@@ -33,18 +35,19 @@ export const swap = async (
   // })
 
   const tokenContract = new ethers.Contract(engine.profile.configs.derivable.token, TokenAbi, provider)
+
+
   const currentBalanceOut = await tokenContract.balanceOf(configs.account, packId(poolSide.toString(), poolOut))
   const steps = [
     {
-      amountIn: bn(numberToWei(amount, 6)),
-      tokenIn: NATIVE_ADDRESS,
+      amountIn: bn(numberToWei(amountIn, tokenInDecimals)),
+      tokenIn,
       tokenOut: poolOut + '-' + POOL_IDS.C,
       amountOutMin: 0,
       currentBalanceOut,
       useSweep: true,
     },
   ]
-
   const fetcherV2 = await engine.SWAP.needToSubmitFetcher(currentPool)
   const fetcherData = await engine.SWAP.fetchPriceTx(currentPool)
   const res = await engine.SWAP.multiSwap({
@@ -57,3 +60,4 @@ export const swap = async (
   })
   return res
 }
+
