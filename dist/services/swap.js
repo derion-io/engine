@@ -116,7 +116,7 @@ class Swap {
         let nativeAmountToWrap = (0, helper_1.bn)(0);
         const metaDatas = [];
         const promises = [];
-        steps.forEach((step) => {
+        steps.forEach(async (step) => {
             const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut);
             if ((step.tokenIn === constant_1.NATIVE_ADDRESS || step.tokenOut === constant_1.NATIVE_ADDRESS) &&
                 poolGroup.TOKEN_R !== this.profile.configs.wrappedTokenAddress) {
@@ -130,7 +130,7 @@ class Swap {
                 nativeAmountToWrap = nativeAmountToWrap.add(step.amountIn);
             }
             if (step.useSweep && (0, helper_1.isErc1155Address)(step.tokenOut)) {
-                const { inputs, populateTxData } = this.getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut });
+                const { inputs, populateTxData } = await this.getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut });
                 metaDatas.push({
                     code: this.derivableAdr.stateCalHelper,
                     inputs,
@@ -141,7 +141,7 @@ class Swap {
                 promises.push(...populateTxData);
             }
             else {
-                const { inputs, populateTxData } = this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut });
+                const { inputs, populateTxData } = await this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut });
                 metaDatas.push({
                     code: this.derivableAdr.stateCalHelper,
                     inputs,
@@ -170,10 +170,10 @@ class Swap {
         }
         return { params: [outputs, actions], value: nativeAmountToWrap };
     }
-    getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }) {
+    async getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }) {
         try {
             const stateCalHelper = this.getStateCalHelperContract();
-            const swapCallData = this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut });
+            const swapCallData = await this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut });
             const inputs = [
                 {
                     mode: TRANSFER,
@@ -198,7 +198,7 @@ class Swap {
             throw error;
         }
     }
-    getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }) {
+    async getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }) {
         try {
             const inputs = step.tokenIn === constant_1.NATIVE_ADDRESS
                 ? [
@@ -232,25 +232,26 @@ class Swap {
                 amountIn = amountIn.mul(OPEN_RATE).div(resource_1.Q128);
             }
             if ((0, utils_1.isAddress)(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R) {
+                const srcDecimals = this.RESOURCE.tokens.find((t) => t.address === step.tokenIn)?.decimals || 18;
+                const destDecimals = this.RESOURCE.tokens.find((t) => t.address === poolGroup.TOKEN_R)?.decimals || 18;
                 const getRateData = {
                     userAddress: this.getStateCalHelperContract().address,
                     ignoreChecks: true,
                     srcToken: step.tokenIn,
-                    srcDecimals: 18,
+                    srcDecimals,
                     srcAmount: amountIn.toString(),
                     destToken: poolGroup.TOKEN_R,
-                    destDecimals: 18,
+                    destDecimals,
                     partner: 'derion.io',
                     side: 'SELL',
                 };
+                console.log(getRateData, amountIn.toString());
                 const openData = {
                     poolAddress: poolOut,
                     poolId: idOut.toNumber()
                 };
-                this.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, this.getStateCalHelperContract()).then(res => {
-                    const { openTx } = res;
-                    populateTxData.push(openTx);
-                });
+                const { openTx } = await this.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, this.getStateCalHelperContract());
+                populateTxData.push(openTx);
                 // populateTxData.push(
                 //   this.generateSwapParams('swapAndOpen', {
                 //     side: idOut,

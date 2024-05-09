@@ -18,6 +18,10 @@ export type MultiSwapParameterType = {
     onSubmitted?: (pendingTx: PendingSwapTransactionType) => void;
     submitFetcherV2?: boolean;
     callStatic?: boolean;
+    tokenDecimals?: {
+        srcDecimals: number;
+        destDecimals: number;
+    };
 };
 export type PoolGroupReturnType = {
     pools: {
@@ -80,8 +84,8 @@ export declare class Swap {
         params: any;
         value: BigNumber;
     }>;
-    getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): SwapCallDataReturnType;
-    getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): SwapCallDataReturnType;
+    getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): Promise<SwapCallDataReturnType>;
+    getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): Promise<SwapCallDataReturnType>;
     wrapToken(address: string): string;
     generateSwapParams(method: string, params: any): {
         [key: string]: any;
