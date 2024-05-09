@@ -29,6 +29,10 @@ export type MultiSwapParameterType = {
   onSubmitted?: (pendingTx: PendingSwapTransactionType) => void
   submitFetcherV2?: boolean
   callStatic?: boolean
+  tokenDecimals?: {
+    srcDecimals: number
+    destDecimals: number
+  }
 }
 
 export type PoolGroupReturnType = {
@@ -188,7 +192,7 @@ export class Swap {
 
     const metaDatas: any = []
     const promises: any = []
-    steps.forEach((step) => {
+    steps.forEach(async (step) => {
       const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut)
 
       if (
@@ -208,7 +212,7 @@ export class Swap {
       }
 
       if (step.useSweep && isErc1155Address(step.tokenOut)) {
-        const { inputs, populateTxData } = this.getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut })
+        const { inputs, populateTxData } = await this.getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut })
 
         metaDatas.push(
           {
@@ -223,7 +227,7 @@ export class Swap {
 
         promises.push(...populateTxData)
       } else {
-        const { inputs, populateTxData } = this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut })
+        const { inputs, populateTxData } = await this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut })
         metaDatas.push({
           code: this.derivableAdr.stateCalHelper,
           inputs,
@@ -257,11 +261,11 @@ export class Swap {
     return { params: [outputs, actions], value: nativeAmountToWrap }
   }
 
-  getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): SwapCallDataReturnType {
+  async getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): Promise<SwapCallDataReturnType> {
     try {
       const stateCalHelper = this.getStateCalHelperContract()
 
-      const swapCallData = this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut })
+      const swapCallData = await this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut })
 
       const inputs = [
         {
@@ -289,7 +293,7 @@ export class Swap {
     }
   }
 
-  getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): SwapCallDataReturnType {
+  async getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): Promise<SwapCallDataReturnType> {
     try {
       const inputs =
         step.tokenIn === NATIVE_ADDRESS
@@ -328,25 +332,28 @@ export class Swap {
       }
 
       if (isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R) {
+        const srcDecimals = this.RESOURCE.tokens.find((t) => t.address === step.tokenIn)?.decimals || 18
+        const destDecimals = this.RESOURCE.tokens.find((t) => t.address ===  poolGroup.TOKEN_R)?.decimals || 18,
+
         const getRateData = {
           userAddress: this.getStateCalHelperContract().address,
           ignoreChecks: true,
           srcToken: step.tokenIn,
-          srcDecimals: 18, // need to import
+          srcDecimals,
           srcAmount: amountIn.toString(),
           destToken: poolGroup.TOKEN_R,
-          destDecimals: 18,// need to import
+          destDecimals,
           partner: 'derion.io',
           side: 'SELL',
         }
+        console.log(getRateData,amountIn.toString())
         const openData = {
           poolAddress: poolOut,
           poolId: idOut.toNumber()
         }
-        this.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, this.getStateCalHelperContract()).then(res => {
-          const {openTx} = res
-          populateTxData.push(openTx)
-        })
+        const {openTx} = await this.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, this.getStateCalHelperContract())
+        populateTxData.push(openTx)
+        
         // populateTxData.push(
         //   this.generateSwapParams('swapAndOpen', {
         //     side: idOut,

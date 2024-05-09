@@ -239,6 +239,7 @@ describe('Derivable Tools', () => {
       genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
       ['0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'],
       '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96',
+      POOL_IDS.C,
       0.1,
     )
   })
@@ -248,8 +249,8 @@ describe('Derivable Tools', () => {
       genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
       ['0x68b2663e8b566c6ec976b2719ddee750be318647'],
       '0x68b2663e8b566c6ec976b2719ddee750be318647',
+      POOL_IDS.A,
       0.001,
-      POOL_IDS.A
     )
   })
 
@@ -451,6 +452,17 @@ describe('Derivable Tools', () => {
       }
     )
     // console.log('tx', tx)
+  })
+  test('Swap aggregator', async () => {
+    await swap(
+      genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
+      ['0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'],
+      '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96',
+      POOL_IDS.C,
+      0.1,
+      "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+      6
+    )
   })
 
 })
