@@ -316,7 +316,8 @@ export class Swap {
                 amountIn: step.amountIn,
                 recipient:
                   isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R
-                    ? this.getUniPool(step.tokenIn, poolGroup.TOKEN_R)
+                    ? this.getStateCalHelperContract().address
+                    // this.getUniPool(step.tokenIn, poolGroup.TOKEN_R)
                     : isErc1155Address(step.tokenIn)
                     ? poolIn
                     : poolOut,
@@ -346,7 +347,7 @@ export class Swap {
           partner: 'derion.io',
           side: 'SELL',
         }
-        console.log(getRateData,amountIn.toString())
+        console.log(getRateData)
         const openData = {
           poolAddress: poolOut,
           poolId: idOut.toNumber()
