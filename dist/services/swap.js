@@ -116,7 +116,7 @@ class Swap {
         let nativeAmountToWrap = (0, helper_1.bn)(0);
         const metaDatas = [];
         const promises = [];
-        steps.forEach(async (step) => {
+        const fetchStepPromise = steps.map(async (step) => {
             const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut);
             if ((step.tokenIn === constant_1.NATIVE_ADDRESS || step.tokenOut === constant_1.NATIVE_ADDRESS) &&
                 poolGroup.TOKEN_R !== this.profile.configs.wrappedTokenAddress) {
@@ -155,6 +155,7 @@ class Swap {
                 }
             }
         });
+        await Promise.all(fetchStepPromise);
         const datas = await Promise.all(promises);
         const actions = [];
         metaDatas.forEach((metaData, key) => {
