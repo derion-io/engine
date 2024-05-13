@@ -192,9 +192,8 @@ export class Swap {
 
     const metaDatas: any = []
     const promises: any = []
-    steps.forEach(async (step) => {
+    const fetchStepPromise = steps.map(async(step) => {
       const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut)
-
       if (
         (step.tokenIn === NATIVE_ADDRESS || step.tokenOut === NATIVE_ADDRESS) &&
         poolGroup.TOKEN_R !== this.profile.configs.wrappedTokenAddress
@@ -242,6 +241,7 @@ export class Swap {
         }
       }
     })
+    await Promise.all(fetchStepPromise)
     const datas: Array<any> = await Promise.all(promises)
 
     const actions: Array<any> = []
