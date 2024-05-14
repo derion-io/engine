@@ -13,7 +13,7 @@ import { Interceptor } from './shared/libs/interceptor'
 import { Engine } from '../src/engine'
 import {POOL_IDS} from '../src/utils/constant'
 import {IEngineConfig} from '../src/utils/configs'
-import {ethers} from 'ethers'
+import {Contract, ethers} from 'ethers'
 
 // import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
 
@@ -254,7 +254,8 @@ describe('Derivable Tools', () => {
     )
   })
 
-  test('Aggregator buy arb', async () => {
+  test('Aggregator buy USDC', async () => {
+    
     const USDC = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
     const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
     const configs: IEngineConfig = genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df')
@@ -295,6 +296,22 @@ describe('Derivable Tools', () => {
     const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
 
     try {
+      console.log(
+          { 
+            inputs: [
+              {
+                mode: 1, // TRANSFER
+                eip: 20,
+                token: getRateData.srcToken,
+                id: 0,
+                amountIn: BIG(amount).sub(1).toString(),
+                recipient: helper.address,
+              }
+            ],
+            code: helper.address,
+            data: openTx.data,
+          }
+      )
       await utr.callStatic.exec(
         [],
         [
@@ -342,7 +359,110 @@ describe('Derivable Tools', () => {
     )
     // console.log('tx', tx)
   })
+  test('Aggregator buy ARB', async () => {
+    const ARB = '0x912ce59144191c1204e64559fe8253a0e49e6548'
+    const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
+    const configs: IEngineConfig = genConfig(42161, '0x3Ed64C0BfC1e3f28D282B85F9d0f1B25d7892d6D')
+    const poolAddress = '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'
+    const amount = '100000000000'
+    // console.log(amount)
 
+    const engine = new Engine(configs)
+    await engine.initServices()
+
+    const provider = engine.RESOURCE.provider
+    // // override the Helper contract
+    // provider.setStateOverride({
+    //   [engine.profile.configs.derivable.stateCalHelper]: {
+    //     code: jsonHelper.deployedBytecode
+    //   }
+    // })
+    const utr = new ethers.Contract(engine.profile.configs.helperContract.utr as string, engine.profile.getAbi('UTR'), provider)
+    const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, engine.profile.getAbi('Helper'), provider)
+
+    const getRateData = {
+      // txOrigin: configs.account,
+      userAddress: helper.address,
+      // receiver: helper.address,
+      ignoreChecks: false,
+      srcToken: ARB,
+      srcDecimals: 18,
+      srcAmount: amount,
+      destToken: WETH,
+      destDecimals: 18,
+      partner: 'derion.io',
+      side: 'SELL',
+    }
+    const openData = {
+      poolAddress,
+      poolId: POOL_IDS.A
+    }
+    const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
+
+    try {
+      console.log(
+          { 
+            inputs: [
+              {
+                mode: 0, // TRANSFER
+                eip: 20,
+                token: getRateData.srcToken,
+                id: 0,
+                amountIn: BIG(amount).sub(1).toString(),
+                recipient: helper.address,
+              }
+            ],
+            code: helper.address,
+            data: openTx.data,
+          }
+      )
+      await utr.callStatic.exec(
+        [],
+        [
+          { 
+            inputs: [
+              {
+                mode: 0, // TRANSFER
+                eip: 20,
+                token: getRateData.srcToken,
+                id: 0,
+                amountIn: BIG(amount).sub(1),
+                recipient: helper.address,
+              }
+            ],
+            code: helper.address,
+            data: openTx.data,
+          }
+        ],
+        { from: configs.account }
+      )
+      expect(true).toBeFalsy()
+    } catch (err) {
+      expect(String(err)).toContain('ERC20: transfer amount exceeds balance')
+    }
+
+    const tx = await utr.callStatic.exec(
+      [],
+      [
+        {
+          inputs: [
+            {
+              mode: 0, // TRANSFER
+              eip: 20,
+              token: getRateData.srcToken,
+              id: 0,
+              amountIn: amount,
+              recipient: helper.address,
+            }
+          ],
+          code: helper.address,
+          data: openTx.data,
+        }
+      ],
+      { from: configs.account }
+    )
+    // console.log('tx', tx)
+  })
   test('Aggregator and Open with NATIVE', async () => {
     const ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
     const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
@@ -455,13 +575,13 @@ describe('Derivable Tools', () => {
   })
   test('Swap aggregator', async () => {
     await swap(
-      genConfig(42161, '0xc500ab620e2bbd0b444d55b7dec405a9c3da803a'), // ARB Holder
+      genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'), // ARB Holder
       ['0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'],
       '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96',
       POOL_IDS.C,
-      0.1,
-      '0x912CE59144191C1204E64559FE8253a0e49E6548', // ARB
-      18
+      2,
+      '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // ARB
+      6
     )
   })
 

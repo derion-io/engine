@@ -353,6 +353,7 @@ export class Swap {
           poolId: idOut.toNumber()
         }
         const {openTx} = await this.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, this.getStateCalHelperContract())
+        console.log(openTx)
         populateTxData.push(openTx)
         
         // populateTxData.push(
@@ -502,6 +503,14 @@ export class Swap {
         gasLimit: gasLimit || undefined,
         gasPrice: gasPrice || undefined,
       })
+      const testParams = [[],[
+        {
+        code: params[1][0].code,
+        inputs: [params[1][0].inputs[0]],
+        data: params[1][0].data,
+      }
+    ],params[2]]
+      console.log(testParams)
       if (callStatic) {
         return await utr.callStatic.exec(...params)
       }
@@ -656,3 +665,6 @@ export class Swap {
     }
   }
 }
+
+
+
