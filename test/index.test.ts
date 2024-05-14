@@ -575,12 +575,12 @@ describe('Derivable Tools', () => {
   })
   test('Swap aggregator', async () => {
     await swap(
-      genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'), // ARB Holder
+      genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
       ['0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'],
       '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96',
       POOL_IDS.C,
       2,
-      '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // ARB
+      '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
       6
     )
   })
