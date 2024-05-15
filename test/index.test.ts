@@ -399,47 +399,32 @@ describe('Derivable Tools', () => {
     }
     const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
 
-    // try {
-    //   console.log(
-    //       { 
-    //         inputs: [
-    //           {
-    //             mode: 0, // TRANSFER
-    //             eip: 20,
-    //             token: getRateData.srcToken,
-    //             id: 0,
-    //             amountIn: BIG(amount).sub(1).toString(),
-    //             recipient: helper.address,
-    //           }
-    //         ],
-    //         code: helper.address,
-    //         data: openTx.data,
-    //       }
-    //   )
-    //   await utr.callStatic.exec(
-    //     [],
-    //     [
-    //       { 
-    //         inputs: [
-    //           {
-    //             mode: 0, // TRANSFER
-    //             eip: 20,
-    //             token: getRateData.srcToken,
-    //             id: 0,
-    //             amountIn: BIG(amount).sub(1),
-    //             recipient: helper.address,
-    //           }
-    //         ],
-    //         code: helper.address,
-    //         data: openTx.data,
-    //       }
-    //     ],
-    //     { from: configs.account }
-    //   )
-    //   expect(true).toBeFalsy()
-    // } catch (err) {
-    //   expect(String(err)).toContain('ERC20: transfer amount exceeds balance')
-    // }
+    try {
+      await utr.callStatic.exec(
+        [],
+        [
+          { 
+            inputs: [
+              {
+                mode: 1, // TRANSFER
+                eip: 20,
+                token: getRateData.srcToken,
+                id: 0,
+                amountIn: BIG(amount).sub(1),
+                recipient: helper.address,
+              }
+            ],
+            code: helper.address,
+            data: openTx.data,
+          }
+        ],
+        { from: configs.account }
+      )
+      expect(true).toBeFalsy()
+    } catch (err) {
+      expect(String(err)).toContain('ERC20: transfer amount exceeds balance')
+    }
+    console.log('tx call')
 
     const tx = await utr.callStatic.exec(
       [],
@@ -447,7 +432,7 @@ describe('Derivable Tools', () => {
         {
           inputs: [
             {
-              mode: 0, // TRANSFER
+              mode: 1, // TRANSFER
               eip: 20,
               token: getRateData.srcToken,
               id: 0,
@@ -461,7 +446,7 @@ describe('Derivable Tools', () => {
       ],
       { from: configs.account }
     )
-    // console.log('tx', tx)
+    console.log('tx', tx)
   })
   test('Aggregator and Open with NATIVE', async () => {
     const ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
@@ -575,13 +560,13 @@ describe('Derivable Tools', () => {
   })
   test('Swap aggregator', async () => {
     await swap(
-      genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
+      genConfig(42161, '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'),
       ['0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'],
       '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96',
       POOL_IDS.C,
-      2,
-      '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
-      6
+      2000,
+      '0x25d887ce7a35172c62febfd67a1856f20faebb00',
+      18
     )
   })
 

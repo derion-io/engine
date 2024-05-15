@@ -309,7 +309,7 @@ export class Swap {
             ]
           : [
               {
-                mode: PAYMENT,
+                mode: isErc1155Address(step.tokenIn) ? PAYMENT : TRANSFER,
                 eip: isErc1155Address(step.tokenIn) ? 1155 : 20,
                 token: isErc1155Address(step.tokenIn) ? this.derivableAdr.token : step.tokenIn,
                 id: isErc1155Address(step.tokenIn) ? packId(idIn.toString(), poolIn) : 0,
@@ -503,14 +503,6 @@ export class Swap {
         gasLimit: gasLimit || undefined,
         gasPrice: gasPrice || undefined,
       })
-      const testParams = [[],[
-        {
-        code: params[1][0].code,
-        inputs: [params[1][0].inputs[0]],
-        data: params[1][0].data,
-      }
-    ],params[2]]
-      console.log(testParams)
       if (callStatic) {
         return await utr.callStatic.exec(...params)
       }
