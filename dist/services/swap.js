@@ -214,7 +214,7 @@ class Swap {
                 ]
                 : [
                     {
-                        mode: PAYMENT,
+                        mode: (0, helper_1.isErc1155Address)(step.tokenIn) ? PAYMENT : TRANSFER,
                         eip: (0, helper_1.isErc1155Address)(step.tokenIn) ? 1155 : 20,
                         token: (0, helper_1.isErc1155Address)(step.tokenIn) ? this.derivableAdr.token : step.tokenIn,
                         id: (0, helper_1.isErc1155Address)(step.tokenIn) ? (0, helper_1.packId)(idIn.toString(), poolIn) : 0,
@@ -253,6 +253,7 @@ class Swap {
                     poolId: idOut.toNumber()
                 };
                 const { openTx } = await this.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, this.getStateCalHelperContract());
+                console.log(openTx);
                 populateTxData.push(openTx);
                 // populateTxData.push(
                 //   this.generateSwapParams('swapAndOpen', {
