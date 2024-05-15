@@ -54,7 +54,7 @@ export const swap = async (
     fetcherData,
     submitFetcherV2: fetcherV2,
     steps,
-    gasLimit: bn(2000000),
+    gasLimit: bn(1000000),
     gasPrice: bn(3e9),
     callStatic: true,
   })
