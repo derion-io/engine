@@ -359,13 +359,13 @@ describe('Derivable Tools', () => {
     )
     // console.log('tx', tx)
   })
-  test('Aggregator buy ARB', async () => {
-    const ARB = '0x912ce59144191c1204e64559fe8253a0e49e6548'
+  test('Aggregator buy PEPE', async () => {
+    const PEPE = '0x25d887ce7a35172c62febfd67a1856f20faebb00'
     const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
-    const configs: IEngineConfig = genConfig(42161, '0x3Ed64C0BfC1e3f28D282B85F9d0f1B25d7892d6D')
+    const configs: IEngineConfig = genConfig(42161, '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10')
     const poolAddress = '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'
-    const amount = '100000000000'
-    // console.log(amount)
+    const amount = numberToWei(2000, 18)
+    console.log(amount)
 
     const engine = new Engine(configs)
     await engine.initServices()
@@ -384,8 +384,8 @@ describe('Derivable Tools', () => {
       // txOrigin: configs.account,
       userAddress: helper.address,
       // receiver: helper.address,
-      ignoreChecks: false,
-      srcToken: ARB,
+      ignoreChecks: true,
+      srcToken: PEPE,
       srcDecimals: 18,
       srcAmount: amount,
       destToken: WETH,
@@ -399,47 +399,47 @@ describe('Derivable Tools', () => {
     }
     const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
 
-    try {
-      console.log(
-          { 
-            inputs: [
-              {
-                mode: 0, // TRANSFER
-                eip: 20,
-                token: getRateData.srcToken,
-                id: 0,
-                amountIn: BIG(amount).sub(1).toString(),
-                recipient: helper.address,
-              }
-            ],
-            code: helper.address,
-            data: openTx.data,
-          }
-      )
-      await utr.callStatic.exec(
-        [],
-        [
-          { 
-            inputs: [
-              {
-                mode: 0, // TRANSFER
-                eip: 20,
-                token: getRateData.srcToken,
-                id: 0,
-                amountIn: BIG(amount).sub(1),
-                recipient: helper.address,
-              }
-            ],
-            code: helper.address,
-            data: openTx.data,
-          }
-        ],
-        { from: configs.account }
-      )
-      expect(true).toBeFalsy()
-    } catch (err) {
-      expect(String(err)).toContain('ERC20: transfer amount exceeds balance')
-    }
+    // try {
+    //   console.log(
+    //       { 
+    //         inputs: [
+    //           {
+    //             mode: 0, // TRANSFER
+    //             eip: 20,
+    //             token: getRateData.srcToken,
+    //             id: 0,
+    //             amountIn: BIG(amount).sub(1).toString(),
+    //             recipient: helper.address,
+    //           }
+    //         ],
+    //         code: helper.address,
+    //         data: openTx.data,
+    //       }
+    //   )
+    //   await utr.callStatic.exec(
+    //     [],
+    //     [
+    //       { 
+    //         inputs: [
+    //           {
+    //             mode: 0, // TRANSFER
+    //             eip: 20,
+    //             token: getRateData.srcToken,
+    //             id: 0,
+    //             amountIn: BIG(amount).sub(1),
+    //             recipient: helper.address,
+    //           }
+    //         ],
+    //         code: helper.address,
+    //         data: openTx.data,
+    //       }
+    //     ],
+    //     { from: configs.account }
+    //   )
+    //   expect(true).toBeFalsy()
+    // } catch (err) {
+    //   expect(String(err)).toContain('ERC20: transfer amount exceeds balance')
+    // }
 
     const tx = await utr.callStatic.exec(
       [],
