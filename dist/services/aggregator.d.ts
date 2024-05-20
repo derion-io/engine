@@ -13,10 +13,12 @@ export declare class Aggregator {
     paraBuildTxBaseURL: string;
     paraDataBaseVersion: string;
     constructor(config: IEngineConfig, profile: Profile, paraDataBaseURL?: string, paraBuildTxBaseURL?: string, paraVersion?: string);
-    getRateAndBuildTxSwapApi(getRateData: rateDataAggregatorType, openData: SwapAndOpenAggregatorType, helperOverride?: Contract): Promise<{
+    getRateAndBuildTxSwapApi(getRateData: rateDataAggregatorType, openData: SwapAndOpenAggregatorType, helperOverride?: Contract, slippage?: number): Promise<{
         rateData: any;
         swapData: any;
         openTx: any;
     }>;
+    getRate(getRateData: rateDataAggregatorType): Promise<any>;
+    buildTx(getRateData: rateDataAggregatorType, rateData: any, slippage?: number): Promise<any>;
     private generateSigner;
 }
