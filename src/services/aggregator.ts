@@ -28,38 +28,16 @@ export class Aggregator {
     this.paraDataBaseVersion = paraVersion || PARA_VERSION
   }
 
-  async getRateAndBuildTxSwapApi(getRateData: rateDataAggregatorType, openData: SwapAndOpenAggregatorType, helperOverride?: Contract): Promise<{
+  async getRateAndBuildTxSwapApi(getRateData: rateDataAggregatorType, openData: SwapAndOpenAggregatorType, helperOverride?: Contract, slippage?: number): Promise<{
     rateData: any,
     swapData: any,
     openTx: any
   }> {
     try {
-      const amount = getRateData?.srcAmount || getRateData.destAmount
-
-    const rateData = await (await fetch(
-      `${this.paraDataBaseURL}/?version=${this.paraDataBaseVersion}&srcToken=${getRateData.srcToken}&srcDecimals=${getRateData.srcDecimals}&destToken=${getRateData.destToken}&destDecimals=${getRateData.destDecimals}&amount=${amount}&side=${getRateData.side}&excludeDirectContractMethods=${getRateData.excludeDirectContractMethods || false}&otherExchangePrices=${getRateData.otherExchangePrices || true}&partner=${getRateData.partner}&network=${this.config.chainId}&userAddress=${this.config.account}`,
-      {
-      method: "GET",
-      redirect: "follow"
-    })).json()
-   
-    const myHeaders: any = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    if(rateData.error) throw 'Rate data: ' + rateData.error
-    const swapData = await (await fetch(
-      `${this.paraBuildTxBaseURL}/${this.config.chainId}?ignoreGasEstimate=${getRateData.ignoreGasEstimate || true}&ignoreAllowance=${getRateData.ignoreAllowance || true}&gasPrice=${rateData.priceRoute.gasCost}`,
-       {
-      method: "POST",
-      headers: myHeaders,
-      body: JSON.stringify({
-        ...getRateData,
-        slippage: 2500, //25%
-        partner: getRateData.partner,
-        priceRoute: rateData.priceRoute,
-      })
-    })).json()
-
-    if(swapData.error) throw 'Swap data: ' + swapData.error
+      const rateData = await this.getRate(getRateData)
+      if(rateData.error) throw 'Rate data: ' + rateData.error
+      const swapData = await this.buildTx(getRateData, rateData, slippage)
+      if(swapData.error) throw 'Swap data: ' + swapData.error
     let openTx = null
     if(helperOverride) {
       openTx = await helperOverride.populateTransaction.aggregateAndOpen({
@@ -83,6 +61,33 @@ export class Aggregator {
       throw error
     }
     
+  }
+  async getRate(getRateData:rateDataAggregatorType) {
+    const amount = getRateData?.srcAmount || getRateData.destAmount
+    const rateData = await (await fetch(
+      `${this.paraDataBaseURL}/?version=${this.paraDataBaseVersion}&srcToken=${getRateData.srcToken}&srcDecimals=${getRateData.srcDecimals}&destToken=${getRateData.destToken}&destDecimals=${getRateData.destDecimals}&amount=${amount}&side=${getRateData.side}&excludeDirectContractMethods=${getRateData.excludeDirectContractMethods || false}&otherExchangePrices=${getRateData.otherExchangePrices || true}&partner=${getRateData.partner}&network=${this.config.chainId}&userAddress=${this.config.account}`,
+      {
+      method: "GET",
+      redirect: "follow"
+    })).json()
+    return rateData
+  }
+  async buildTx(getRateData:rateDataAggregatorType, rateData:any, slippage?:number) {
+    const myHeaders: any = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    const swapData = await (await fetch(
+      `${this.paraBuildTxBaseURL}/${this.config.chainId}?ignoreGasEstimate=${getRateData.ignoreGasEstimate || true}&ignoreAllowance=${getRateData.ignoreAllowance || true}&gasPrice=${rateData.priceRoute.gasCost}`,
+       {
+      method: "POST",
+      headers: myHeaders,
+      body: JSON.stringify({
+        ...getRateData,
+        slippage: slippage || 500, // 5%
+        partner: getRateData.partner,
+        priceRoute: rateData.priceRoute,
+      })
+    })).json()
+    return swapData;
   }
   private generateSigner(): ethers.Wallet {
     const id = crypto.randomBytes(32).toString('hex')
