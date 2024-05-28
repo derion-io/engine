@@ -9,7 +9,7 @@ import { IDerivableContractAddress, IEngineConfig } from '../utils/configs'
 import { Q128, Resource } from './resource'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
 import * as OracleSdk from '../utils/OracleSdk'
-import {Aggregator} from './aggregator'
+import { Aggregator } from './aggregator'
 
 const PAYMENT = 0
 const TRANSFER = 1
@@ -347,13 +347,13 @@ export class Swap {
           partner: 'derion.io',
           side: 'SELL',
         }
-        console.log(getRateData)
+        // console.log(getRateData)
         const openData = {
           poolAddress: poolOut,
           poolId: idOut.toNumber()
         }
         const {openTx} = await this.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, this.getStateCalHelperContract())
-        console.log(openTx)
+        // console.log(openTx)
         populateTxData.push(openTx)
         
         // populateTxData.push(
@@ -657,6 +657,3 @@ export class Swap {
     }
   }
 }
-
-
-

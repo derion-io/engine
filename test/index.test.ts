@@ -12,8 +12,8 @@ import { TestConfiguration } from './shared/configurations/configurations'
 import { Interceptor } from './shared/libs/interceptor'
 import { Engine } from '../src/engine'
 import {POOL_IDS} from '../src/utils/constant'
-import {IEngineConfig} from '../src/utils/configs'
-import {Contract, ethers} from 'ethers'
+import { IEngineConfig } from '../src/utils/configs'
+import { ethers } from 'ethers'
 
 // import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
 
@@ -254,8 +254,7 @@ describe('Derivable Tools', () => {
     )
   })
 
-  test('Aggregator buy USDC', async () => {
-    
+  test('Aggregator-open-USDC', async () => {
     const USDC = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
     const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
     const configs: IEngineConfig = genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df')
@@ -296,22 +295,6 @@ describe('Derivable Tools', () => {
     const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
 
     try {
-      console.log(
-          { 
-            inputs: [
-              {
-                mode: 1, // TRANSFER
-                eip: 20,
-                token: getRateData.srcToken,
-                id: 0,
-                amountIn: BIG(amount).sub(1).toString(),
-                recipient: helper.address,
-              }
-            ],
-            code: helper.address,
-            data: openTx.data,
-          }
-      )
       await utr.callStatic.exec(
         [],
         [
@@ -359,13 +342,12 @@ describe('Derivable Tools', () => {
     )
     // console.log('tx', tx)
   })
-  test('Aggregator buy PEPE', async () => {
+  test('Aggregator-open-PEPE', async () => {
     const PEPE = '0x25d887ce7a35172c62febfd67a1856f20faebb00'
     const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
     const configs: IEngineConfig = genConfig(42161, '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10')
     const poolAddress = '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'
     const amount = numberToWei(2000, 18)
-    console.log(amount)
 
     const engine = new Engine(configs)
     await engine.initServices()
@@ -424,7 +406,6 @@ describe('Derivable Tools', () => {
     } catch (err) {
       expect(String(err)).toContain('ERC20: transfer amount exceeds balance')
     }
-    console.log('tx call')
 
     const tx = await utr.callStatic.exec(
       [],
@@ -446,9 +427,8 @@ describe('Derivable Tools', () => {
       ],
       { from: configs.account }
     )
-    console.log('tx', tx)
   })
-  test('Aggregator and Open with NATIVE', async () => {
+  test('Aggregator-open-BNB', async () => {
     const ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
     const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
     const configs: IEngineConfig = genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df')
@@ -558,7 +538,8 @@ describe('Derivable Tools', () => {
     )
     // console.log('tx', tx)
   })
-  test('Swap aggregator', async () => {
+
+  test('Swap-aggregator', async () => {
     await swap(
       genConfig(42161, '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'),
       ['0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'],

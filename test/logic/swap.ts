@@ -35,8 +35,6 @@ export const swap = async (
   // })
 
   const tokenContract = new ethers.Contract(engine.profile.configs.derivable.token, TokenAbi, provider)
-
-
   const currentBalanceOut = await tokenContract.balanceOf(configs.account, packId(poolSide.toString(), poolOut))
   const steps = [
     {
@@ -48,6 +46,7 @@ export const swap = async (
       useSweep: true,
     },
   ]
+
   const fetcherV2 = await engine.SWAP.needToSubmitFetcher(currentPool)
   const fetcherData = await engine.SWAP.fetchPriceTx(currentPool)
   const res = await engine.SWAP.multiSwap({
@@ -60,4 +59,3 @@ export const swap = async (
   })
   return res
 }
-
