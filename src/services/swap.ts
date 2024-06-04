@@ -334,7 +334,7 @@ export class Swap {
 
       if (isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R) {
         const srcDecimals = this.RESOURCE.tokens.find((t) => t.address === step.tokenIn)?.decimals || 18
-        const destDecimals = this.RESOURCE.tokens.find((t) => t.address ===  poolGroup.TOKEN_R)?.decimals || 18,
+        const destDecimals = this.RESOURCE.tokens.find((t) => t.address ===  poolGroup.TOKEN_R)?.decimals || 18
 
         const getRateData = {
           userAddress: this.getStateCalHelperContract().address,
