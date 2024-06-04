@@ -160,6 +160,26 @@ export type SwapStepType = {
     currentBalanceOut?: BigNumber;
     uniPool?: string;
 };
+export type rateDataAggregatorType = {
+    userAddress: string;
+    ignoreChecks: boolean;
+    srcToken: string;
+    srcDecimals: number;
+    srcAmount?: string;
+    destAmount?: string;
+    destToken: string;
+    destDecimals: number;
+    partner: string;
+    side: string;
+    excludeDirectContractMethods?: boolean;
+    otherExchangePrices?: boolean;
+    ignoreGasEstimate?: boolean;
+    ignoreAllowance?: boolean;
+};
+export type SwapAndOpenAggregatorType = {
+    poolAddress: string;
+    poolId: number;
+};
 export type PendingSwapTransactionType = {
     hash: string;
     steps: SwapStepType[];

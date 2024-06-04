@@ -4,6 +4,7 @@ import { JsonRpcProvider, Provider, TransactionReceipt } from '@ethersproject/pr
 import { Profile } from '../profile';
 import { IDerivableContractAddress, IEngineConfig } from '../utils/configs';
 import { Resource } from './resource';
+import { Aggregator } from './aggregator';
 export type PriceTxReturnType = {
     inputs: Array<any>;
     code: string;
@@ -17,6 +18,10 @@ export type MultiSwapParameterType = {
     onSubmitted?: (pendingTx: PendingSwapTransactionType) => void;
     submitFetcherV2?: boolean;
     callStatic?: boolean;
+    tokenDecimals?: {
+        srcDecimals: number;
+        destDecimals: number;
+    };
 };
 export type PoolGroupReturnType = {
     pools: {
@@ -55,12 +60,14 @@ export declare class Swap {
     overrideProvider: JsonRpcProvider;
     signer?: Signer;
     RESOURCE: Resource;
+    AGGREGATOR: Aggregator;
     config: IEngineConfig;
     profile: Profile;
     derivableAdr: IDerivableContractAddress;
     pendingTxs: Array<PendingSwapTransactionType>;
     constructor(config: IEngineConfig & {
         RESOURCE: Resource;
+        AGGREGATOR: Aggregator;
     }, profile: Profile);
     calculateAmountOuts({ steps, fetcherV2, fetcherData, }: {
         steps: Array<SwapStepType>;
@@ -77,8 +84,8 @@ export declare class Swap {
         params: any;
         value: BigNumber;
     }>;
-    getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): SwapCallDataReturnType;
-    getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): SwapCallDataReturnType;
+    getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): Promise<SwapCallDataReturnType>;
+    getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): Promise<SwapCallDataReturnType>;
     wrapToken(address: string): string;
     generateSwapParams(method: string, params: any): {
         [key: string]: any;

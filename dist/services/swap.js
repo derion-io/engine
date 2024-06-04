@@ -38,6 +38,7 @@ const CALL_VALUE = 2;
 class Swap {
     constructor(config, profile) {
         this.RESOURCE = config.RESOURCE;
+        this.AGGREGATOR = config.AGGREGATOR;
         this.config = config;
         this.account = config.account ?? config.signer?._address ?? constant_1.ZERO_ADDRESS;
         this.chainId = config.chainId;
@@ -115,7 +116,7 @@ class Swap {
         let nativeAmountToWrap = (0, helper_1.bn)(0);
         const metaDatas = [];
         const promises = [];
-        steps.forEach((step) => {
+        const fetchStepPromise = steps.map(async (step) => {
             const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut);
             if ((step.tokenIn === constant_1.NATIVE_ADDRESS || step.tokenOut === constant_1.NATIVE_ADDRESS) &&
                 poolGroup.TOKEN_R !== this.profile.configs.wrappedTokenAddress) {
@@ -129,7 +130,7 @@ class Swap {
                 nativeAmountToWrap = nativeAmountToWrap.add(step.amountIn);
             }
             if (step.useSweep && (0, helper_1.isErc1155Address)(step.tokenOut)) {
-                const { inputs, populateTxData } = this.getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut });
+                const { inputs, populateTxData } = await this.getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut });
                 metaDatas.push({
                     code: this.derivableAdr.stateCalHelper,
                     inputs,
@@ -140,7 +141,7 @@ class Swap {
                 promises.push(...populateTxData);
             }
             else {
-                const { inputs, populateTxData } = this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut });
+                const { inputs, populateTxData } = await this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut });
                 metaDatas.push({
                     code: this.derivableAdr.stateCalHelper,
                     inputs,
@@ -154,6 +155,7 @@ class Swap {
                 }
             }
         });
+        await Promise.all(fetchStepPromise);
         const datas = await Promise.all(promises);
         const actions = [];
         metaDatas.forEach((metaData, key) => {
@@ -169,10 +171,10 @@ class Swap {
         }
         return { params: [outputs, actions], value: nativeAmountToWrap };
     }
-    getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }) {
+    async getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }) {
         try {
             const stateCalHelper = this.getStateCalHelperContract();
-            const swapCallData = this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut });
+            const swapCallData = await this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut });
             const inputs = [
                 {
                     mode: TRANSFER,
@@ -197,7 +199,7 @@ class Swap {
             throw error;
         }
     }
-    getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }) {
+    async getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }) {
         try {
             const inputs = step.tokenIn === constant_1.NATIVE_ADDRESS
                 ? [
@@ -212,13 +214,14 @@ class Swap {
                 ]
                 : [
                     {
-                        mode: PAYMENT,
+                        mode: (0, helper_1.isErc1155Address)(step.tokenIn) ? PAYMENT : TRANSFER,
                         eip: (0, helper_1.isErc1155Address)(step.tokenIn) ? 1155 : 20,
                         token: (0, helper_1.isErc1155Address)(step.tokenIn) ? this.derivableAdr.token : step.tokenIn,
                         id: (0, helper_1.isErc1155Address)(step.tokenIn) ? (0, helper_1.packId)(idIn.toString(), poolIn) : 0,
                         amountIn: step.amountIn,
                         recipient: (0, utils_1.isAddress)(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R
-                            ? this.getUniPool(step.tokenIn, poolGroup.TOKEN_R)
+                            ? this.getStateCalHelperContract().address
+                            // this.getUniPool(step.tokenIn, poolGroup.TOKEN_R)
                             : (0, helper_1.isErc1155Address)(step.tokenIn)
                                 ? poolIn
                                 : poolOut,
@@ -231,16 +234,39 @@ class Swap {
                 amountIn = amountIn.mul(OPEN_RATE).div(resource_1.Q128);
             }
             if ((0, utils_1.isAddress)(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R) {
-                populateTxData.push(this.generateSwapParams('swapAndOpen', {
-                    side: idOut,
-                    deriPool: poolOut,
-                    uniPool: this.getUniPool(step.tokenIn, poolGroup.TOKEN_R),
-                    token: step.tokenIn,
-                    amount: amountIn,
-                    payer: this.account,
-                    recipient: this.account,
-                    INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
-                }));
+                const srcDecimals = this.RESOURCE.tokens.find((t) => t.address === step.tokenIn)?.decimals || 18;
+                const destDecimals = this.RESOURCE.tokens.find((t) => t.address === poolGroup.TOKEN_R)?.decimals || 18;
+                const getRateData = {
+                    userAddress: this.getStateCalHelperContract().address,
+                    ignoreChecks: true,
+                    srcToken: step.tokenIn,
+                    srcDecimals,
+                    srcAmount: amountIn.toString(),
+                    destToken: poolGroup.TOKEN_R,
+                    destDecimals,
+                    partner: 'derion.io',
+                    side: 'SELL',
+                };
+                // console.log(getRateData)
+                const openData = {
+                    poolAddress: poolOut,
+                    poolId: idOut.toNumber()
+                };
+                const { openTx } = await this.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, this.getStateCalHelperContract());
+                // console.log(openTx)
+                populateTxData.push(openTx);
+                // populateTxData.push(
+                //   this.generateSwapParams('swapAndOpen', {
+                //     side: idOut,
+                //     deriPool: poolOut,
+                //     uniPool: this.getUniPool(step.tokenIn, poolGroup.TOKEN_R),
+                //     token: step.tokenIn,
+                //     amount: amountIn,
+                //     payer: this.account,
+                //     recipient: this.account,
+                //     INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
+                //   }),
+                // )
             }
             else if ((0, utils_1.isAddress)(step.tokenOut) && this.wrapToken(step.tokenOut) !== poolGroup.TOKEN_R) {
                 populateTxData.push(this.generateSwapParams('closeAndSwap', {

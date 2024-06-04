@@ -11,6 +11,7 @@ import { CreatePool } from './services/createPool';
 import { UniV3Pair } from './services/uniV3Pair';
 import { IEngineConfig } from './utils/configs';
 import { Profile } from './profile';
+import { Aggregator } from './services/aggregator';
 export declare class Engine {
     chainId: number;
     scanApi?: string;
@@ -28,6 +29,7 @@ export declare class Engine {
     SWAP: Swap;
     CURRENT_POOL: CurrentPool;
     CREATE_POOL: CreatePool;
+    AGGREGATOR: Aggregator;
     enginConfigs: IEngineConfig;
     constructor(enginConfigs: IEngineConfig, profile?: typeof Profile);
     profile: Profile;

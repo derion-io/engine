@@ -11,6 +11,7 @@ const currentPool_1 = require("./services/currentPool");
 const createPool_1 = require("./services/createPool");
 const uniV3Pair_1 = require("./services/uniV3Pair");
 const profile_1 = require("./profile");
+const aggregator_1 = require("./services/aggregator");
 class Engine {
     constructor(enginConfigs, profile = profile_1.Profile) {
         this.enginConfigs = enginConfigs;
@@ -32,7 +33,8 @@ class Engine {
         this.BNA = new balanceAndAllowance_1.BnA(configs, this.profile);
         this.PRICE = new price_1.Price(configs, this.profile);
         this.HISTORY = new history_1.History(configs, this.profile);
-        this.SWAP = new swap_1.Swap(configs, this.profile);
+        this.AGGREGATOR = new aggregator_1.Aggregator(this.enginConfigs, this.profile);
+        this.SWAP = new swap_1.Swap({ ...configs, AGGREGATOR: this.AGGREGATOR }, this.profile);
     }
     setCurrentPool(poolData) {
         this.CURRENT_POOL.initCurrentPoolData(poolData);

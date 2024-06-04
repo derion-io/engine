@@ -41,8 +41,8 @@ const abis = {
     FetcherV2Override: FetcherV2Override_json_1.default,
 };
 const DDL_CONFIGS_URL = {
-    development: `https://raw.githubusercontent.com/derivable-labs/configs/dev/`,
-    production: `https://raw.githubusercontent.com/derivable-labs/configs/main/`,
+    development: `https://raw.githubusercontent.com/derion-io/configs/dev/`,
+    production: `https://raw.githubusercontent.com/derion-io/configs/main/`,
 };
 // TODO: Change name from profile to ...
 class Profile {

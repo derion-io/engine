@@ -13,6 +13,9 @@ export declare const LOCALSTORAGE_KEY: {
     ACCOUNT_LOGS: string;
     ACCOUNT_BLOCK_LOGS: string;
 };
+export declare const PARA_DATA_BASE_URL = "https://api.paraswap.io/prices";
+export declare const PARA_VERSION = "5";
+export declare const PARA_BUILD_TX_BASE_URL = "https://api.paraswap.io/transactions";
 export declare const POOL_IDS: {
     cToken: number;
     cp: number;
