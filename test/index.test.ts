@@ -1,4 +1,4 @@
-import { IEW, NUM, bn } from '../src/utils/helper'
+import { BIG, IEW, NUM, bn, numberToWei } from '../src/utils/helper'
 import { calcAmountOuts } from './logic/calcAmountOuts'
 import { getBalanceAndAllowance } from './logic/getBalanceAndAllowance'
 import { getLargestPoolAddress } from './logic/getPairAddress'
@@ -12,6 +12,11 @@ import { TestConfiguration } from './shared/configurations/configurations'
 import { Interceptor } from './shared/libs/interceptor'
 import { Engine } from '../src/engine'
 import {POOL_IDS} from '../src/utils/constant'
+import { IEngineConfig } from '../src/utils/configs'
+import { ethers } from 'ethers'
+
+// import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
+
 const interceptor = new Interceptor()
 
 const confs = new TestConfiguration()
@@ -234,6 +239,7 @@ describe('Derivable Tools', () => {
       genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
       ['0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'],
       '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96',
+      POOL_IDS.C,
       0.1,
     )
   })
@@ -243,8 +249,306 @@ describe('Derivable Tools', () => {
       genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
       ['0x68b2663e8b566c6ec976b2719ddee750be318647'],
       '0x68b2663e8b566c6ec976b2719ddee750be318647',
+      POOL_IDS.A,
       0.001,
-      POOL_IDS.A
     )
   })
+
+  test('Aggregator-open-USDC', async () => {
+    const USDC = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
+    const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
+    const configs: IEngineConfig = genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df')
+    const poolAddress = '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'
+    const amount = numberToWei(1, 6)
+    // console.log(amount)
+
+    const engine = new Engine(configs)
+    await engine.initServices()
+
+    const provider = engine.RESOURCE.provider
+    // // override the Helper contract
+    // provider.setStateOverride({
+    //   [engine.profile.configs.derivable.stateCalHelper]: {
+    //     code: jsonHelper.deployedBytecode
+    //   }
+    // })
+    const utr = new ethers.Contract(engine.profile.configs.helperContract.utr as string, engine.profile.getAbi('UTR'), provider)
+    const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, engine.profile.getAbi('Helper'), provider)
+
+    const getRateData = {
+      // txOrigin: configs.account,
+      userAddress: helper.address,
+      // receiver: helper.address,
+      ignoreChecks: true,
+      srcToken: USDC,
+      srcDecimals: 6,
+      srcAmount: amount,
+      destToken: WETH,
+      destDecimals: 18,
+      partner: 'derion.io',
+      side: 'SELL',
+    }
+    const openData = {
+      poolAddress,
+      poolId: POOL_IDS.A
+    }
+    const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
+
+    try {
+      await utr.callStatic.exec(
+        [],
+        [
+          { 
+            inputs: [
+              {
+                mode: 1, // TRANSFER
+                eip: 20,
+                token: getRateData.srcToken,
+                id: 0,
+                amountIn: BIG(amount).sub(1),
+                recipient: helper.address,
+              }
+            ],
+            code: helper.address,
+            data: openTx.data,
+          }
+        ],
+        { from: configs.account }
+      )
+      expect(true).toBeFalsy()
+    } catch (err) {
+      expect(String(err)).toContain('ERC20: transfer amount exceeds balance')
+    }
+
+    const tx = await utr.callStatic.exec(
+      [],
+      [
+        {
+          inputs: [
+            {
+              mode: 1, // TRANSFER
+              eip: 20,
+              token: getRateData.srcToken,
+              id: 0,
+              amountIn: amount,
+              recipient: helper.address,
+            }
+          ],
+          code: helper.address,
+          data: openTx.data,
+        }
+      ],
+      { from: configs.account }
+    )
+    // console.log('tx', tx)
+  })
+  test('Aggregator-open-PEPE', async () => {
+    const PEPE = '0x25d887ce7a35172c62febfd67a1856f20faebb00'
+    const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
+    const configs: IEngineConfig = genConfig(42161, '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10')
+    const poolAddress = '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'
+    const amount = numberToWei(2000, 18)
+
+    const engine = new Engine(configs)
+    await engine.initServices()
+
+    const provider = engine.RESOURCE.provider
+    // // override the Helper contract
+    // provider.setStateOverride({
+    //   [engine.profile.configs.derivable.stateCalHelper]: {
+    //     code: jsonHelper.deployedBytecode
+    //   }
+    // })
+    const utr = new ethers.Contract(engine.profile.configs.helperContract.utr as string, engine.profile.getAbi('UTR'), provider)
+    const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, engine.profile.getAbi('Helper'), provider)
+
+    const getRateData = {
+      // txOrigin: configs.account,
+      userAddress: helper.address,
+      // receiver: helper.address,
+      ignoreChecks: true,
+      srcToken: PEPE,
+      srcDecimals: 18,
+      srcAmount: amount,
+      destToken: WETH,
+      destDecimals: 18,
+      partner: 'derion.io',
+      side: 'SELL',
+    }
+    const openData = {
+      poolAddress,
+      poolId: POOL_IDS.A
+    }
+    const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
+
+    try {
+      await utr.callStatic.exec(
+        [],
+        [
+          { 
+            inputs: [
+              {
+                mode: 1, // TRANSFER
+                eip: 20,
+                token: getRateData.srcToken,
+                id: 0,
+                amountIn: BIG(amount).sub(1),
+                recipient: helper.address,
+              }
+            ],
+            code: helper.address,
+            data: openTx.data,
+          }
+        ],
+        { from: configs.account }
+      )
+      expect(true).toBeFalsy()
+    } catch (err) {
+      expect(String(err)).toContain('ERC20: transfer amount exceeds balance')
+    }
+
+    const tx = await utr.callStatic.exec(
+      [],
+      [
+        {
+          inputs: [
+            {
+              mode: 1, // TRANSFER
+              eip: 20,
+              token: getRateData.srcToken,
+              id: 0,
+              amountIn: amount,
+              recipient: helper.address,
+            }
+          ],
+          code: helper.address,
+          data: openTx.data,
+        }
+      ],
+      { from: configs.account }
+    )
+  })
+  test('Aggregator-open-BNB', async () => {
+    const ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+    const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
+    const configs: IEngineConfig = genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df')
+    const poolAddress = '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'
+    const amount = numberToWei(0.0001, 18)
+    // console.log(amount)
+
+    const engine = new Engine(configs)
+    await engine.initServices()
+
+    const provider = engine.RESOURCE.provider
+    // // override Helper code
+    // provider.setStateOverride({
+    //   [engine.profile.configs.derivable.stateCalHelper]: {
+    //     code: jsonHelper.deployedBytecode
+    //   }
+    // })
+    const utr = new ethers.Contract(engine.profile.configs.helperContract.utr as string, engine.profile.getAbi('UTR'), provider)
+    const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, engine.profile.getAbi('Helper'), provider)
+
+    const getRateData = {
+      // txOrigin: configs.account,
+      userAddress: helper.address,
+      // receiver: helper.address,
+      ignoreChecks: true,
+      srcToken: ETH,
+      srcDecimals: 18,
+      srcAmount: amount,
+      destToken: WETH,
+      destDecimals: 18,
+      partner: 'derion.io',
+      side: "SELL",
+    }
+    const openData = {
+      poolAddress,
+      poolId: POOL_IDS.A
+    }
+    const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
+
+    // const { rateData, swapData } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
+    // console.log('aggregateAndOpen params: ', rateData, swapData)
+
+    // const openTx = await helper.populateTransaction.aggregateAndOpen({
+    //   tokenIn: getRateData.srcToken,
+    //   tokenOperator: rateData.priceRoute.tokenTransferProxy,
+    //   aggregator: swapData.to,
+    //   aggregatorData: swapData.data,
+    //   pool: poolAddress,
+    //   side: POOL_IDS.A,
+    //   payer: ZERO_ADDRESS,
+    //   recipient: configs.account,
+    //   INDEX_R: 0,
+    // },{
+    //   value: BIG(amount)
+    // })
+
+    try {
+      await utr.callStatic.exec(
+        [],
+        [
+          {
+            inputs: [
+              {
+                mode: 2, // TRANSFER
+                eip: 20,
+                token: getRateData.srcToken,
+                id: 0,
+                amountIn: BIG(amount).sub(1),
+                recipient: helper.address,
+              }
+            ],
+            code: helper.address,
+            data: openTx.data,
+          }
+        ],
+        { from: configs.account,
+          value: BIG(amount).sub(1)
+         }
+      )
+      expect(true).toBeFalsy()
+    } catch (err) {
+      expect(String(err.reason)).toContain('Incorrect msg.value')
+    }
+
+    const tx = await utr.callStatic.exec(
+      [],
+      [
+        {
+          inputs: [
+            {
+              mode: 2, // TRANSFER
+              eip: 20,
+              token: getRateData.srcToken,
+              id: 0,
+              amountIn: amount,
+              recipient: helper.address,
+            }
+          ],
+          code: helper.address,
+          data: openTx.data,
+        }
+      ],
+      { from: configs.account,
+        value: amount
+
+      }
+    )
+    // console.log('tx', tx)
+  })
+
+  test('Swap-aggregator', async () => {
+    await swap(
+      genConfig(42161, '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'),
+      ['0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'],
+      '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96',
+      POOL_IDS.C,
+      2000,
+      '0x25d887ce7a35172c62febfd67a1856f20faebb00',
+      18
+    )
+  })
+
 })

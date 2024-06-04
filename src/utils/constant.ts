@@ -14,6 +14,9 @@ export const LOCALSTORAGE_KEY = {
   ACCOUNT_LOGS: 'account-log-v1.2',
   ACCOUNT_BLOCK_LOGS: 'account-block-log-v1.2',
 }
+export const PARA_DATA_BASE_URL = 'https://api.paraswap.io/prices'
+export const PARA_VERSION = "5"
+export const PARA_BUILD_TX_BASE_URL = 'https://api.paraswap.io/transactions'
 
 export const POOL_IDS = {
   cToken: 0x20000,

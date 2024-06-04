@@ -9,6 +9,7 @@ import { IDerivableContractAddress, IEngineConfig } from '../utils/configs'
 import { Q128, Resource } from './resource'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
 import * as OracleSdk from '../utils/OracleSdk'
+import { Aggregator } from './aggregator'
 
 const PAYMENT = 0
 const TRANSFER = 1
@@ -28,6 +29,10 @@ export type MultiSwapParameterType = {
   onSubmitted?: (pendingTx: PendingSwapTransactionType) => void
   submitFetcherV2?: boolean
   callStatic?: boolean
+  tokenDecimals?: {
+    srcDecimals: number
+    destDecimals: number
+  }
 }
 
 export type PoolGroupReturnType = {
@@ -66,13 +71,15 @@ export class Swap {
   overrideProvider: JsonRpcProvider
   signer?: Signer
   RESOURCE: Resource
+  AGGREGATOR: Aggregator
   config: IEngineConfig
   profile: Profile
   derivableAdr: IDerivableContractAddress
   pendingTxs: Array<PendingSwapTransactionType>
 
-  constructor(config: IEngineConfig & { RESOURCE: Resource }, profile: Profile) {
+  constructor(config: IEngineConfig & { RESOURCE: Resource, AGGREGATOR: Aggregator }, profile: Profile) {
     this.RESOURCE = config.RESOURCE
+    this.AGGREGATOR = config.AGGREGATOR
     this.config = config
     this.account = config.account ?? config.signer?._address ?? ZERO_ADDRESS
     this.chainId = config.chainId
@@ -185,9 +192,8 @@ export class Swap {
 
     const metaDatas: any = []
     const promises: any = []
-    steps.forEach((step) => {
+    const fetchStepPromise = steps.map(async(step) => {
       const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut)
-
       if (
         (step.tokenIn === NATIVE_ADDRESS || step.tokenOut === NATIVE_ADDRESS) &&
         poolGroup.TOKEN_R !== this.profile.configs.wrappedTokenAddress
@@ -205,7 +211,7 @@ export class Swap {
       }
 
       if (step.useSweep && isErc1155Address(step.tokenOut)) {
-        const { inputs, populateTxData } = this.getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut })
+        const { inputs, populateTxData } = await this.getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut })
 
         metaDatas.push(
           {
@@ -220,7 +226,7 @@ export class Swap {
 
         promises.push(...populateTxData)
       } else {
-        const { inputs, populateTxData } = this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut })
+        const { inputs, populateTxData } = await this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut })
         metaDatas.push({
           code: this.derivableAdr.stateCalHelper,
           inputs,
@@ -235,6 +241,7 @@ export class Swap {
         }
       }
     })
+    await Promise.all(fetchStepPromise)
     const datas: Array<any> = await Promise.all(promises)
 
     const actions: Array<any> = []
@@ -254,11 +261,11 @@ export class Swap {
     return { params: [outputs, actions], value: nativeAmountToWrap }
   }
 
-  getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): SwapCallDataReturnType {
+  async getSweepCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): Promise<SwapCallDataReturnType> {
     try {
       const stateCalHelper = this.getStateCalHelperContract()
 
-      const swapCallData = this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut })
+      const swapCallData = await this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut })
 
       const inputs = [
         {
@@ -286,7 +293,7 @@ export class Swap {
     }
   }
 
-  getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): SwapCallDataReturnType {
+  async getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): Promise<SwapCallDataReturnType> {
     try {
       const inputs =
         step.tokenIn === NATIVE_ADDRESS
@@ -302,14 +309,15 @@ export class Swap {
             ]
           : [
               {
-                mode: PAYMENT,
+                mode: isErc1155Address(step.tokenIn) ? PAYMENT : TRANSFER,
                 eip: isErc1155Address(step.tokenIn) ? 1155 : 20,
                 token: isErc1155Address(step.tokenIn) ? this.derivableAdr.token : step.tokenIn,
                 id: isErc1155Address(step.tokenIn) ? packId(idIn.toString(), poolIn) : 0,
                 amountIn: step.amountIn,
                 recipient:
                   isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R
-                    ? this.getUniPool(step.tokenIn, poolGroup.TOKEN_R)
+                    ? this.getStateCalHelperContract().address
+                    // this.getUniPool(step.tokenIn, poolGroup.TOKEN_R)
                     : isErc1155Address(step.tokenIn)
                     ? poolIn
                     : poolOut,
@@ -325,18 +333,41 @@ export class Swap {
       }
 
       if (isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R) {
-        populateTxData.push(
-          this.generateSwapParams('swapAndOpen', {
-            side: idOut,
-            deriPool: poolOut,
-            uniPool: this.getUniPool(step.tokenIn, poolGroup.TOKEN_R),
-            token: step.tokenIn,
-            amount: amountIn,
-            payer: this.account,
-            recipient: this.account,
-            INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
-          }),
-        )
+        const srcDecimals = this.RESOURCE.tokens.find((t) => t.address === step.tokenIn)?.decimals || 18
+        const destDecimals = this.RESOURCE.tokens.find((t) => t.address ===  poolGroup.TOKEN_R)?.decimals || 18,
+
+        const getRateData = {
+          userAddress: this.getStateCalHelperContract().address,
+          ignoreChecks: true,
+          srcToken: step.tokenIn,
+          srcDecimals,
+          srcAmount: amountIn.toString(),
+          destToken: poolGroup.TOKEN_R,
+          destDecimals,
+          partner: 'derion.io',
+          side: 'SELL',
+        }
+        // console.log(getRateData)
+        const openData = {
+          poolAddress: poolOut,
+          poolId: idOut.toNumber()
+        }
+        const {openTx} = await this.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, this.getStateCalHelperContract())
+        // console.log(openTx)
+        populateTxData.push(openTx)
+        
+        // populateTxData.push(
+        //   this.generateSwapParams('swapAndOpen', {
+        //     side: idOut,
+        //     deriPool: poolOut,
+        //     uniPool: this.getUniPool(step.tokenIn, poolGroup.TOKEN_R),
+        //     token: step.tokenIn,
+        //     amount: amountIn,
+        //     payer: this.account,
+        //     recipient: this.account,
+        //     INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
+        //   }),
+        // )
       } else if (isAddress(step.tokenOut) && this.wrapToken(step.tokenOut) !== poolGroup.TOKEN_R) {
         populateTxData.push(
           this.generateSwapParams('closeAndSwap', {

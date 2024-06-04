@@ -93,6 +93,72 @@
       {
         "components": [
           {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenOperator",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "aggregator",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "aggregatorData",
+            "type": "bytes"
+          },
+          {
+            "internalType": "address",
+            "name": "pool",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "side",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "payer",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "recipient",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "INDEX_R",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Helper.AggregateParams",
+        "name": "params",
+        "type": "tuple"
+      }
+    ],
+    "name": "aggregateAndOpen",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amountOut",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
             "internalType": "uint256",
             "name": "side",
             "type": "uint256"
