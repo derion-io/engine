@@ -515,9 +515,9 @@
     bech32 "1.1.4"
     ws "7.4.6"
 
-"@ethersproject/providers@https://gitpkg.now.sh/derivable-labs/ethers.js/packages/providers?v5.3.5.0":
+"@ethersproject/providers@https://gitpkg.now.sh/derion-io/ethers.js/packages/providers?v5.3.5.0":
   version "5.5.2"
-  resolved "https://gitpkg.now.sh/derivable-labs/ethers.js/packages/providers?v5.3.5.0#6ac23afcc2ad3967690d4194157ed62f41a1127e"
+  resolved "https://gitpkg.now.sh/derion-io/ethers.js/packages/providers?v5.3.5.0#6ac23afcc2ad3967690d4194157ed62f41a1127e"
   dependencies:
     "@ethersproject/abstract-provider" "^5.5.0"
     "@ethersproject/abstract-signer" "^5.5.0"
@@ -1312,9 +1312,9 @@ arraybuffer.prototype.slice@^1.0.3:
     is-array-buffer "^3.0.4"
     is-shared-array-buffer "^1.0.2"
 
-"assisted-json-rpc-provider@git+ssh://git@github.com:derivable-labs/AssistedJsonRpcProvider.git#dev":
+"assisted-json-rpc-provider@git+ssh://git@github.com:derion-io/AssistedJsonRpcProvider.git#dev":
   version "1.0.0"
-  resolved "git+ssh://git@github.com:derivable-labs/AssistedJsonRpcProvider.git#d5fa3e9cda40f39e526d44c93f301f8b7273812d"
+  resolved "git+ssh://git@github.com:derion-io/AssistedJsonRpcProvider.git#d5fa3e9cda40f39e526d44c93f301f8b7273812d"
   dependencies:
     async-task-throttle-on-response "^1.0.1"
     ethers "^5.5.3"
