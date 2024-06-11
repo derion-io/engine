@@ -1168,6 +1168,9 @@ export class Resource {
   poolHasOpeningPosition(tokenTransferLogs: Array<LogType>): Array<string> {
     const balances: { [id: string]: BigNumber } = {}
     tokenTransferLogs.forEach((log) => {
+      if (log.blockNumber < this.profile.configs.derivable.startBlock) {
+        return
+      }
       const { from, to } = log.args
       const isBatch = !log.args.id
       const ids = isBatch ? log.args.ids : [log.args.id]
