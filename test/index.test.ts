@@ -158,6 +158,20 @@ describe('Derivable Tools', () => {
     expect(pool?.riskFactor).toEqual('0.006344299538270911')
   })
 
+  test('Resource-premium', async () => {
+    const poolAddress = '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE'
+    const resource = await getResource(
+      genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
+      [],
+    )
+
+    const pool = resource.newResource.pools[poolAddress]
+    expect(pool).toBeDefined()
+    expect(pool.sides[16].premium).toEqual(0.002626)
+    expect(pool.sides[32].premium).toEqual(-2413.574754)
+    expect(pool.sides[48].premium).toEqual(0)
+  })
+
   test('Resource-bsc', async () => {
     const poolAddress = '0x2C3d0F3dcD28b5481a50E1DD0071378f92D56954'
     const resource = await getResource(
