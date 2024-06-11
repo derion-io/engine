@@ -967,18 +967,16 @@ export class Resource {
       if (maxPremiumRate > 0) {
         if (rA.gt(rB)) {
           const rDiff = rA.sub(rB)
-          const givingRate = rDiff.mul(Math.round(this.unit * maxPremiumRate))
-          const receivingRate = numDiv(givingRate.div(rB.add(rC)), this.unit)
+          const givingRate = rDiff.mul(Math.round(this.unit * maxPremiumRate)).mul(rA.add(rB)).div(R)
           sides[A].premium = numDiv(givingRate.div(rA), this.unit)
-          sides[B].premium = -receivingRate
-          sides[C].premium = receivingRate
+          sides[B].premium = -numDiv(givingRate.div(rB), this.unit)
+          sides[C].premium = 0
         } else if (rB.gt(rA)) {
           const rDiff = rB.sub(rA)
-          const givingRate = rDiff.mul(Math.round(this.unit * maxPremiumRate))
-          const receivingRate = numDiv(givingRate.div(rA.add(rC)), this.unit)
+          const givingRate = rDiff.mul(Math.round(this.unit * maxPremiumRate)).mul(rA.add(rB)).div(R)
           sides[B].premium = numDiv(givingRate.div(rB), this.unit)
-          sides[A].premium = -receivingRate
-          sides[C].premium = receivingRate
+          sides[A].premium = -numDiv(givingRate.div(rA), this.unit)
+          sides[C].premium = 0
         } else {
           sides[A].premium = 0
           sides[B].premium = 0
@@ -1168,6 +1166,9 @@ export class Resource {
   poolHasOpeningPosition(tokenTransferLogs: Array<LogType>): Array<string> {
     const balances: { [id: string]: BigNumber } = {}
     tokenTransferLogs.forEach((log) => {
+      if (log.blockNumber < this.profile.configs.derivable.startBlock) {
+        return
+      }
       const { from, to } = log.args
       const isBatch = !log.args.id
       const ids = isBatch ? log.args.ids : [log.args.id]
