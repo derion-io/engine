@@ -16,7 +16,7 @@ const Pool_json_1 = __importDefault(require("./abi/Pool.json"));
 const ReserveTokenPrice_json_1 = __importDefault(require("./abi/ReserveTokenPrice.json"));
 const Token_json_1 = __importDefault(require("./abi/Token.json"));
 const Helper_json_1 = __importDefault(require("./abi/Helper.json"));
-const PoolOverride_json_1 = __importDefault(require("./abi/PoolOverride.json"));
+const View_json_1 = __importDefault(require("./abi/View.json"));
 const UTR_json_1 = __importDefault(require("./abi/UTR.json"));
 const FetcherV2_json_1 = __importDefault(require("./abi/FetcherV2.json"));
 const UTROverride_json_1 = __importDefault(require("./abi/UTROverride.json"));
@@ -34,7 +34,7 @@ const abis = {
     Token: Token_json_1.default,
     TokensInfo: TokensInfo_json_1.default,
     Helper: Helper_json_1.default,
-    PoolOverride: PoolOverride_json_1.default,
+    View: View_json_1.default,
     UTR: UTR_json_1.default,
     UTROverride: UTROverride_json_1.default,
     FetcherV2Mock: FetcherV2Mock_json_1.default,

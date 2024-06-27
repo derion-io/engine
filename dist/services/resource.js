@@ -619,7 +619,7 @@ class Resource {
                 pairAddresses: [pool.pair],
             });
             const pricesInfo = await this.getPrices({ [poolAddress]: pool }, pairsInfo);
-            const contract = new ethers_1.Contract(poolAddress, this.profile.getAbi('PoolOverride').abi, this.getPoolOverridedProvider());
+            const contract = new ethers_1.Contract(poolAddress, this.profile.getAbi('View').abi, this.getPoolOverridedProvider());
             const states = await contract.callStatic.compute(this.derivableAddress.token, 5, pricesInfo[poolAddress]?.twap || (0, helper_1.bn)(0), pricesInfo[poolAddress]?.spot || (0, helper_1.bn)(0));
             this.pools[poolAddress].states = states;
             const baseToken = this.tokens.find((token) => token.address === pool.baseToken);
@@ -658,7 +658,7 @@ class Resource {
             const stateOverride = {};
             // poolAddresses.forEach((address: string) => {
             stateOverride[this.derivableAddress.logic] = {
-                code: this.profile.getAbi('PoolOverride').deployedBytecode,
+                code: this.profile.getAbi('View').deployedBytecode,
             };
             if (this.derivableAddress.uniswapV2Fetcher) {
                 stateOverride[this.derivableAddress.uniswapV2Fetcher] = {
@@ -696,7 +696,7 @@ class Resource {
                     ],
                 },
             ];
-            const poolOverrideAbi = this.profile.getAbi('PoolOverride').abi;
+            const poolOverrideAbi = this.profile.getAbi('View').abi;
             poolAddresses.forEach((poolAddress) => {
                 request.push({
                     decoded: true,
@@ -734,7 +734,7 @@ class Resource {
         try {
             const pools = {};
             const tokens = multiCallData.tokens.callsReturnContext[0].returnValues;
-            const poolOverrideAbi = this.profile.getAbi('PoolOverride').abi;
+            const poolOverrideAbi = this.profile.getAbi('View').abi;
             poolAddresses.forEach((poolAddress) => {
                 try {
                     const abiInterface = new ethers_1.ethers.utils.Interface(poolOverrideAbi);
