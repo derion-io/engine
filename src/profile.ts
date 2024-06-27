@@ -11,7 +11,7 @@ import Pool from './abi/Pool.json'
 import ReserveTokenPrice from './abi/ReserveTokenPrice.json'
 import Token from './abi/Token.json'
 import Helper from './abi/Helper.json'
-import PoolOverride from './abi/PoolOverride.json'
+import View from './abi/View.json'
 import UTR from './abi/UTR.json'
 import FetcherV2 from './abi/FetcherV2.json'
 import UTROverride from './abi/UTROverride.json'
@@ -31,7 +31,7 @@ const abis = {
   Token,
   TokensInfo,
   Helper,
-  PoolOverride,
+  View,
   UTR,
   UTROverride,
   FetcherV2Mock,

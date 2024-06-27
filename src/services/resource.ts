@@ -766,7 +766,7 @@ export class Resource {
         pairAddresses: [pool.pair],
       })
       const pricesInfo = await this.getPrices({ [poolAddress]: pool }, pairsInfo)
-      const contract = new Contract(poolAddress, this.profile.getAbi('PoolOverride').abi, this.getPoolOverridedProvider())
+      const contract = new Contract(poolAddress, this.profile.getAbi('View').abi, this.getPoolOverridedProvider())
       const states = await contract.callStatic.compute(
         this.derivableAddress.token,
         5,
@@ -811,7 +811,7 @@ export class Resource {
       const stateOverride: any = {}
       // poolAddresses.forEach((address: string) => {
       stateOverride[this.derivableAddress.logic as string] = {
-        code: this.profile.getAbi('PoolOverride').deployedBytecode,
+        code: this.profile.getAbi('View').deployedBytecode,
       }
       if (this.derivableAddress.uniswapV2Fetcher) {
         stateOverride[this.derivableAddress.uniswapV2Fetcher as string] = {
@@ -850,7 +850,7 @@ export class Resource {
           ],
         },
       ]
-      const poolOverrideAbi = this.profile.getAbi('PoolOverride').abi
+      const poolOverrideAbi = this.profile.getAbi('View').abi
       poolAddresses.forEach((poolAddress) => {
         request.push({
           decoded: true,
@@ -889,7 +889,7 @@ export class Resource {
     try {
       const pools: any = {}
       const tokens = multiCallData.tokens.callsReturnContext[0].returnValues
-      const poolOverrideAbi = this.profile.getAbi('PoolOverride').abi
+      const poolOverrideAbi = this.profile.getAbi('View').abi
       poolAddresses.forEach((poolAddress) => {
         try {
           const abiInterface = new ethers.utils.Interface(poolOverrideAbi)
