@@ -231,12 +231,12 @@ class Resource {
                     rangeThreshold: 0,
                     rateLimitCount: 1,
                     rateLimitDuration: 5000,
-                    apiKeys: this.scanApiKey ? [this.scanApiKey] : [],
+                    apiKeys: this.scanApiKey ? this.scanApiKey.split(',') : [],
                 }
                 : this.scanApi;
             const provider = new AssistedJsonRpcProvider(this.providerToGetLog, etherscanConfig);
             const lastHeadBlockCached = this.getLastBlockCached(account);
-            const accTopic = account ? `0x${'0'.repeat(24)}${account.slice(2)}` : null;
+            const accTopic = account ? (0, utils_1.hexZeroPad)(account, 32) : null;
             const filterTopics = [
                 [null, null, null, null],
                 [null, accTopic, null, null],
@@ -548,7 +548,7 @@ class Resource {
                     rangeThreshold: 0,
                     rateLimitCount: 1,
                     rateLimitDuration: 5000,
-                    apiKeys: this.scanApiKey ? [this.scanApiKey] : [],
+                    apiKeys: this.scanApiKey ? this.scanApiKey.split(',') : [],
                 }
                 : this.scanApi;
             const provider = new AssistedJsonRpcProvider(this.providerToGetLog, etherscanConfig);
