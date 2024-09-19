@@ -7,7 +7,7 @@ import { JsonRpcProvider } from '@ethersproject/providers'
 import _, { concat, uniqBy } from 'lodash'
 import { IPairInfo, IPairsInfo, UniV3Pair } from './uniV3Pair'
 import { IDerivableContractAddress, IEngineConfig } from '../utils/configs'
-import { defaultAbiCoder } from 'ethers/lib/utils'
+import { defaultAbiCoder, hexZeroPad } from 'ethers/lib/utils'
 import { Profile } from '../profile'
 import * as OracleSdk from '../utils/OracleSdk'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
@@ -334,7 +334,7 @@ export class Resource {
 
       const provider = new AssistedJsonRpcProvider(this.providerToGetLog, etherscanConfig)
       const lastHeadBlockCached = this.getLastBlockCached(account)
-      const accTopic = account ? `0x${'0'.repeat(24)}${account.slice(2)}` : null
+      const accTopic = account ? hexZeroPad(account, 32) : null
 
       const filterTopics = [
         [null, null, null, null],
