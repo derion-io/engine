@@ -328,7 +328,7 @@ export class Resource {
               rangeThreshold: 0,
               rateLimitCount: 1,
               rateLimitDuration: 5000,
-              apiKeys: this.scanApiKey ? [this.scanApiKey] : [],
+              apiKeys: this.scanApiKey ? this.scanApiKey.split(',') : [],
             }
           : this.scanApi
 
@@ -695,7 +695,7 @@ export class Resource {
               rangeThreshold: 0,
               rateLimitCount: 1,
               rateLimitDuration: 5000,
-              apiKeys: this.scanApiKey ? [this.scanApiKey] : [],
+              apiKeys: this.scanApiKey ? this.scanApiKey.split(',') : [],
             }
           : this.scanApi
 
