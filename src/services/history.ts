@@ -165,7 +165,11 @@ export class History {
           posOut.balanceForPrice = posOut.balanceForPrice.add(amountOut)
         }
       }
-
+      Object.keys(positions).map(posKey => {
+        if(positions[posKey].balanceForPrice.eq(0) && positions[posKey].balanceForPriceR.eq(0)) {
+          delete positions[posKey]
+        }
+      })
       return positions
     } catch (error) {
       throw error
