@@ -7,8 +7,10 @@ import { IEngineConfig } from '../utils/configs'
 import { M256, Resource } from './resource'
 import Erc20 from '../abi/ERC20.json'
 import { Result } from 'ethers/lib/utils'
+import {keyFromTokenId} from './balanceAndAllowance'
 
 const POS_IDS = [POOL_IDS.A, POOL_IDS.B, POOL_IDS.C]
+const TOPICS = getTopics()
 
 export type FormatSwapHistoryParameterType = {
   transferLogs: Array<LogType>
@@ -19,6 +21,7 @@ export type FormatSwapHistoryParameterType = {
 export type PositionGenerateParameterType = {
   tokens: Array<TokenType>
   logs: Array<LogType>
+  transferLogs?: Array<LogType>
 }
 export class History {
   account?: string
@@ -34,7 +37,7 @@ export class History {
   }
 
   // TODO: refactor position type
-  generatePositions({ tokens, logs }: PositionGenerateParameterType): any {
+  generatePositions({ tokens, logs, transferLogs }: PositionGenerateParameterType): any {
     try {
       if (!logs || logs.length === 0) {
         return []
@@ -44,11 +47,50 @@ export class History {
       logs.forEach((log: LogType) => {
         positions = this.generatePositionBySwapLog(positions, tokens, log)
       })
+      if(transferLogs?.length && transferLogs?.length > 0) {
+        transferLogs.forEach((log: LogType) => {
+          positions = this.generatePositionByTransferLog(positions, log)
+        })
+      }
 
       return positions
     } catch (e) {
       throw e
     }
+  }
+  generatePositionByTransferLog(positions: any, tranferLog: LogType): any {
+    if (TOPICS.TransferSingle.includes(tranferLog.topics[0])) {
+      const { from, to, id, value } = tranferLog.args
+      const key = keyFromTokenId(id)
+      console.log({ from, to, key, value: value.toString() },this.account )
+      if (to == this.account) {
+        positions[key].balanceForPrice = positions[key]?.balanceForPrice.add(value)
+        positions[key].balanceForPriceR = positions[key]?.balanceForPriceR.add(value)
+      }
+      if (from == this.account) {
+        positions[key].balanceForPrice = positions[key]?.balanceForPrice.sub(value)
+        positions[key].balanceForPriceR = positions[key]?.balanceForPriceR.sub(value)
+      }
+    }
+    if (TOPICS.TransferBatch.includes(tranferLog.topics[0])) {
+      const { from, to, ids, } = tranferLog.args
+      // TODO: where is log.args.values?
+      const values = tranferLog.args['4']
+      for (let i = 0; i < ids.length; ++i) {
+        const value = values[i]
+        const key = keyFromTokenId(ids[i])
+        if (to == this.account) {
+          positions[key].balanceForPrice = positions[key]?.balanceForPrice.add(value)
+          positions[key].balanceForPriceR = positions[key]?.balanceForPriceR.add(value)
+        }
+        if (from == this.account) {
+          positions[key].balanceForPrice = positions[key]?.balanceForPrice.sub(value)
+          positions[key].balanceForPriceR = positions[key]?.balanceForPriceR.sub(value)
+        }
+      }
+    }
+    console.log(positions)
+    return positions
   }
 
   // TODO: refactor position type

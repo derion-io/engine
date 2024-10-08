@@ -14,6 +14,7 @@
     "example:createPool": "npx ts-node --files ./example/createPool.ts",
     "example:calcAmountOuts": "npx ts-node --files ./example/calculateAmountOuts.ts",
     "example:history": "npx ts-node --files ./example/history.ts",
+    "example:historyTransfer": "npx ts-node --files ./example/historyTransfer.ts",
     "example:power": "npx ts-node --files ./example/power.ts",
     "example:getPairAddress": "npx ts-node --files ./example/getPairAddress.ts",
     "pretty": "prettier --write \"./src/**/*.ts\"",
