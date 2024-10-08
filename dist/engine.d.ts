@@ -1,0 +1,38 @@
+import { Storage } from './types';
+import { ethers } from 'ethers';
+import { Price } from './services/price';
+import { Resource } from './services/resource';
+import { BnA } from './services/balanceAndAllowance';
+import { UniV2Pair } from './services/uniV2Pair';
+import { History } from './services/history';
+import { Swap } from './services/swap';
+import { CurrentPool } from './services/currentPool';
+import { CreatePool } from './services/createPool';
+import { UniV3Pair } from './services/uniV3Pair';
+import { IEngineConfig } from './utils/configs';
+import { Profile } from './profile';
+import { Aggregator } from './services/aggregator';
+export declare class Engine {
+    chainId: number;
+    scanApi?: string;
+    rpcUrl: string;
+    account?: string;
+    signer?: ethers.providers.JsonRpcSigner;
+    provider: ethers.providers.Provider;
+    storage?: Storage;
+    PRICE: Price;
+    RESOURCE: Resource;
+    BNA: BnA;
+    UNIV2PAIR: UniV2Pair;
+    UNIV3PAIR: UniV3Pair;
+    HISTORY: History;
+    SWAP: Swap;
+    CURRENT_POOL: CurrentPool;
+    CREATE_POOL: CreatePool;
+    AGGREGATOR: Aggregator;
+    enginConfigs: IEngineConfig;
+    constructor(enginConfigs: IEngineConfig, profile?: typeof Profile);
+    profile: Profile;
+    initServices(): Promise<void>;
+    setCurrentPool(poolData: any): void;
+}
