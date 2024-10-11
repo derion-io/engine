@@ -118,7 +118,7 @@ export class History {
       const tokenInAddress = this.getTokenAddressByPoolAndSide(poolIn, formatedData.sideIn)
       const tokenOutAddress = this.getTokenAddressByPoolAndSide(poolOut, formatedData.sideOut)
 
-      // if (POS_IDS.includes(sideOut.toNumber())) {
+      if (POS_IDS.includes(sideOut.toNumber())) {
         if (!positions[tokenOutAddress]) {
           positions[tokenOutAddress] = {
             avgPriceR: 0,
@@ -128,65 +128,63 @@ export class History {
             amountR: bn(0),
           }
         }
+      }
 
-        const pool = pools[poolOut]
-
-        if (POS_IDS.includes(sideIn.toNumber())) {
-          const pool = pools[poolIn]
-          const posIn = positions[tokenInAddress]
-          if (posIn) {
-            if (!amountR?.gt(0) && posIn?.balanceForPrice?.gt(0)) {
-              amountR = posIn.amountR.mul(amountIn).div(posIn.balanceForPrice)
-            }
-            posIn.amountR = posIn.amountR.sub(amountR)
-            if (priceR?.gt(0) || pool.TOKEN_R == playToken) {
-              if (posIn.balanceForPriceR.lt(amountIn)) {
-                console.warn(`missing value of balanceForPriceR: ${posIn.balanceForPriceR.toString()} < ${amountIn.toString()}`)
-                posIn.balanceForPriceR = bn(0)
-              } else {
-                posIn.balanceForPriceR = posIn.balanceForPriceR.sub(amountIn)
-              }
-            }
-            if (price) {
-              if (posIn.balanceForPrice.lt(amountIn)) {
-                console.warn(`missing value of balanceForPrice: ${posIn.balanceForPrice.toString()} < ${amountIn.toString()}`)
-                posIn.balanceForPriceR = bn(0)
-              } else {
-                posIn.balanceForPrice = posIn.balanceForPrice.sub(amountIn)
-              }
-            }
-          } else {
-            console.warn(`missing input position: ${poolIn}-${sideIn.toNumber()}`)
+      if (POS_IDS.includes(sideIn.toNumber())) {
+        const posIn = positions[tokenInAddress]
+        if (posIn) {
+          if (!amountR?.gt(0) && posIn?.balanceForPrice?.gt(0)) {
+            amountR = posIn.amountR.mul(amountIn).div(posIn.balanceForPrice)
           }
+          posIn.amountR = posIn.amountR.sub(amountR)
+          if (priceR?.gt(0) || pools[poolIn].TOKEN_R == playToken) {
+            if (posIn.balanceForPriceR.lt(amountIn)) {
+              console.warn(`missing value of balanceForPriceR: ${posIn.balanceForPriceR.toString()} < ${amountIn.toString()}`)
+              posIn.balanceForPriceR = bn(0)
+            } else {
+              posIn.balanceForPriceR = posIn.balanceForPriceR.sub(amountIn)
+            }
+          }
+          if (price) {
+            if (posIn.balanceForPrice.lt(amountIn)) {
+              console.warn(`missing value of balanceForPrice: ${posIn.balanceForPrice.toString()} < ${amountIn.toString()}`)
+              posIn.balanceForPriceR = bn(0)
+            } else {
+              posIn.balanceForPrice = posIn.balanceForPrice.sub(amountIn)
+            }
+          }
+        } else {
+          console.warn(`missing input position: ${poolIn}-${sideIn.toNumber()}`)
         }
+      }
 
+      if (POS_IDS.includes(sideOut.toNumber())) {
+        const pool = pools[poolOut]
         const posOut = positions[tokenOutAddress]
 
-        if (POS_IDS.includes(sideOut.toNumber())) {
-          posOut.amountR = posOut.amountR.add(amountR)
-          if (priceR?.gt(0) || pool.TOKEN_R == playToken) {
-            const tokenR = tokens.find((t) => t.address === pool.TOKEN_R)
-            if (tokenR) {
-              let playTokenPrice: any = whiteListToken?.[playToken]?.price ?? 1
-              if (typeof playTokenPrice === 'string' && playTokenPrice?.startsWith('0x')) {
-                // ignore the x96 price here
-                playTokenPrice = 1
-              }
-              const priceRFormated = pool.TOKEN_R == playToken ? playTokenPrice : this.extractPriceR(tokenR, tokens, priceR, log)
-              if (priceRFormated) {
-                posOut.avgPriceR = IEW(
-                  BIG(WEI(posOut.avgPriceR))
-                    .mul(posOut.balanceForPriceR)
-                    .add(BIG(WEI(priceRFormated)).mul(amountOut))
-                    .div(posOut.balanceForPriceR.add(amountOut)),
-                )
-                posOut.balanceForPriceR = posOut.balanceForPriceR.add(amountOut)
-              } else {
-                console.warn('unable to extract priceR')
-              }
-            } else {
-              console.warn('missing token info for TOKEN_R', tokenR)
+        posOut.amountR = posOut.amountR.add(amountR)
+        if (priceR?.gt(0) || pool.TOKEN_R == playToken) {
+          const tokenR = tokens.find((t) => t.address === pool.TOKEN_R)
+          if (tokenR) {
+            let playTokenPrice: any = whiteListToken?.[playToken]?.price ?? 1
+            if (typeof playTokenPrice === 'string' && playTokenPrice?.startsWith('0x')) {
+              // ignore the x96 price here
+              playTokenPrice = 1
             }
+            const priceRFormated = pool.TOKEN_R == playToken ? playTokenPrice : this.extractPriceR(tokenR, tokens, priceR, log)
+            if (priceRFormated) {
+              posOut.avgPriceR = IEW(
+                BIG(WEI(posOut.avgPriceR))
+                  .mul(posOut.balanceForPriceR)
+                  .add(BIG(WEI(priceRFormated)).mul(amountOut))
+                  .div(posOut.balanceForPriceR.add(amountOut)),
+              )
+              posOut.balanceForPriceR = posOut.balanceForPriceR.add(amountOut)
+            } else {
+              console.warn('unable to extract priceR')
+            }
+          } else {
+            console.warn('missing token info for TOKEN_R', tokenR)
           }
         }
 
@@ -205,8 +203,9 @@ export class History {
               .div(posOut.balanceForPrice.add(amountOut)),
           )
           posOut.balanceForPrice = posOut.balanceForPrice.add(amountOut)
-        // }
+        }
       }
+
       Object.keys(positions).map(posKey => {
         if (positions[posKey].balanceForPrice.lte(0) || positions[posKey].balanceForPriceR.lte(0)) {
           delete positions[posKey]
