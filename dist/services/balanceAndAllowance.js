@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BnA = void 0;
+exports.BnA = exports.keyFromTokenId = void 0;
 const helper_1 = require("../utils/helper");
 const constant_1 = require("../utils/constant");
 const BnA_json_1 = __importDefault(require("../abi/BnA.json"));
@@ -16,6 +16,7 @@ function keyFromTokenId(id) {
     const pool = (0, utils_1.getAddress)('0x' + s.substring(4));
     return pool + '-' + side;
 }
+exports.keyFromTokenId = keyFromTokenId;
 class BnA {
     constructor(config, profile) {
         this.provider = new providers_1.JsonRpcProvider(profile.configs.rpc);

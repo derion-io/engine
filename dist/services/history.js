@@ -9,7 +9,9 @@ const constant_1 = require("../utils/constant");
 const helper_1 = require("../utils/helper");
 const resource_1 = require("./resource");
 const ERC20_json_1 = __importDefault(require("../abi/ERC20.json"));
+const balanceAndAllowance_1 = require("./balanceAndAllowance");
 const POS_IDS = [constant_1.POOL_IDS.A, constant_1.POOL_IDS.B, constant_1.POOL_IDS.C];
+const TOPICS = (0, helper_1.getTopics)();
 class History {
     constructor(config, profile) {
         this.config = config;
@@ -18,7 +20,7 @@ class History {
         this.profile = profile;
     }
     // TODO: refactor position type
-    generatePositions({ tokens, logs }) {
+    generatePositions({ tokens, logs, transferLogs }) {
         try {
             if (!logs || logs.length === 0) {
                 return [];
@@ -27,11 +29,50 @@ class History {
             logs.forEach((log) => {
                 positions = this.generatePositionBySwapLog(positions, tokens, log);
             });
+            if (transferLogs?.length && transferLogs?.length > 0) {
+                transferLogs.forEach((log) => {
+                    positions = this.generatePositionByTransferLog(positions, log);
+                });
+            }
             return positions;
         }
         catch (e) {
             throw e;
         }
+    }
+    generatePositionByTransferLog(positions, tranferLog) {
+        if (TOPICS.TransferSingle.includes(tranferLog.topics[0])) {
+            const { from, to, id, value } = tranferLog.args;
+            const key = (0, balanceAndAllowance_1.keyFromTokenId)(id);
+            console.log({ from, to, key, value: value.toString() }, this.account);
+            if (to == this.account) {
+                positions[key].balanceForPrice = positions[key]?.balanceForPrice.add(value);
+                positions[key].balanceForPriceR = positions[key]?.balanceForPriceR.add(value);
+            }
+            if (from == this.account) {
+                positions[key].balanceForPrice = positions[key]?.balanceForPrice.sub(value);
+                positions[key].balanceForPriceR = positions[key]?.balanceForPriceR.sub(value);
+            }
+        }
+        if (TOPICS.TransferBatch.includes(tranferLog.topics[0])) {
+            const { from, to, ids, } = tranferLog.args;
+            // TODO: where is log.args.values?
+            const values = tranferLog.args['4'];
+            for (let i = 0; i < ids.length; ++i) {
+                const value = values[i];
+                const key = (0, balanceAndAllowance_1.keyFromTokenId)(ids[i]);
+                if (to == this.account) {
+                    positions[key].balanceForPrice = positions[key]?.balanceForPrice.add(value);
+                    positions[key].balanceForPriceR = positions[key]?.balanceForPriceR.add(value);
+                }
+                if (from == this.account) {
+                    positions[key].balanceForPrice = positions[key]?.balanceForPrice.sub(value);
+                    positions[key].balanceForPriceR = positions[key]?.balanceForPriceR.sub(value);
+                }
+            }
+        }
+        console.log(positions);
+        return positions;
     }
     // TODO: refactor position type
     generatePositionBySwapLog(positions, tokens, log) {
@@ -49,85 +90,85 @@ class History {
             }
             const tokenInAddress = this.getTokenAddressByPoolAndSide(poolIn, formatedData.sideIn);
             const tokenOutAddress = this.getTokenAddressByPoolAndSide(poolOut, formatedData.sideOut);
-            if (POS_IDS.includes(sideOut.toNumber())) {
-                if (!positions[tokenOutAddress]) {
-                    positions[tokenOutAddress] = {
-                        avgPriceR: 0,
-                        avgPrice: 0,
-                        balanceForPriceR: (0, helper_1.bn)(0),
-                        balanceForPrice: (0, helper_1.bn)(0),
-                        amountR: (0, helper_1.bn)(0),
-                    };
+            // if (POS_IDS.includes(sideOut.toNumber())) {
+            if (!positions[tokenOutAddress]) {
+                positions[tokenOutAddress] = {
+                    avgPriceR: 0,
+                    avgPrice: 0,
+                    balanceForPriceR: (0, helper_1.bn)(0),
+                    balanceForPrice: (0, helper_1.bn)(0),
+                    amountR: (0, helper_1.bn)(0),
+                };
+            }
+            const pool = pools[poolOut];
+            if (POS_IDS.includes(sideIn.toNumber())) {
+                const pool = pools[poolIn];
+                const posIn = positions[tokenInAddress];
+                if (posIn) {
+                    if (!amountR?.gt(0) && posIn?.balanceForPrice?.gt(0)) {
+                        amountR = posIn.amountR.mul(amountIn).div(posIn.balanceForPrice);
+                    }
+                    posIn.amountR = posIn.amountR.sub(amountR);
+                    if (priceR?.gt(0) || pool.TOKEN_R == playToken) {
+                        if (posIn.balanceForPriceR.lt(amountIn)) {
+                            console.warn(`missing value of balanceForPriceR: ${posIn.balanceForPriceR.toString()} < ${amountIn.toString()}`);
+                            posIn.balanceForPriceR = (0, helper_1.bn)(0);
+                        }
+                        else {
+                            posIn.balanceForPriceR = posIn.balanceForPriceR.sub(amountIn);
+                        }
+                    }
+                    if (price) {
+                        if (posIn.balanceForPrice.lt(amountIn)) {
+                            console.warn(`missing value of balanceForPrice: ${posIn.balanceForPrice.toString()} < ${amountIn.toString()}`);
+                            posIn.balanceForPriceR = (0, helper_1.bn)(0);
+                        }
+                        else {
+                            posIn.balanceForPrice = posIn.balanceForPrice.sub(amountIn);
+                        }
+                    }
                 }
-                const pool = pools[poolOut];
-                if (POS_IDS.includes(sideIn.toNumber())) {
-                    const pool = pools[poolIn];
-                    const posIn = positions[tokenInAddress];
-                    if (posIn) {
-                        if (!amountR?.gt(0) && posIn?.balanceForPrice?.gt(0)) {
-                            amountR = posIn.amountR.mul(amountIn).div(posIn.balanceForPrice);
+                else {
+                    console.warn(`missing input position: ${poolIn}-${sideIn.toNumber()}`);
+                }
+            }
+            const posOut = positions[tokenOutAddress];
+            if (POS_IDS.includes(sideOut.toNumber())) {
+                posOut.amountR = posOut.amountR.add(amountR);
+                if (priceR?.gt(0) || pool.TOKEN_R == playToken) {
+                    const tokenR = tokens.find((t) => t.address === pool.TOKEN_R);
+                    if (tokenR) {
+                        let playTokenPrice = whiteListToken?.[playToken]?.price ?? 1;
+                        if (typeof playTokenPrice === 'string' && playTokenPrice?.startsWith('0x')) {
+                            // ignore the x96 price here
+                            playTokenPrice = 1;
                         }
-                        posIn.amountR = posIn.amountR.sub(amountR);
-                        if (priceR?.gt(0) || pool.TOKEN_R == playToken) {
-                            if (posIn.balanceForPriceR.lt(amountIn)) {
-                                console.warn(`missing value of balanceForPriceR: ${posIn.balanceForPriceR.toString()} < ${amountIn.toString()}`);
-                                posIn.balanceForPriceR = (0, helper_1.bn)(0);
-                            }
-                            else {
-                                posIn.balanceForPriceR = posIn.balanceForPriceR.sub(amountIn);
-                            }
+                        const priceRFormated = pool.TOKEN_R == playToken ? playTokenPrice : this.extractPriceR(tokenR, tokens, priceR, log);
+                        if (priceRFormated) {
+                            posOut.avgPriceR = (0, helper_1.IEW)((0, helper_1.BIG)((0, helper_1.WEI)(posOut.avgPriceR))
+                                .mul(posOut.balanceForPriceR)
+                                .add((0, helper_1.BIG)((0, helper_1.WEI)(priceRFormated)).mul(amountOut))
+                                .div(posOut.balanceForPriceR.add(amountOut)));
+                            posOut.balanceForPriceR = posOut.balanceForPriceR.add(amountOut);
                         }
-                        if (price) {
-                            if (posIn.balanceForPrice.lt(amountIn)) {
-                                console.warn(`missing value of balanceForPrice: ${posIn.balanceForPrice.toString()} < ${amountIn.toString()}`);
-                                posIn.balanceForPriceR = (0, helper_1.bn)(0);
-                            }
-                            else {
-                                posIn.balanceForPrice = posIn.balanceForPrice.sub(amountIn);
-                            }
+                        else {
+                            console.warn('unable to extract priceR');
                         }
                     }
                     else {
-                        console.warn(`missing input position: ${poolIn}-${sideIn.toNumber()}`);
+                        console.warn('missing token info for TOKEN_R', tokenR);
                     }
                 }
-                const posOut = positions[tokenOutAddress];
-                if (POS_IDS.includes(sideOut.toNumber())) {
-                    posOut.amountR = posOut.amountR.add(amountR);
-                    if (priceR?.gt(0) || pool.TOKEN_R == playToken) {
-                        const tokenR = tokens.find((t) => t.address === pool.TOKEN_R);
-                        if (tokenR) {
-                            let playTokenPrice = whiteListToken?.[playToken]?.price ?? 1;
-                            if (typeof playTokenPrice === 'string' && playTokenPrice?.startsWith('0x')) {
-                                // ignore the x96 price here
-                                playTokenPrice = 1;
-                            }
-                            const priceRFormated = pool.TOKEN_R == playToken ? playTokenPrice : this.extractPriceR(tokenR, tokens, priceR, log);
-                            if (priceRFormated) {
-                                posOut.avgPriceR = (0, helper_1.IEW)((0, helper_1.BIG)((0, helper_1.WEI)(posOut.avgPriceR))
-                                    .mul(posOut.balanceForPriceR)
-                                    .add((0, helper_1.BIG)((0, helper_1.WEI)(priceRFormated)).mul(amountOut))
-                                    .div(posOut.balanceForPriceR.add(amountOut)));
-                                posOut.balanceForPriceR = posOut.balanceForPriceR.add(amountOut);
-                            }
-                            else {
-                                console.warn('unable to extract priceR');
-                            }
-                        }
-                        else {
-                            console.warn('missing token info for TOKEN_R', tokenR);
-                        }
-                    }
-                }
-                if (price) {
-                    const { baseToken, quoteToken } = pool;
-                    const indexPrice = (0, helper_1.parsePrice)(price, tokens.find((t) => t?.address === baseToken), tokens.find((t) => t?.address === quoteToken), pool);
-                    posOut.avgPrice = (0, helper_1.IEW)((0, helper_1.BIG)((0, helper_1.WEI)(posOut.avgPrice))
-                        .mul(posOut.balanceForPrice)
-                        .add((0, helper_1.BIG)((0, helper_1.WEI)(indexPrice)).mul(amountOut))
-                        .div(posOut.balanceForPrice.add(amountOut)));
-                    posOut.balanceForPrice = posOut.balanceForPrice.add(amountOut);
-                }
+            }
+            if (price) {
+                const { baseToken, quoteToken } = pool;
+                const indexPrice = (0, helper_1.parsePrice)(price, tokens.find((t) => t?.address === baseToken), tokens.find((t) => t?.address === quoteToken), pool);
+                posOut.avgPrice = (0, helper_1.IEW)((0, helper_1.BIG)((0, helper_1.WEI)(posOut.avgPrice))
+                    .mul(posOut.balanceForPrice)
+                    .add((0, helper_1.BIG)((0, helper_1.WEI)(indexPrice)).mul(amountOut))
+                    .div(posOut.balanceForPrice.add(amountOut)));
+                posOut.balanceForPrice = posOut.balanceForPrice.add(amountOut);
+                // }
             }
             Object.keys(positions).map(posKey => {
                 if (positions[posKey].balanceForPrice.eq(0) || positions[posKey].balanceForPriceR.eq(0)) {

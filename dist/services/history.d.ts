@@ -12,6 +12,7 @@ export type FormatSwapHistoryParameterType = {
 export type PositionGenerateParameterType = {
     tokens: Array<TokenType>;
     logs: Array<LogType>;
+    transferLogs?: Array<LogType>;
 };
 export declare class History {
     account?: string;
@@ -21,7 +22,8 @@ export declare class History {
     constructor(config: IEngineConfig & {
         RESOURCE: Resource;
     }, profile: Profile);
-    generatePositions({ tokens, logs }: PositionGenerateParameterType): any;
+    generatePositions({ tokens, logs, transferLogs }: PositionGenerateParameterType): any;
+    generatePositionByTransferLog(positions: any, tranferLog: LogType): any;
     generatePositionBySwapLog(positions: any, tokens: Array<TokenType>, log: LogType): any;
     formatSwapHistory({ transferLogs, swapLogs, tokens }: FormatSwapHistoryParameterType): Array<number>;
     extractPriceR(tokenR: TokenType, tokens: Array<TokenType>, priceR: any, log: LogType): string | undefined;
