@@ -7,7 +7,7 @@ import {LogType} from '../src/types'
 import {POOL_IDS} from '../src/utils/constant'
 
 const chainId = Number(process.env.CHAIN ?? 42161)
-const wallet = process.env.WALLET ?? '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
+const wallet = process.env.WALLET ?? '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
 
 
 const testLocal = async () => {
@@ -32,14 +32,15 @@ const testLocal = async () => {
     ...currentPool,
   })
 
-  const swapTxs = engine?.HISTORY.formatSwapHistory({
-    tokens: engine.RESOURCE.tokens,
-    transferLogs: JSON.parse(JSON.stringify(engine.RESOURCE.transferLogs)),
-    swapLogs: JSON.parse(JSON.stringify(engine.RESOURCE.swapLogs)),
-  })
+  // const swapTxs = engine?.HISTORY.formatSwapHistory({
+  //   tokens: engine.RESOURCE.tokens,
+  //   transferLogs: JSON.parse(JSON.stringify(engine.RESOURCE.transferLogs)),
+  //   swapLogs: JSON.parse(JSON.stringify(engine.RESOURCE.swapLogs)),
+  // })
   const TOPICS = getTopics()
   const transferLogs = engine.RESOURCE.bnaLogs.filter(log => TOPICS.TransferBatch.includes(log.topics[0]) || TOPICS.TransferSingle.includes(log.topics[0]))
   const swapLogs = engine.RESOURCE.swapLogs
+  const mapLogs = [...transferLogs, ...swapLogs]
   const mergeLogs: {[hash: string]:LogType[]} ={}
    // Add transfer logs to the map
   transferLogs.forEach(log => {
@@ -55,89 +56,94 @@ const testLocal = async () => {
     }
     mergeLogs[log.transactionHash].push(log);
   });
-  const POS_IDS = [POOL_IDS.A, POOL_IDS.B, POOL_IDS.C]
-  Object.keys(mergeLogs).map(key => {
-    const logs = mergeLogs[key]
-    let transferAmount:{[key: string]: number} = {}
-    let swapAmount: {[key: string]: number} = {}
-    logs.map(log => {
-      if(log.args.operator) {
-        const values = log.args['4'];
-        const key = keyFromTokenId(log.args.id)
-        if(!transferAmount[key]) transferAmount[key] = 0
-        if (log.args.to == wallet) {
-          // console.log('[TRANFER] +', values?.toString())
-          transferAmount[key] = transferAmount[key] + Number(values)
-        } 
-        if (log.args.from == wallet) {
-          // console.log('[TRANFER] -', values?.toString())
-          transferAmount[key] = transferAmount[key] - Number(values)
-        }
-      } else {
-        const abi = engine.HISTORY.getSwapAbi(log.topics[0])
-        const encodeData = ethers.utils.defaultAbiCoder.encode(abi, log.args)
-        const formatedData = ethers.utils.defaultAbiCoder.decode(abi, encodeData)
+
+  // const POS_IDS = [POOL_IDS.A, POOL_IDS.B, POOL_IDS.C]
+  // console.log(Object.keys(mergeLogs).length)
+  // Object.keys(mergeLogs).map(key => {
+  //   const logs = mergeLogs[key]
+  //   let transferAmount:{[key: string]: number} = {}
+  //   let swapAmount: {[key: string]: number} = {}
+
+  //   logs.map(log => {
+  //     if(log.args.operator) {
+  //       const values = log.args['4'];
+  //       const key = keyFromTokenId(log.args.id)
+  //       if(!transferAmount[key]) transferAmount[key] = 0
+  //       if (log.args.to == wallet) {
+  //         // console.log('[TRANFER] +', values?.toString())
+  //         transferAmount[key] = transferAmount[key] + Number(IEW(values))
+  //       } 
+  //       if (log.args.from == wallet) {
+  //         // console.log('[TRANFER] -', IEW(values)?.toString())
+  //         transferAmount[key] = transferAmount[key] - Number(IEW(values))
+  //       }
+  //     } else {
+  //       const abi = engine.HISTORY.getSwapAbi(log.topics[0])
+  //       const encodeData = ethers.utils.defaultAbiCoder.encode(abi, log.args)
+  //       const formatedData = ethers.utils.defaultAbiCoder.decode(abi, encodeData)
   
-        const { poolIn, poolOut, sideIn, sideOut, amountR, amountOut, amountIn, priceR, price } = formatedData
+  //       const { poolIn, poolOut, sideIn, sideOut, amountR, amountOut, amountIn, priceR, price } = formatedData
         
-        const tokenInAddress = engine.HISTORY.getTokenAddressByPoolAndSide(poolIn, formatedData.sideIn)
-        const tokenOutAddress = engine.HISTORY.getTokenAddressByPoolAndSide(poolOut, formatedData.sideOut)
+  //       const tokenInAddress = engine.HISTORY.getTokenAddressByPoolAndSide(poolIn, formatedData.sideIn)
+  //       const tokenOutAddress = engine.HISTORY.getTokenAddressByPoolAndSide(poolOut, formatedData.sideOut)
       
-        if (POS_IDS.includes(sideIn.toNumber())){
-          // console.log('[SWAP] -', amountIn?.toString())
-          if(!swapAmount[tokenInAddress]) swapAmount[tokenInAddress] = 0
-          swapAmount[tokenInAddress] =  swapAmount[tokenInAddress] -  Number(amountIn)
-        }
-        if (POS_IDS.includes(sideOut.toNumber())){
-          if(!swapAmount[tokenOutAddress]) swapAmount[tokenOutAddress] = 0
+  //       if (POS_IDS.includes(sideIn.toNumber())){
+  //         // console.log('[SWAP] -', amountIn?.toString())
+  //         if(!swapAmount[tokenInAddress]) swapAmount[tokenInAddress] = 0
+  //         swapAmount[tokenInAddress] =  swapAmount[tokenInAddress] -  Number(IEW(amountIn))
+  //       }
+  //       if (POS_IDS.includes(sideOut.toNumber())){
+  //         if(!swapAmount[tokenOutAddress]) swapAmount[tokenOutAddress] = 0
 
-          // console.log('[SWAP] +', amountOut?.toString())
-          swapAmount[tokenOutAddress] = swapAmount[tokenOutAddress] +  Number(amountOut)
-        }
-      }
-    })
-    const keys = Object.keys(swapAmount).filter(key => {return swapAmount[key] !== transferAmount[key]})
-    if(keys.length > 0) {
-        logs.map(log => {
-          if(log.args.operator) return;
-          const abi = engine.HISTORY.getSwapAbi(log.topics[0])
-          const encodeData = ethers.utils.defaultAbiCoder.encode(abi, log.args)
-          const formatedData = ethers.utils.defaultAbiCoder.decode(abi, encodeData)
-          const { poolIn, poolOut, sideIn, sideOut,amountR, amountOut, amountIn, priceR, price } = formatedData
-          console.log({
-            ...formatedData,
-            amountOut: amountOut.toString(),
-            amountIn: amountIn.toString(),
-            amountR: amountR.toString(),
-            price: price.toString(),
-            priceR: priceR.toString()
-          })
-        })
+  //         // console.log('[SWAP] +', amountOut?.toString())
+  //         swapAmount[tokenOutAddress] = swapAmount[tokenOutAddress] +  Number(IEW(amountOut))
+  //       }
+  //     }
+  //   })
+  //   const keys = Object.keys(swapAmount).filter(key => {return swapAmount[key] !== transferAmount[key]})
+  //   if(keys.length > 0) {
+  //       logs.map(log => {
+  //         if(log.args.operator) return;
+  //         const abi = engine.HISTORY.getSwapAbi(log.topics[0])
+  //         const encodeData = ethers.utils.defaultAbiCoder.encode(abi, log.args)
+  //         const formatedData = ethers.utils.defaultAbiCoder.decode(abi, encodeData)
+  //         const { poolIn, poolOut, sideIn, sideOut,amountR, amountOut, amountIn, priceR, price } = formatedData
+  //         console.log({
+  //           ...formatedData,
+  //           amountOut: amountOut.toString(),
+  //           amountIn: amountIn.toString(),
+  //           amountR: amountR.toString(),
+  //           price: price.toString(),
+  //           priceR: priceR.toString()
+  //         })
+  //       })
   
-        console.log('------------------------------------------------')
-        console.log('[HASH]', key)
-        console.log('[SWAP]', swapAmount)
-        console.log('[TRANFER]', transferAmount)
-        console.log('------------------------------------------------')
-    }
-  })
-  // const positions = engine?.HISTORY.generatePositions({
-  //   tokens: engine.RESOURCE.tokens,
-  //   logs: JSON.parse(JSON.stringify(engine.RESOURCE.swapLogs)),
-  //   transferLogs
+  //       console.log('------------------------------------------------')
+  //       console.log('[HASH]', key)
+  //       console.log('[SWAP]', swapAmount)
+  //       console.log('[TRANFER]', transferAmount)
+  //       console.log('------------------------------------------------')
+  //   }
   // })
+  const positions = engine?.HISTORY.generatePositions({
+    tokens: engine.RESOURCE.tokens,
+    logs: JSON.parse(JSON.stringify(engine.RESOURCE.swapLogs)),
+    // transferLogs
+  })
 
-// const posMap = Object.keys(positions).map(poskey => {
-//   const pos = positions[poskey]
-//   return {
-//     ...pos,
-//     balanceForPriceR: IEW(pos.balanceForPriceR, 18),
-//     balanceForPrice: IEW(pos.balanceForPrice, 18),
-//     amountR: pos.amountR?.toString?.()
+const posMap = Object.keys(positions).map(poskey => {
+  const pos = positions[poskey]
+  return {
+    ...pos,
+    balanceForPriceR: IEW(pos.balanceForPriceR, 18),
+    balanceForPrice: IEW(pos.balanceForPrice, 18),
+    amountR: pos.amountR?.toString?.()
 
-//   }
-// })
-//   console.table(posMap)
+  }
+})
+console.table(posMap)
+console.log(transferLogs.length, swapLogs.length)
+
 }
 
 testLocal()
