@@ -118,7 +118,7 @@ export class History {
       const tokenInAddress = this.getTokenAddressByPoolAndSide(poolIn, formatedData.sideIn)
       const tokenOutAddress = this.getTokenAddressByPoolAndSide(poolOut, formatedData.sideOut)
 
-      if (POS_IDS.includes(sideOut.toNumber())) {
+      // if (POS_IDS.includes(sideOut.toNumber())) {
         if (!positions[tokenOutAddress]) {
           positions[tokenOutAddress] = {
             avgPriceR: 0,
@@ -205,7 +205,7 @@ export class History {
               .div(posOut.balanceForPrice.add(amountOut)),
           )
           posOut.balanceForPrice = posOut.balanceForPrice.add(amountOut)
-        }
+        // }
       }
       Object.keys(positions).map(posKey => {
         if(positions[posKey].balanceForPrice.eq(0) || positions[posKey].balanceForPriceR.eq(0)) {
