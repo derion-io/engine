@@ -14,7 +14,7 @@ import { Engine } from '../src/engine'
 import {POOL_IDS} from '../src/utils/constant'
 import { IEngineConfig } from '../src/utils/configs'
 import { ethers } from 'ethers'
-import {historyTransfer} from './logic/HistoryTransfer'
+import {historyTransfer} from './logic/historyTransfer'
 
 // import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
 
