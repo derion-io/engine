@@ -222,11 +222,16 @@ describe('Derivable Tools', () => {
   })
 
   test('History-transfer', async () => {
-    const { swapTxs, positions } = await historyTransfer(
+    const { swapTxs, positions, positionsTransfer } = await historyTransfer(
       genConfig(42161, '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'),
       [],
       '0x9E37cb775a047Ae99FC5A24dDED834127c4180cD'
     )
+    Object.keys(positions).map(posKey => {
+      const posSwap = positions[posKey]
+      const posTransfer = positionsTransfer[posKey]
+      expect(posSwap.balanceForPrice.toString()).toEqual(posTransfer.balance.toString())
+    })
   })
 
   test('History', async () => {

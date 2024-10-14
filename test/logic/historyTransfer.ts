@@ -65,13 +65,10 @@ export const historyTransfer = async (
     tokens: engine.RESOURCE.tokens,
     logs: JSON.parse(JSON.stringify(engine.RESOURCE.swapLogs)),
   })
-  Object.keys(positions).map(posKey => {
-    const posSwap = positions[posKey]
-    const posTransfer = positionsTransfer[posKey]
-    expect(posSwap.balanceForPrice.toString()).toEqual(posTransfer.balance.toString())
-  })
+
   return {
     swapTxs,
     positions,
+    positionsTransfer
   }
 }
