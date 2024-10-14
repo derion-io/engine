@@ -14,6 +14,7 @@ import { Engine } from '../src/engine'
 import {POOL_IDS} from '../src/utils/constant'
 import { IEngineConfig } from '../src/utils/configs'
 import { ethers } from 'ethers'
+import {historyTransfer} from './logic/HistoryTransfer'
 
 // import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
 
@@ -218,6 +219,14 @@ describe('Derivable Tools', () => {
     const keys = Object.keys(idxs)
     expect(keys.length).toEqual(1)
     expect(idxs[keys[0]].pools.length).toEqual(1)
+  })
+
+  test('History-transfer', async () => {
+    const { swapTxs, positions } = await historyTransfer(
+      genConfig(42161, '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'),
+      [],
+      '0x9E37cb775a047Ae99FC5A24dDED834127c4180cD'
+    )
   })
 
   test('History', async () => {
