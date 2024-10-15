@@ -1,0 +1,1 @@
+{"type":"default","status":200,"statusText":"OK","headers":{"cf-cache-status":"DYNAMIC","cf-ray":"8d2c5346ffa64625-SIN","connection":"close","content-type":"application/json","date":"Tue, 15 Oct 2024 02:19:37 GMT","server":"cloudflare","transfer-encoding":"chunked","vary":"Origin","x-envoy-upstream-service-time":"0"},"body":{"jsonrpc":"2.0","id":42,"result":"0xa4b1"}}
