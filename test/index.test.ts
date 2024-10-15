@@ -14,6 +14,7 @@ import { Engine } from '../src/engine'
 import {POOL_IDS} from '../src/utils/constant'
 import { IEngineConfig } from '../src/utils/configs'
 import { ethers } from 'ethers'
+import { historyTransfer } from './logic/historyTransfer'
 
 // import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
 
@@ -246,6 +247,19 @@ describe('Derivable Tools', () => {
     expect(positions['0x2C3d0F3dcD28b5481a50E1DD0071378f92D56954-48'].balanceForPriceR).toEqual(bn('0x1c8f2c56a54f6b9e'))
     expect(positions['0x63187130DdBF058F5167dDAD551920199D1D8de5-48'].balanceForPrice).toEqual(bn('0x22e339714c045d3b'))
     expect(positions['0x1F3fdE32c8Cc19a0BE30a94EDeaD9cE34279b1FF-48'].amountR).toEqual(bn('0x29a2241af62c0000'))
+  })
+
+  test('History-transfer', async () => {
+    const { positions, positionsTransfer } = await historyTransfer(
+      genConfig(42161, '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'),
+      [],
+      '0x9E37cb775a047Ae99FC5A24dDED834127c4180cD'
+    )
+    Object.keys(positions).map(posKey => {
+      const posSwap = positions[posKey]
+      const posTransfer = positionsTransfer[posKey]
+      expect(posSwap.balanceForPrice).toEqual(posTransfer.balance)
+    })
   })
 
   test('Swap', async () => {
