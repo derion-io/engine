@@ -166,6 +166,11 @@ export class History {
         }
       }
 
+      Object.keys(positions).map(posKey => {
+        if (positions[posKey].balanceForPrice.lte(0) || positions[posKey].balanceForPriceR.lte(0)) {
+          delete positions[posKey]
+        }
+      })
       return positions
     } catch (error) {
       throw error
