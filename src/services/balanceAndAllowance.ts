@@ -12,7 +12,7 @@ import { getAddress } from 'ethers/lib/utils'
 
 const TOPICS = getTopics()
 
-function keyFromTokenId(id: BigNumber): string {
+export function keyFromTokenId(id: BigNumber): string {
   const s = id.toHexString()
   const side = Number.parseInt(s.substring(2, 4), 16)
   const pool = getAddress('0x' + s.substring(4))

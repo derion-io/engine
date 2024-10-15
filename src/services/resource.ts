@@ -1049,7 +1049,7 @@ export class Resource {
           ...parsedLog,
         }
       } catch (err) {
-        console.error('Failed to parse log', err, log)
+        console.warn('Failed to parse log', err, log)
       }
       return undefined
     }).filter((log: any) => log != null)
