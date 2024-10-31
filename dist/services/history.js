@@ -79,7 +79,7 @@ class History {
                     if (price) {
                         if (posIn.balanceForPrice.lt(amountIn)) {
                             console.warn(`missing value of balanceForPrice: ${posIn.balanceForPrice.toString()} < ${amountIn.toString()}`);
-                            posIn.balanceForPriceR = (0, helper_1.bn)(0);
+                            posIn.balanceForPrice = (0, helper_1.bn)(0);
                         }
                         else {
                             posIn.balanceForPrice = posIn.balanceForPrice.sub(amountIn);
