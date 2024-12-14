@@ -66,8 +66,8 @@ export class History {
       const encodeData = ethers.utils.defaultAbiCoder.encode(abi, log.args)
       const formatedData = ethers.utils.defaultAbiCoder.decode(abi, encodeData)
 
-      const { poolIn, poolOut, sideIn, sideOut, amountOut, amountIn, priceR, price } = formatedData
-      let { amountR } = formatedData
+      const { poolIn, poolOut, sideIn, sideOut, amountOut, amountIn, price } = formatedData
+      let { amountR, priceR } = formatedData
 
       if (!poolAddresses.includes(poolIn) || !poolAddresses.includes(poolOut)) {
         return positions
@@ -90,12 +90,19 @@ export class History {
 
       if (POS_IDS.includes(sideIn.toNumber())) {
         const posIn = positions[tokenInAddress]
+        const pool = pools[poolIn]
+        if (price) {
+          // special case for INDEX = TOKEN_R / STABLECOIN
+          if (!priceR?.gt(0) && pool.TOKEN_R == pool.baseToken && this.profile.configs.stablecoins.includes(pool.quoteToken)) {
+            priceR = price
+          }
+        }
         if (posIn) {
           if (!amountR?.gt(0) && posIn?.balanceForPrice?.gt(0)) {
             amountR = posIn.amountR.mul(amountIn).div(posIn.balanceForPrice)
           }
           posIn.amountR = posIn.amountR.sub(amountR)
-          if (priceR?.gt(0) || pools[poolIn].TOKEN_R == playToken) {
+          if (priceR?.gt(0) || pool.TOKEN_R == playToken) {
             if (posIn.balanceForPriceR.lt(amountIn)) {
               console.warn(`missing value of balanceForPriceR: ${posIn.balanceForPriceR.toString()} < ${amountIn.toString()}`)
               posIn.balanceForPriceR = bn(0)
@@ -120,31 +127,7 @@ export class History {
         const pool = pools[poolOut]
         const posOut = positions[tokenOutAddress]
 
-        posOut.amountR = posOut.amountR.add(amountR)
-        if (priceR?.gt(0) || pool.TOKEN_R == playToken) {
-          const tokenR = tokens.find((t) => t.address === pool.TOKEN_R)
-          if (tokenR) {
-            let playTokenPrice: any = whiteListToken?.[playToken]?.price ?? 1
-            if (typeof playTokenPrice === 'string' && playTokenPrice?.startsWith('0x')) {
-              // ignore the x96 price here
-              playTokenPrice = 1
-            }
-            const priceRFormated = pool.TOKEN_R == playToken ? playTokenPrice : this.extractPriceR(tokenR, tokens, priceR, log)
-            if (priceRFormated) {
-              posOut.avgPriceR = IEW(
-                BIG(WEI(posOut.avgPriceR))
-                  .mul(posOut.balanceForPriceR)
-                  .add(BIG(WEI(priceRFormated)).mul(amountOut))
-                  .div(posOut.balanceForPriceR.add(amountOut)),
-              )
-              posOut.balanceForPriceR = posOut.balanceForPriceR.add(amountOut)
-            } else {
-              console.warn('unable to extract priceR')
-            }
-          } else {
-            console.warn('missing token info for TOKEN_R', tokenR)
-          }
-        }
+        let priceRFormated
 
         if (price) {
           const { baseToken, quoteToken } = pool
@@ -161,6 +144,40 @@ export class History {
               .div(posOut.balanceForPrice.add(amountOut)),
           )
           posOut.balanceForPrice = posOut.balanceForPrice.add(amountOut)
+
+          // special case for INDEX = TOKEN_R / STABLECOIN
+          if (!priceR?.gt(0) && pool.TOKEN_R == pool.baseToken && this.profile.configs.stablecoins.includes(pool.quoteToken)) {
+            priceR = price
+            priceRFormated = indexPrice
+          }
+        }
+
+        posOut.amountR = posOut.amountR.add(amountR)
+        if (priceR?.gt(0) || pool.TOKEN_R == playToken || priceRFormated) {
+          const tokenR = tokens.find((t) => t.address === pool.TOKEN_R)
+          if (tokenR) {
+            let playTokenPrice: any = whiteListToken?.[playToken]?.price ?? 1
+            if (typeof playTokenPrice === 'string' && playTokenPrice?.startsWith('0x')) {
+              // ignore the x96 price here
+              playTokenPrice = 1
+            }
+            if (!priceRFormated) {
+              priceRFormated = pool.TOKEN_R == playToken ? playTokenPrice : this.extractPriceR(tokenR, tokens, priceR, log)
+            }
+            if (priceRFormated) {
+              posOut.avgPriceR = IEW(
+                BIG(WEI(posOut.avgPriceR))
+                  .mul(posOut.balanceForPriceR)
+                  .add(BIG(WEI(priceRFormated)).mul(amountOut))
+                  .div(posOut.balanceForPriceR.add(amountOut)),
+              )
+              posOut.balanceForPriceR = posOut.balanceForPriceR.add(amountOut)
+            } else {
+              console.warn('unable to extract priceR')
+            }
+          } else {
+            console.warn('missing token info for TOKEN_R', tokenR)
+          }
         }
       }
 
