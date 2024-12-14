@@ -42,8 +42,8 @@ class History {
             const abi = this.getSwapAbi(log.topics[0]);
             const encodeData = ethers_1.ethers.utils.defaultAbiCoder.encode(abi, log.args);
             const formatedData = ethers_1.ethers.utils.defaultAbiCoder.decode(abi, encodeData);
-            const { poolIn, poolOut, sideIn, sideOut, amountOut, amountIn, priceR, price } = formatedData;
-            let { amountR } = formatedData;
+            const { poolIn, poolOut, sideIn, sideOut, amountOut, amountIn, price } = formatedData;
+            let { amountR, priceR } = formatedData;
             if (!poolAddresses.includes(poolIn) || !poolAddresses.includes(poolOut)) {
                 return positions;
             }
@@ -62,12 +62,19 @@ class History {
             }
             if (POS_IDS.includes(sideIn.toNumber())) {
                 const posIn = positions[tokenInAddress];
+                const pool = pools[poolIn];
+                if (price) {
+                    // special case for INDEX = TOKEN_R / STABLECOIN
+                    if (!priceR?.gt(0) && pool.TOKEN_R == pool.baseToken && this.profile.configs.stablecoins.includes(pool.quoteToken)) {
+                        priceR = price;
+                    }
+                }
                 if (posIn) {
                     if (!amountR?.gt(0) && posIn?.balanceForPrice?.gt(0)) {
                         amountR = posIn.amountR.mul(amountIn).div(posIn.balanceForPrice);
                     }
                     posIn.amountR = posIn.amountR.sub(amountR);
-                    if (priceR?.gt(0) || pools[poolIn].TOKEN_R == playToken) {
+                    if (priceR?.gt(0) || pool.TOKEN_R == playToken) {
                         if (posIn.balanceForPriceR.lt(amountIn)) {
                             console.warn(`missing value of balanceForPriceR: ${posIn.balanceForPriceR.toString()} < ${amountIn.toString()}`);
                             posIn.balanceForPriceR = (0, helper_1.bn)(0);
@@ -93,8 +100,23 @@ class History {
             if (POS_IDS.includes(sideOut.toNumber())) {
                 const pool = pools[poolOut];
                 const posOut = positions[tokenOutAddress];
+                let priceRFormated;
+                if (price) {
+                    const { baseToken, quoteToken } = pool;
+                    const indexPrice = (0, helper_1.parsePrice)(price, tokens.find((t) => t?.address === baseToken), tokens.find((t) => t?.address === quoteToken), pool);
+                    posOut.avgPrice = (0, helper_1.IEW)((0, helper_1.BIG)((0, helper_1.WEI)(posOut.avgPrice))
+                        .mul(posOut.balanceForPrice)
+                        .add((0, helper_1.BIG)((0, helper_1.WEI)(indexPrice)).mul(amountOut))
+                        .div(posOut.balanceForPrice.add(amountOut)));
+                    posOut.balanceForPrice = posOut.balanceForPrice.add(amountOut);
+                    // special case for INDEX = TOKEN_R / STABLECOIN
+                    if (!priceR?.gt(0) && pool.TOKEN_R == pool.baseToken && this.profile.configs.stablecoins.includes(pool.quoteToken)) {
+                        priceR = price;
+                        priceRFormated = indexPrice;
+                    }
+                }
                 posOut.amountR = posOut.amountR.add(amountR);
-                if (priceR?.gt(0) || pool.TOKEN_R == playToken) {
+                if (priceR?.gt(0) || pool.TOKEN_R == playToken || priceRFormated) {
                     const tokenR = tokens.find((t) => t.address === pool.TOKEN_R);
                     if (tokenR) {
                         let playTokenPrice = whiteListToken?.[playToken]?.price ?? 1;
@@ -102,7 +124,9 @@ class History {
                             // ignore the x96 price here
                             playTokenPrice = 1;
                         }
-                        const priceRFormated = pool.TOKEN_R == playToken ? playTokenPrice : this.extractPriceR(tokenR, tokens, priceR, log);
+                        if (!priceRFormated) {
+                            priceRFormated = pool.TOKEN_R == playToken ? playTokenPrice : this.extractPriceR(tokenR, tokens, priceR, log);
+                        }
                         if (priceRFormated) {
                             posOut.avgPriceR = (0, helper_1.IEW)((0, helper_1.BIG)((0, helper_1.WEI)(posOut.avgPriceR))
                                 .mul(posOut.balanceForPriceR)
@@ -117,15 +141,6 @@ class History {
                     else {
                         console.warn('missing token info for TOKEN_R', tokenR);
                     }
-                }
-                if (price) {
-                    const { baseToken, quoteToken } = pool;
-                    const indexPrice = (0, helper_1.parsePrice)(price, tokens.find((t) => t?.address === baseToken), tokens.find((t) => t?.address === quoteToken), pool);
-                    posOut.avgPrice = (0, helper_1.IEW)((0, helper_1.BIG)((0, helper_1.WEI)(posOut.avgPrice))
-                        .mul(posOut.balanceForPrice)
-                        .add((0, helper_1.BIG)((0, helper_1.WEI)(indexPrice)).mul(amountOut))
-                        .div(posOut.balanceForPrice.add(amountOut)));
-                    posOut.balanceForPrice = posOut.balanceForPrice.add(amountOut);
                 }
             }
             Object.keys(positions).map(posKey => {
