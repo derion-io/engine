@@ -2,6 +2,55 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "pauser",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "Pause",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "Unpause",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "PAUSED_SLOT",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PAUSER",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes",
         "name": "payment",
         "type": "bytes"
@@ -112,6 +161,26 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "pause",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "bytes",
@@ -149,7 +218,10 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "unpause",
+    "outputs": [],
     "stateMutability": "payable",
-    "type": "receive"
+    "type": "function"
   }
 ]

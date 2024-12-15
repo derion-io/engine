@@ -309,7 +309,7 @@ export class Swap {
             ]
           : [
               {
-                mode: isErc1155Address(step.tokenIn) ? PAYMENT : TRANSFER,
+                mode: PAYMENT,
                 eip: isErc1155Address(step.tokenIn) ? 1155 : 20,
                 token: isErc1155Address(step.tokenIn) ? this.derivableAdr.token : step.tokenIn,
                 id: isErc1155Address(step.tokenIn) ? packId(idIn.toString(), poolIn) : 0,

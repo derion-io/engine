@@ -14,11 +14,17 @@ const TestConfigs = {
     account,
     signer: wallet,
   },
+  [137]: {
+    chainId: 137,
+    scanApi: '',
+    rpcUrl: 'https://polygon.meowrpc.com',
+    account,
+    signer: wallet,
+  },
   [56]: {
     chainId: 56,
     account,
     signer: wallet,
-    env: 'development'
   },
   [204]: {
     chainId: 204,
@@ -26,7 +32,6 @@ const TestConfigs = {
     rpcUrl: 'https://opbnb-mainnet-rpc.bnbchain.org',
     account,
     signer: wallet,
-    env: 'development'
   },
   [42161]: {
     chainId: 42161,
@@ -34,7 +39,6 @@ const TestConfigs = {
     rpcUrl: 'https://arb1.arbitrum.io/rpc',
     account,
     signer: wallet,
-    env: 'development'
   },
   [8453]: {
     chainId: 8453,
@@ -42,7 +46,6 @@ const TestConfigs = {
     rpcUrl: 'https://mainnet.base.org',
     account,
     signer: wallet,
-    env: 'development'
   },
 }
 
@@ -51,6 +54,8 @@ export const getTestConfigs = (chainId: number) => {
   return {
     //@ts-ignore
     ...TestConfigs[chainId],
+    scanApiKey: process.env['SCAN_API_KEY_' + chainId],
+    env: 'development',
     storage: {
       getItem: (key: string) => {
         return storageData[key]
