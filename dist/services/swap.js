@@ -118,10 +118,12 @@ class Swap {
         const promises = [];
         const fetchStepPromise = steps.map(async (step) => {
             const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut);
-            if ((step.tokenIn === constant_1.NATIVE_ADDRESS || step.tokenOut === constant_1.NATIVE_ADDRESS) &&
-                poolGroup.TOKEN_R !== this.profile.configs.wrappedTokenAddress) {
-                throw 'This pool do not support swap by native Token';
-            }
+            // if (
+            //   (step.tokenIn === NATIVE_ADDRESS || step.tokenOut === NATIVE_ADDRESS) &&
+            //   poolGroup.TOKEN_R !== this.profile.configs.wrappedTokenAddress
+            // ) {
+            //   throw 'This pool do not support swap by native Token'
+            // }
             const poolIn = this.getAddressByErc1155Address(step.tokenIn, poolGroup.TOKEN_R);
             const poolOut = this.getAddressByErc1155Address(step.tokenOut, poolGroup.TOKEN_R);
             const idIn = this.getIdByAddress(step.tokenIn, poolGroup.TOKEN_R);
@@ -240,7 +242,7 @@ class Swap {
                 const getRateData = {
                     userAddress: this.getStateCalHelperContract().address,
                     ignoreChecks: true,
-                    srcToken: step.tokenIn,
+                    srcToken: this.wrapToken(step.tokenIn),
                     srcDecimals,
                     srcAmount: amountIn.toString(),
                     destToken: poolGroup.TOKEN_R,
