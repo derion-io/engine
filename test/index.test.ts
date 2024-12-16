@@ -370,11 +370,185 @@ describe('Derivable Tools', () => {
     )
     // console.log('tx', tx)
   })
-  test('Aggregator-open-PEPE', async () => {
+  // test('Aggregator-open-USDT', async () => {
+  //   const USDT = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
+  //   const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
+  //   const configs: IEngineConfig = genConfig(42161, '0x454caEB0C2Ec8202Cf50814eDb4669f31F248027')
+  //   const poolAddress = '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'
+  //   const amount = numberToWei(1, 6)
+  //   // console.log(amount)
+
+  //   const engine = new Engine(configs)
+  //   await engine.initServices()
+
+  //   const provider = engine.RESOURCE.provider
+  //   // // override the Helper contract
+  //   // provider.setStateOverride({
+  //   //   [engine.profile.configs.derivable.stateCalHelper]: {
+  //   //     code: jsonHelper.deployedBytecode
+  //   //   }
+  //   // })
+  //   const utr = new ethers.Contract(engine.profile.configs.helperContract.utr as string, engine.profile.getAbi('UTR'), provider)
+  //   const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, engine.profile.getAbi('Helper'), provider)
+
+  //   const getRateData = {
+  //     // txOrigin: configs.account,
+  //     userAddress: helper.address,
+  //     // receiver: helper.address,
+  //     ignoreChecks: true,
+  //     srcToken: USDT,
+  //     srcDecimals: 6,
+  //     srcAmount: amount,
+  //     destToken: WETH,
+  //     destDecimals: 18,
+  //     partner: 'derion.io',
+  //     side: 'SELL',
+  //   }
+  //   const openData = {
+  //     poolAddress,
+  //     poolId: POOL_IDS.A
+  //   }
+  //   const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
+
+  //   try {
+  //     await utr.callStatic.exec(
+  //       [],
+  //       [
+  //         { 
+  //           inputs: [
+  //             {
+  //               mode: 1, // TRANSFER
+  //               eip: 20,
+  //               token: getRateData.srcToken,
+  //               id: 0,
+  //               amountIn: BIG(amount).sub(1),
+  //               recipient: helper.address,
+  //             }
+  //           ],
+  //           code: helper.address,
+  //           data: openTx.data,
+  //         }
+  //       ],
+  //       { from: configs.account }
+  //     )
+  //     expect(true).toBeFalsy()
+  //   } catch (err) {
+  //     expect(String(err)).toContain('ERC20: transfer amount exceeds balance')
+  //   }
+
+  //   const tx = await utr.callStatic.exec(
+  //     [],
+  //     [
+  //       {
+  //         inputs: [
+  //           {
+  //             mode: 1, // TRANSFER
+  //             eip: 20,
+  //             token: getRateData.srcToken,
+  //             id: 0,
+  //             amountIn: amount,
+  //             recipient: helper.address,
+  //           }
+  //         ],
+  //         code: helper.address,
+  //         data: openTx.data,
+  //       }
+  //     ],
+  //     { from: configs.account }
+  //   )
+  //   // console.log('tx', tx)
+  // })
+  test('Aggregator-open-PEPE-old-pool', async () => {
     const PEPE = '0x25d887ce7a35172c62febfd67a1856f20faebb00'
     const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
     const configs: IEngineConfig = genConfig(42161, '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10')
     const poolAddress = '0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'
+    const amount = numberToWei(2000, 18)
+
+    const engine = new Engine(configs)
+    await engine.initServices()
+
+    const provider = engine.RESOURCE.provider
+    // // override the Helper contract
+    // provider.setStateOverride({
+    //   [engine.profile.configs.derivable.stateCalHelper]: {
+    //     code: jsonHelper.deployedBytecode
+    //   }
+    // })
+    const utr = new ethers.Contract(engine.profile.configs.helperContract.utr as string, engine.profile.getAbi('UTR'), provider)
+    const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, engine.profile.getAbi('Helper'), provider)
+
+    const getRateData = {
+      // txOrigin: configs.account,
+      userAddress: helper.address,
+      // receiver: helper.address,
+      ignoreChecks: true,
+      srcToken: PEPE,
+      srcDecimals: 18,
+      srcAmount: amount,
+      destToken: WETH,
+      destDecimals: 18,
+      partner: 'derion.io',
+      side: 'SELL',
+    }
+    const openData = {
+      poolAddress,
+      poolId: POOL_IDS.A
+    }
+    const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
+
+    try {
+      await utr.callStatic.exec(
+        [],
+        [
+          { 
+            inputs: [
+              {
+                mode: 1, // TRANSFER
+                eip: 20,
+                token: getRateData.srcToken,
+                id: 0,
+                amountIn: BIG(amount).sub(1),
+                recipient: helper.address,
+              }
+            ],
+            code: helper.address,
+            data: openTx.data,
+          }
+        ],
+        { from: configs.account }
+      )
+      expect(true).toBeFalsy()
+    } catch (err) {
+      expect(String(err)).toContain('ERC20: transfer amount exceeds balance')
+    }
+
+    const tx = await utr.callStatic.exec(
+      [],
+      [
+        {
+          inputs: [
+            {
+              mode: 1, // TRANSFER
+              eip: 20,
+              token: getRateData.srcToken,
+              id: 0,
+              amountIn: amount,
+              recipient: helper.address,
+            }
+          ],
+          code: helper.address,
+          data: openTx.data,
+        }
+      ],
+      { from: configs.account }
+    )
+  })
+  test('Aggregator-open-PEPE-new-pool', async () => {
+    const PEPE = '0x25d887ce7a35172c62febfd67a1856f20faebb00'
+    const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
+    const configs: IEngineConfig = genConfig(42161, '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10')
+    const poolAddress = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd'
     const amount = numberToWei(2000, 18)
 
     const engine = new Engine(configs)
