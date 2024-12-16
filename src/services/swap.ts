@@ -295,6 +295,7 @@ export class Swap {
 
   async getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut }: SwapCallDataParameterType): Promise<SwapCallDataReturnType> {
     try {
+      const needAggregator = isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R
       const inputs =
         step.tokenIn === NATIVE_ADDRESS
           ? [
@@ -309,7 +310,7 @@ export class Swap {
             ]
           : [
               {
-                mode: PAYMENT,
+                mode: !needAggregator ? PAYMENT : TRANSFER,
                 eip: isErc1155Address(step.tokenIn) ? 1155 : 20,
                 token: isErc1155Address(step.tokenIn) ? this.derivableAdr.token : step.tokenIn,
                 id: isErc1155Address(step.tokenIn) ? packId(idIn.toString(), poolIn) : 0,
@@ -332,7 +333,7 @@ export class Swap {
         amountIn = amountIn.mul(OPEN_RATE).div(Q128)
       }
 
-      if (isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R) {
+      if (needAggregator) {
         const srcDecimals = this.RESOURCE.tokens.find((t) => t.address === step.tokenIn)?.decimals || 18
         const destDecimals = this.RESOURCE.tokens.find((t) => t.address ===  poolGroup.TOKEN_R)?.decimals || 18
 
