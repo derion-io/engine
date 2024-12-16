@@ -456,6 +456,118 @@ describe('Derivable Tools', () => {
       { from: configs.account }
     )
   })
+  test('Aggregator-open-POL', async () => {
+    const ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+    const destToken = '0x1ef5bB23e0b91c2E8480a4a2B71Feb4607cB32F1'
+    const destDecimals = 8
+    const configs: IEngineConfig = genConfig(137, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df')
+    const poolAddress = '0x45c0C6a6d08B430F73b80b54dF09050114f5D55b'
+    const amount = numberToWei(1, 18)
+    // console.log(amount)
+
+    const engine = new Engine(configs)
+    await engine.initServices()
+
+    const provider = engine.RESOURCE.provider
+    // // override Helper code
+    // provider.setStateOverride({
+    //   [engine.profile.configs.derivable.stateCalHelper]: {
+    //     code: jsonHelper.deployedBytecode
+    //   }
+    // })
+    const utr = new ethers.Contract(engine.profile.configs.helperContract.utr as string, engine.profile.getAbi('UTR'), provider)
+    const helper = new ethers.Contract(engine.profile.configs.derivable.stateCalHelper, engine.profile.getAbi('Helper'), provider)
+
+    const getRateData = {
+      // txOrigin: configs.account,
+      userAddress: helper.address,
+      // receiver: helper.address,
+      ignoreChecks: true,
+      srcToken: ETH,
+      srcDecimals: 18,
+      srcAmount: amount,
+      destToken,
+      destDecimals,
+      partner: 'derion.io',
+      side: "SELL",
+    }
+    const openData = {
+      poolAddress,
+      poolId: POOL_IDS.C,
+    }
+    const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
+
+    // const { rateData, swapData } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
+    // console.log('aggregateAndOpen params: ', rateData, swapData)
+
+    // const openTx = await helper.populateTransaction.aggregateAndOpen({
+    //   tokenIn: getRateData.srcToken,
+    //   tokenOperator: rateData.priceRoute.tokenTransferProxy,
+    //   aggregator: swapData.to,
+    //   aggregatorData: swapData.data,
+    //   pool: poolAddress,
+    //   side: POOL_IDS.A,
+    //   payer: ZERO_ADDRESS,
+    //   recipient: configs.account,
+    //   INDEX_R: 0,
+    // },{
+    //   value: BIG(amount)
+    // })
+
+    try {
+      await utr.callStatic.exec(
+        [],
+        [
+          {
+            inputs: [
+              {
+                mode: 2, // CALL_DATA
+                eip: 20,
+                token: getRateData.srcToken,
+                id: 0,
+                amountIn: BIG(amount).sub(1),
+                recipient: helper.address,
+              }
+            ],
+            code: helper.address,
+            data: openTx.data,
+          }
+        ],
+        { from: configs.account,
+          value: BIG(amount).sub(1)
+         }
+      )
+      expect(true).toBeFalsy()
+    } catch (err) {
+      expect(String(err.reason)).toContain('Incorrect msg.value')
+    }
+
+    const tx = await utr.callStatic.exec(
+      [],
+      [
+        {
+          inputs: [
+            {
+              mode: 2, // TRANSFER
+              eip: 20,
+              token: getRateData.srcToken,
+              id: 0,
+              amountIn: amount,
+              recipient: helper.address,
+            }
+          ],
+          code: helper.address,
+          data: openTx.data,
+        }
+      ],
+      { from: configs.account,
+        value: amount
+
+      }
+    )
+    // console.log('tx', tx)
+  })
+
   test('Aggregator-open-BNB', async () => {
     const ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
     const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
