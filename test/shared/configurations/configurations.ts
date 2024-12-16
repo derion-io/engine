@@ -39,6 +39,14 @@ export class TestConfiguration {
       env: 'development',
     }
 
+    this.conf[137] = {
+      chainId: 137,
+      scanApiKey: process.env['SCAN_API_KEY_137'] ?? '',
+      scanApi: process.env['SCAN_API_URL_137'] ?? 'https://polygonscan.com',
+      rpcUrl: process.env['RPC_URL_137'] ?? 'https://polygon.meowrpc.com',
+      env: 'development',
+    }
+
     this.conf[8453] = {
       chainId: 8453,
       scanApiKey: process.env['SCAN_API_KEY_8453'] ?? '',
