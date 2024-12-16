@@ -35,9 +35,13 @@ export class Aggregator {
   }> {
     try {
       const rateData = await this.getRate(getRateData)
-      if(rateData.error) throw 'Rate data: ' + rateData.error
+      if (rateData.error) {
+        throw new Error(rateData.error)
+      }
       const swapData = await this.buildTx(getRateData, rateData, slippage)
-      if(swapData.error) throw 'Swap data: ' + swapData.error
+      if (swapData.error) {
+        throw new Error(swapData.error)
+      }
     let openTx = null
     if(helperOverride) {
       openTx = await helperOverride.populateTransaction.aggregateAndOpen({
