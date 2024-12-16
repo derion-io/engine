@@ -328,12 +328,9 @@ export class Swap {
       const populateTxData = []
       
       let amountIn = step.payloadAmountIn ? step.payloadAmountIn : step.amountIn
-      const OPEN_RATE = this.RESOURCE.pools[poolOut]?.OPEN_RATE
-      if (OPEN_RATE && [POOL_IDS.A, POOL_IDS.B].includes(idOut.toNumber())) {
-        amountIn = amountIn.mul(OPEN_RATE).div(Q128)
-      }
 
       if (needAggregator) {
+        // TODO: handle payloadAmountIn or inputTolerance for aggreateAndOpen
         const srcDecimals = this.RESOURCE.tokens.find((t) => t.address === step.tokenIn)?.decimals || 18
         const destDecimals = this.RESOURCE.tokens.find((t) => t.address ===  poolGroup.TOKEN_R)?.decimals || 18
 
@@ -376,13 +373,18 @@ export class Swap {
             deriPool: poolIn,
             uniPool: this.getUniPool(step.tokenOut, poolGroup.TOKEN_R),
             token: step.tokenOut,
-            amount: step.payloadAmountIn ? step.payloadAmountIn : step.amountIn,
+            amount: amountIn,
             payer: this.account,
             recipient: this.account,
             INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
           }),
         )
       } else {
+        const OPEN_RATE = this.RESOURCE.pools[poolOut]?.OPEN_RATE
+        if (OPEN_RATE && [POOL_IDS.A, POOL_IDS.B].includes(idOut.toNumber())) {
+          amountIn = amountIn.mul(OPEN_RATE).div(Q128)
+        }
+
         populateTxData.push(
           this.generateSwapParams('swap', {
             sideIn: idIn,

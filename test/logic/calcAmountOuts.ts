@@ -8,7 +8,7 @@ import { IEngineConfig } from '../../src/utils/configs'
 export const calcAmountOuts = async (
   configs: IEngineConfig,
   poolAddresses: Array<string>,
-  amountIn: number,
+  amountIn: number | BigNumber,
   sideOut: number = POOL_IDS.C,
 ): Promise<[any[], BigNumber]> => {
   const account = configs.account ?? configs.signer?._address
@@ -28,12 +28,12 @@ export const calcAmountOuts = async (
   const currentBalanceOut = await tokenContract.balanceOf(account, packId(sideOut.toString(), poolOut))
   const steps = [
     {
-      amountIn: bn(numberToWei(amountIn, 6)),
+      amountIn: BigNumber.isBigNumber(amountIn) ? amountIn : bn(numberToWei(amountIn, 6)),
       tokenIn: NATIVE_ADDRESS,
       tokenOut: poolOut + '-' + sideOut,
       amountOutMin: 0,
       currentBalanceOut,
-      useSweep: true,
+      useSweep: false,
     },
   ]
 

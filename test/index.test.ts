@@ -56,6 +56,42 @@ describe('Derivable Tools', () => {
     expect(amountOut.toNumber()).toEqual(99973)
   })
 
+  test('AmountOut-native-aggregator-openingfee-A-POL', async () => {
+    const [res, gasUsed] = await calcAmountOuts(
+      genConfig(137, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
+      ['0x45c0C6a6d08B430F73b80b54dF09050114f5D55b'],
+      bn(numberToWei(1, 18)),
+      POOL_IDS.A,
+    )
+    const amountOut = res[res.length - 1].amountOut
+    expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
+    expect(NUM(amountOut)).toBeGreaterThan(0)
+  })
+
+  test('AmountOut-native-aggregator-openingfee-B-POL', async () => {
+    const [res, gasUsed] = await calcAmountOuts(
+      genConfig(137, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
+      ['0x45c0C6a6d08B430F73b80b54dF09050114f5D55b'],
+      bn(numberToWei(1, 18)),
+      POOL_IDS.B,
+    )
+    const amountOut = res[res.length - 1].amountOut
+    expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
+    expect(NUM(amountOut)).toBeGreaterThan(0)
+  })
+
+  test('AmountOut-native-aggregator-C-POL', async () => {
+    const [res, gasUsed] = await calcAmountOuts(
+      genConfig(137, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
+      ['0x45c0C6a6d08B430F73b80b54dF09050114f5D55b'],
+      bn(numberToWei(1, 18)),
+      POOL_IDS.C,
+    )
+    const amountOut = res[res.length - 1].amountOut
+    expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
+    expect(NUM(amountOut)).toBeGreaterThan(0)
+  })
+
   test('AmountOut-openingfee-opbnb', async () => {
     const [res, gasUsed] = await calcAmountOuts(
       genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
@@ -462,7 +498,7 @@ describe('Derivable Tools', () => {
     const destDecimals = 8
     const configs: IEngineConfig = genConfig(137, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df')
     const poolAddress = '0x45c0C6a6d08B430F73b80b54dF09050114f5D55b'
-    const amount = numberToWei(1, 18)
+    const amount = numberToWei(27.7, 18)
     // console.log(amount)
 
     const engine = new Engine(configs)
@@ -493,7 +529,7 @@ describe('Derivable Tools', () => {
     }
     const openData = {
       poolAddress,
-      poolId: POOL_IDS.C,
+      poolId: POOL_IDS.B,
     }
     const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
 
