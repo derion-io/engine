@@ -340,7 +340,7 @@ export class Swap {
         const getRateData = {
           userAddress: this.getStateCalHelperContract().address,
           ignoreChecks: true,
-          srcToken: step.tokenIn,
+          srcToken: this.wrapToken(step.tokenIn),
           srcDecimals,
           srcAmount: amountIn.toString(),
           destToken: poolGroup.TOKEN_R,
