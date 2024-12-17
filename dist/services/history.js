@@ -44,7 +44,7 @@ class History {
             const formatedData = ethers_1.ethers.utils.defaultAbiCoder.decode(abi, encodeData);
             const { poolIn, poolOut, sideIn, sideOut, amountOut, amountIn, price } = formatedData;
             let { amountR, priceR } = formatedData;
-            if (!poolAddresses.includes(poolIn) || !poolAddresses.includes(poolOut)) {
+            if (!poolAddresses.includes(poolIn) && !poolAddresses.includes(poolOut)) {
                 return positions;
             }
             const tokenInAddress = this.getTokenAddressByPoolAndSide(poolIn, formatedData.sideIn);
