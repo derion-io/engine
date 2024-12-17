@@ -21,7 +21,11 @@ export class Pool {
     this.pool = pool
     this.enginConfigs = enginConfigs
     this.profile = profile
-    this.AGGREGATOR = new Aggregator(this.enginConfigs, this.profile)
+    const configs = {
+      ...this.enginConfigs,
+      RESOURCE: this.RESOURCE,
+    }
+    this.AGGREGATOR = new Aggregator(configs, this.profile)
     this.RESOURCE = new Resource(this.enginConfigs, this.profile)
     this.SWAP = new Swap({ ...this.enginConfigs, RESOURCE: this.RESOURCE, AGGREGATOR: this.AGGREGATOR }, this.profile)
   }
