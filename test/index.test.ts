@@ -12,10 +12,11 @@ import { TestConfiguration } from './shared/configurations/configurations'
 import { Interceptor } from './shared/libs/interceptor'
 import { Engine } from '../src/engine'
 import { DerionSDK } from '../src/sdk/sdk'
-import {POOL_IDS} from '../src/utils/constant'
+import {NATIVE_ADDRESS, POOL_IDS} from '../src/utils/constant'
 import { IEngineConfig } from '../src/utils/configs'
-import { ethers } from 'ethers'
+import { ethers, Wallet } from 'ethers'
 import { historyTransfer } from './logic/historyTransfer'
+import {config} from 'dotenv'
 
 // import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
 
@@ -728,14 +729,30 @@ describe('Derivable Tools', () => {
     )
   })
 
-  test('Derion SDK', async () => {
-    const sdk = new DerionSDK({
-      chainId: 42161
+  test('derion-sdk', async () => {
+    const signer = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
+    const configs: IEngineConfig = genConfig(42161, signer)
+    const poolsLoad = ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B', '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE']
+    const derion = new DerionSDK(configs)
+    await derion.initServices()
+    const derionPools = await derion.loadPools(poolsLoad)
+    expect(Object.keys(derionPools).length).toBeGreaterThan(1)
+    const derionPool = await derion.loadPool(poolsLoad[0])
+    expect(derionPool.pool.poolAddress).toEqual(poolsLoad[0])
+    const amountOut = await derionPool.calcAmountOuts({
+      sideOut: POOL_IDS.C,
+      amountIn: 0.1,
+      signer,
     })
-    // const sdk = new DerionSDk
-  //   const engine = new Engine({
-  //     chainId: ''
-  //   })
-  //   await engine.initServices()
+    expect(amountOut.length).toBeGreaterThanOrEqual(1)
+    const swapResult = await derionPool.swap({
+      amountIn: 0.1,
+      tokenIn: NATIVE_ADDRESS,
+      tokenInDecimals: 18,
+      poolSide: POOL_IDS.C,
+      signer,
+    })
+    expect(swapResult.length).toBe(0)
   })
 })
+
