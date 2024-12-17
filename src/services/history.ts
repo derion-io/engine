@@ -206,7 +206,7 @@ export class History {
 
         const { poolIn, poolOut, sideIn, sideOut, amountIn, amountOut, price, priceR } = formatedData
 
-        if (!poolAddresses.includes(poolIn) || !poolAddresses.includes(poolOut)) {
+        if (!poolAddresses.includes(poolIn) && !poolAddresses.includes(poolOut)) {
           return null
         }
 
@@ -216,7 +216,8 @@ export class History {
 
         let entryValue
         let entryPrice
-        const pool = [POOL_IDS.R, POOL_IDS.native].includes(sideIn.toNumber()) ? pools[poolIn] : pools[poolOut]
+        // Note: aggregator's poolIn can be a different token (not native nor TOKEN_R)
+        const pool = [POOL_IDS.R, POOL_IDS.native].includes(sideIn.toNumber()) ? (pools[poolIn] ?? pools[poolOut]) : pools[poolOut]
         const { TOKEN_R, baseToken, quoteToken } = pool
         const {
           derivable: { playToken },
