@@ -38,9 +38,9 @@ class Aggregator {
                     aggregatorData: swapData.data,
                     pool: openData?.poolAddress,
                     side: openData?.poolId,
-                    payer: constant_1.ZERO_ADDRESS,
+                    payer: this.config.account,
                     recipient: this.config.account,
-                    INDEX_R: 0,
+                    INDEX_R: this.config.RESOURCE.getIndexR(getRateData.destToken), // TOKEN_R
                 });
             }
             return {

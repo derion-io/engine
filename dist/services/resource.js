@@ -956,6 +956,18 @@ class Resource {
             throw error;
         }
     }
+    getIndexR(tokenR) {
+        try {
+            const { quoteTokenIndex, address } = this.getSingleRouteToUSD(tokenR) ?? {};
+            if (!address) {
+                return (0, helper_1.bn)(0);
+            }
+            return (0, helper_1.bn)(ethers_1.ethers.utils.hexZeroPad((0, helper_1.bn)(quoteTokenIndex).shl(255).add(address).toHexString(), 32));
+        }
+        catch (error) {
+            throw error;
+        }
+    }
     getSingleRouteToUSD(token, types = ['uniswap3']) {
         try {
             const { routes, configs: { stablecoins }, } = this.profile;

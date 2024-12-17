@@ -96,7 +96,6 @@ export declare class Swap {
     getAddressByErc1155Address(address: string, TOKEN_R: string): string;
     getRouterContract(provider: any): Contract;
     getStateCalHelperContract(provider?: any): Contract;
-    getIndexR(tokenR: string): BigNumber;
     getUniPool(tokenIn: string, tokenR: string): string;
     needToSubmitFetcher(pool: PoolType): Promise<boolean>;
     fetchPriceTx(pool: PoolType, blockNumber?: number): Promise<PriceTxReturnType>;

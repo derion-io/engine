@@ -135,6 +135,7 @@ export declare class Resource {
         [key: string]: PoolType;
     }, pairs: IPairsInfo): Promise<IPriceInfo>;
     getPrice(pool: PoolType, blockNumber: number, pair: IPairInfo): Promise<GetPriceReturnType>;
+    getIndexR(tokenR: string): BigNumber;
     getSingleRouteToUSD(token: string, types?: Array<string>): SingleRouteToUSDReturnType | undefined;
     poolHasOpeningPosition(tokenTransferLogs: Array<LogType>): Array<string>;
     getPoolGroupId({ pair, quoteTokenIndex, tokenR }: GetPoolGroupIdParameterType): string;
