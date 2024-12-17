@@ -165,7 +165,7 @@ class History {
                 const abi = this.getSwapAbi(log.topics[0]);
                 const formatedData = this.decodeSwapLog(abi, log.args);
                 const { poolIn, poolOut, sideIn, sideOut, amountIn, amountOut, price, priceR } = formatedData;
-                if (!poolAddresses.includes(poolIn) || !poolAddresses.includes(poolOut)) {
+                if (!poolAddresses.includes(poolIn) && !poolAddresses.includes(poolOut)) {
                     return null;
                 }
                 const tokenInAddress = this.getTokenAddressByPoolAndSide(poolIn, formatedData.sideIn);
@@ -173,7 +173,8 @@ class History {
                 const tokenIn = tokens.find((t) => t.address === tokenInAddress);
                 let entryValue;
                 let entryPrice;
-                const pool = [constant_1.POOL_IDS.R, constant_1.POOL_IDS.native].includes(sideIn.toNumber()) ? pools[poolIn] : pools[poolOut];
+                // Note: aggregator's poolIn can be a different token (not native nor TOKEN_R)
+                const pool = [constant_1.POOL_IDS.R, constant_1.POOL_IDS.native].includes(sideIn.toNumber()) ? (pools[poolIn] ?? pools[poolOut]) : pools[poolOut];
                 const { TOKEN_R, baseToken, quoteToken } = pool;
                 const { derivable: { playToken }, tokens: whiteListToken, } = this.profile.configs;
                 if (([constant_1.POOL_IDS.R, constant_1.POOL_IDS.native].includes(sideIn.toNumber()) || [constant_1.POOL_IDS.R, constant_1.POOL_IDS.native].includes(sideOut.toNumber())) &&
