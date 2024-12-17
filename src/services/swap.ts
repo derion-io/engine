@@ -363,7 +363,7 @@ export class Swap {
         //     amount: amountIn,
         //     payer: this.account,
         //     recipient: this.account,
-        //     INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
+        //     INDEX_R: this.RESOURCE.getIndexR(poolGroup.TOKEN_R),
         //   }),
         // )
       } else if (isAddress(step.tokenOut) && this.wrapToken(step.tokenOut) !== poolGroup.TOKEN_R) {
@@ -376,7 +376,7 @@ export class Swap {
             amount: amountIn,
             payer: this.account,
             recipient: this.account,
-            INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
+            INDEX_R: this.RESOURCE.getIndexR(poolGroup.TOKEN_R),
           }),
         )
       } else {
@@ -395,7 +395,7 @@ export class Swap {
             maturity: 0,
             payer: this.account,
             recipient: this.account,
-            INDEX_R: this.getIndexR(poolGroup.TOKEN_R),
+            INDEX_R: this.RESOURCE.getIndexR(poolGroup.TOKEN_R),
           }),
         )
       }
@@ -542,18 +542,6 @@ export class Swap {
 
   getStateCalHelperContract(provider?: any): Contract {
     return new ethers.Contract(this.derivableAdr.stateCalHelper as string, this.profile.getAbi('Helper'), provider || this.provider)
-  }
-
-  getIndexR(tokenR: string): BigNumber {
-    try {
-      const { quoteTokenIndex, address } = this.RESOURCE.getSingleRouteToUSD(tokenR) ?? {}
-      if (!address) {
-        return bn(0)
-      }
-      return bn(ethers.utils.hexZeroPad(bn(quoteTokenIndex).shl(255).add(address).toHexString(), 32))
-    } catch (error) {
-      throw error
-    }
   }
 
   getUniPool(tokenIn: string, tokenR: string): string {
