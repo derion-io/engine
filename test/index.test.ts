@@ -11,6 +11,7 @@ import { TestConfiguration } from './shared/configurations/configurations'
 
 import { Interceptor } from './shared/libs/interceptor'
 import { Engine } from '../src/engine'
+import { DerionSDK } from '../src/sdk/sdk'
 import {POOL_IDS} from '../src/utils/constant'
 import { IEngineConfig } from '../src/utils/configs'
 import { ethers } from 'ethers'
@@ -727,4 +728,14 @@ describe('Derivable Tools', () => {
     )
   })
 
+  test('Derion SDK', async () => {
+    const sdk = new DerionSDK({
+      chainId: 42161
+    })
+    // const sdk = new DerionSDk
+  //   const engine = new Engine({
+  //     chainId: ''
+  //   })
+  //   await engine.initServices()
+  })
 })
