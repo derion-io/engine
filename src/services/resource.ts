@@ -1132,6 +1132,18 @@ export class Resource {
     }
   }
 
+  getIndexR(tokenR: string): BigNumber {
+    try {
+      const { quoteTokenIndex, address } = this.getSingleRouteToUSD(tokenR) ?? {}
+      if (!address) {
+        return bn(0)
+      }
+      return bn(ethers.utils.hexZeroPad(bn(quoteTokenIndex).shl(255).add(address).toHexString(), 32))
+    } catch (error) {
+      throw error
+    }
+  }
+
   getSingleRouteToUSD(token: string, types: Array<string> = ['uniswap3']): SingleRouteToUSDReturnType | undefined {
     try {
       const {

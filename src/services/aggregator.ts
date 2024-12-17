@@ -6,18 +6,19 @@ import { IEngineConfig } from '../utils/configs'
 import crypto from 'crypto'
 import {PARA_BUILD_TX_BASE_URL, PARA_DATA_BASE_URL, PARA_VERSION, ZERO_ADDRESS} from '../utils/constant'
 import {SwapAndOpenAggregatorType, rateDataAggregatorType} from '../types'
+import { Resource } from './resource'
 
 export class Aggregator {
   account?: string
   provider: ethers.providers.JsonRpcProvider
   overrideProvider: JsonRpcProvider
   signer?: ethers.providers.JsonRpcSigner
-  config: IEngineConfig
+  config: IEngineConfig & { RESOURCE: Resource }
   paraDataBaseURL: string
   paraBuildTxBaseURL:string
   paraDataBaseVersion: string
 
-  constructor(config: IEngineConfig, profile: Profile, paraDataBaseURL?: string, paraBuildTxBaseURL?:string, paraVersion?: string ) {
+  constructor(config: IEngineConfig & { RESOURCE: Resource }, profile: Profile, paraDataBaseURL?: string, paraBuildTxBaseURL?:string, paraVersion?: string ) {
     this.signer = config.signer
     this.account = config.account
     this.config = config
@@ -51,9 +52,9 @@ export class Aggregator {
         aggregatorData: swapData.data,
         pool: openData?.poolAddress,
         side: openData?.poolId,
-        payer: ZERO_ADDRESS,
+        payer: this.config.account,     // for event Swap.payer
         recipient: this.config.account,
-        INDEX_R: 0,
+        INDEX_R: this.config.RESOURCE.getIndexR(getRateData.destToken), // TOKEN_R
       })
     }
     return {
