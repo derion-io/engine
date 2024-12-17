@@ -33,6 +33,7 @@ export type MultiSwapParameterType = {
     srcDecimals: number
     destDecimals: number
   }
+  poolOverride?: PoolType
 }
 
 export type PoolGroupReturnType = {
@@ -96,10 +97,12 @@ export class Swap {
     steps,
     fetcherV2 = false,
     fetcherData,
+    poolOverride,
   }: {
     steps: Array<SwapStepType>
     fetcherV2?: boolean
     fetcherData?: any
+    poolOverride: PoolType
   }): Promise<any> {
     if (!this.signer) return [[bn(0)], bn(0)]
     try {
@@ -112,6 +115,7 @@ export class Swap {
         submitFetcherV2: fetcherV2,
         isCalculate: true,
         fetcherData,
+        poolOverride,
       })
 
       const router = helperContract.utr as string
@@ -153,11 +157,13 @@ export class Swap {
     submitFetcherV2,
     isCalculate = false,
     fetcherData,
+    poolOverride,
   }: {
     steps: Array<SwapStepType>
     submitFetcherV2: boolean
     isCalculate?: boolean
     fetcherData?: any
+    poolOverride?: any
   }): Promise<{
     params: any
     value: BigNumber
@@ -173,7 +179,7 @@ export class Swap {
       recipient: string | undefined
     }[] = []
     steps.forEach((step) => {
-      const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut)
+      const poolGroup = poolOverride || this.getPoolPoolGroup(step.tokenIn, step.tokenOut)
 
       outputs.push({
         recipient: this.account,
@@ -193,7 +199,7 @@ export class Swap {
     const metaDatas: any = []
     const promises: any = []
     const fetchStepPromise = steps.map(async(step) => {
-      const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut)
+      const poolGroup = poolOverride || this.getPoolPoolGroup(step.tokenIn, step.tokenOut)
       // if (
       //   (step.tokenIn === NATIVE_ADDRESS || step.tokenOut === NATIVE_ADDRESS) &&
       //   poolGroup.TOKEN_R !== this.profile.configs.wrappedTokenAddress
@@ -486,12 +492,14 @@ export class Swap {
     onSubmitted,
     submitFetcherV2 = false,
     callStatic = false,
+    poolOverride,
   }: MultiSwapParameterType): Promise<TransactionReceipt> {
     try {
       const { params, value } = await this.convertStepToActions({
         steps: [...steps],
         submitFetcherV2,
         fetcherData,
+        poolOverride,
       })
 
       // await this.callStaticMultiSwap({

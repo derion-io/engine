@@ -1,4 +1,4 @@
-import { PoolsType, Storage, SwapLog, TokenType } from '../types'
+import { PoolsType, PoolType, Storage, SwapLog, TokenType } from '../types'
 import { ethers } from 'ethers'
 import { Price } from '../services/price'
 import { Resource } from '../services/resource'
@@ -14,7 +14,7 @@ import { Profile } from '../profile'
 import { Aggregator } from '../services/aggregator'
 import {Pool} from './pool'
 
-export class Engine {
+export class DerionSDK {
   chainId: number
   scanApi?: string
   rpcUrl: string
@@ -62,10 +62,17 @@ export class Engine {
     this.SWAP = new Swap({ ...configs, AGGREGATOR: this.AGGREGATOR }, this.profile)
   }
 
-  async loadPool(derionPoolAddress: string) {
-
+  async loadPools(derionPoolsAddress: string[]): Promise<{[key: string]: Pool}> {
+    const {pools} = await this.RESOURCE.loadInitPoolsData([], derionPoolsAddress, false)
+    const derionPoolsSdk: {[key: string]: Pool} = {}
+    Object.keys(pools).map(key => {
+      derionPoolsSdk[key] = new Pool(pools[key],this.enginConfigs, this.profile)
+    })
+    return derionPoolsSdk
   }
-  async loadPosition(derionPositionId: string) {
-
+  async loadPool(derionPoolAddress: string): Promise<Pool> {
+    const {pools} = await this.RESOURCE.loadInitPoolsData([], [derionPoolAddress], false)
+    const derionPoolSdk = new Pool(pools[derionPoolAddress], this.enginConfigs, this.profile)
+    return derionPoolSdk
   }
 }
