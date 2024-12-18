@@ -34,8 +34,11 @@ export class Position {
     this.RESOURCE = new Resource(this.enginConfigs, this.profile)
     this.SWAP = new Swap({ ...this.enginConfigs, RESOURCE: this.RESOURCE, AGGREGATOR: this.AGGREGATOR }, this.profile)
   }
-  loadPositionState = async () => {
-
+  loadPositionState = async (logs: LogType[]) => {
+    const { pools, poolGroups } = await this.RESOURCE.getResourceFromOverrideLogs(logs)
+    const positionState = this.RESOURCE.getPositionState({ id: this.positionId, ...this.positionWithEntry}, this.positionWithEntry.balance, pools, poolGroups)
+    if(positionState) this.positionState = positionState
+    return positionState
   }
   positionData = () => {
     return {
