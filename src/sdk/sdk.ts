@@ -77,9 +77,16 @@ export class DerionSDK {
   }
   async loadPosition(id: string) {
   }
-  async loadAccountPositions({address, logs}:{address?: string,logs: LogType[]}) {
-    // override log in resource cached
-    const sdkResourceData = await this.RESOURCE.getResourceCached(address || this.account || '', false, logs)
-    return sdkResourceData
+  async loadAccountPositions({transferLogs, swaplogs}:{transferLogs: LogType[], swaplogs: LogType[]}) {
+     const { tokens, pools, poolGroups } = await this.RESOURCE.generateData({
+      poolAddresses: [],
+      transferLogs: transferLogs,
+      playMode: false,
+    })
+    const positionsWithEntry = this.HISTORY.generatePositions({
+        tokens: tokens,
+        logs: swaplogs
+    })
+    return positionsWithEntry
   }
 }

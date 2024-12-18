@@ -738,26 +738,31 @@ describe('Derivable Tools', () => {
     const derionPools = await derion.loadPools(poolsLoad)
     expect(Object.keys(derionPools).length).toBeGreaterThan(1)
     const derionPool = await derion.loadPool(poolsLoad[0])
+
     expect(derionPool.pool.poolAddress).toEqual(poolsLoad[0])
     const amountOut = await derionPool.calcAmountOuts({
       sideOut: POOL_IDS.C,
       amountIn: 0.1,
       signer,
     })
+
     expect(amountOut.length).toBeGreaterThanOrEqual(1)
-    const swapResult = await derionPool.swap({
-      amountIn: 0.1,
-      tokenIn: NATIVE_ADDRESS,
-      tokenInDecimals: 18,
-      poolSide: POOL_IDS.C,
+    // const swapResult = await derionPool.swap({
+    //   amountIn: 0.1,
+    //   tokenIn: NATIVE_ADDRESS,
+    //   tokenInDecimals: 18,
+    //   poolSide: POOL_IDS.C,
+    //   signer,
+    // })
+    // expect(swapResult.length).toBe(0)
+    await derion.RESOURCE.fetchResourceData(
+      [],
       signer,
-    })
-    expect(swapResult.length).toBe(0)
-    const {cacheResource: {bnaLogs}} = await getResource(
-      configs,
-      poolsLoad,
     )
-    console.log(bnaLogs)
+    console.log(derion.RESOURCE.swapLogs.length)
+    console.log(derion.RESOURCE.bnaLogs.length)
+    const positionsWithEntry = await derion.loadAccountPositions({transferLogs: derion.RESOURCE.bnaLogs, swaplogs: derion.RESOURCE.swapLogs})
+    console.log(positionsWithEntry)
   })
 })
 

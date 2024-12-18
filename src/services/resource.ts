@@ -234,7 +234,7 @@ export class Resource {
         poolGroups: {},
       }
 
-      if (!logsOverride || (!this.storage || !this.storage.getItem)) return results
+      if (!logsOverride?.length && (!this.storage || !this.storage.getItem)) return results
       const logs = logsOverride ?? this.getCachedLogs(account)
       const accountLogs = this.parseDdlLogs(
         logs.filter(
@@ -1049,7 +1049,7 @@ export class Resource {
           ...parsedLog,
         }
       } catch (err) {
-        console.warn('Failed to parse log', err, log)
+        // console.warn('Failed to parse log', err, log)
       }
       return undefined
     }).filter((log: any) => log != null)
