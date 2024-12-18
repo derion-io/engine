@@ -13,15 +13,16 @@ import {PositionEntry} from '../services/history'
 export class Position {
   positionWithEntry: PositionEntry
   positionState: PositionState
-  key: string
+  positionId: string
   enginConfigs: IEngineConfig
   profile: Profile
   SWAP: Swap
   AGGREGATOR: Aggregator
   RESOURCE: Resource
 
-  constructor({positionState, positionWithEntry, enginConfigs, profile}:{positionWithEntry: any, positionState: PositionState | null, enginConfigs: IEngineConfig, profile: Profile}) {
+  constructor({positionState, positionWithEntry, enginConfigs, profile}:{positionWithEntry: any, positionId: string,  positionState: PositionState | null, enginConfigs: IEngineConfig, profile: Profile}) {
     this.positionWithEntry = positionWithEntry
+    this.positionId = this.positionId
     if(positionState) this.positionState = positionState
     this.enginConfigs = enginConfigs
     this.profile = profile
@@ -39,7 +40,8 @@ export class Position {
   positionData = () => {
     return {
       ...this.positionState,
-      ...this.positionWithEntry
+      ...this.positionWithEntry,
+      positionId: this.positionId
     }
   }
 }

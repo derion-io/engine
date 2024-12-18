@@ -91,7 +91,7 @@ export class DerionSDK {
     console.log(_positions)
     for (const id in _positions) {
       const positionState = this.RESOURCE.getPositionState({ id, ..._positions[id]}, _positions[id].balance, pools, poolGroups)
-      positions[id] = new Position({positionState, positionWithEntry: _positions[id], profile: this.profile, enginConfigs: this.enginConfigs})
+      positions[id] = new Position({positionState, positionId: id, positionWithEntry: _positions[id], profile: this.profile, enginConfigs: this.enginConfigs})
     }
     return positions
   }
