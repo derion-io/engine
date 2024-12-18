@@ -10,6 +10,15 @@ import { defaultAbiCoder, formatEther, getAddress, hexDataSlice, Result } from '
 
 const POS_IDS = [POOL_IDS.A, POOL_IDS.B, POOL_IDS.C]
 
+const TOPICS: { [topic0: string]: string } = {
+  ['0xba5c330f8eb505cee9b4eb08fecf34234a327cfb6f9e480f9d3b4dfae5b23e4d']: 'Position',       // Derion Pool
+  ['0xf7462f2a86b97b14a4669ae97bf107eb47f1574e511038ba3bb2c0cace5bb227']: 'Swap',           // Derion Helper
+  ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef']: 'Transfer',       // 20, 721
+  ['0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62']: 'TransferSingle', // 1155
+  ['0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb']: 'TransferBatch',  // 1155
+  ['0x4dfe1bbbcf077ddc3e01291eea2d5c70c2b422b415d95645b9adcfd678cb1d63']: 'LogFeeTransfer', // Polygon Native POL
+}
+
 export type FormatSwapHistoryParameterType = {
   transferLogs: Array<LogType>
   swapLogs: Array<LogType>
@@ -57,15 +66,6 @@ export class History {
     positions: { [id: string]: PositionEntry },
     histories: HistoryEntry[],
   } {
-    const pools = this.RESOURCE.pools
-    const TOPICS: { [topic0: string]: string } = {
-      ['0xba5c330f8eb505cee9b4eb08fecf34234a327cfb6f9e480f9d3b4dfae5b23e4d']: 'Position',       // Derion Pool
-      ['0xf7462f2a86b97b14a4669ae97bf107eb47f1574e511038ba3bb2c0cace5bb227']: 'Swap',           // Derion Helper
-      ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef']: 'Transfer',       // 20, 721
-      ['0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62']: 'TransferSingle', // 1155
-      ['0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb']: 'TransferBatch',  // 1155
-      ['0x4dfe1bbbcf077ddc3e01291eea2d5c70c2b422b415d95645b9adcfd678cb1d63']: 'LogFeeTransfer', // Polygon Native POL
-    }
     const positions: { [id: string]: PositionEntry } = {}
     const histories: HistoryEntry[] = []
     for (const txLogs of logs) {
@@ -182,7 +182,7 @@ export class History {
               history.price = price
               pos.price = pos.price.mul(pos.balance).add(amount.mul(price)).div(newBalance)
               if (!priceR.gt(0)) {
-                const pool = pools[poolAddress]
+                const pool = this.RESOURCE.pools[poolAddress]
                 // special case for INDEX = TOKEN_R / STABLECOIN
                 if (pool.TOKEN_R == pool.baseToken && this.profile.configs.stablecoins.includes(pool.quoteToken)) {
                   priceR = price
