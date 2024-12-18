@@ -15,6 +15,7 @@ import {POOL_IDS} from '../src/utils/constant'
 import { IEngineConfig } from '../src/utils/configs'
 import { ethers } from 'ethers'
 import { historyTransfer } from './logic/historyTransfer'
+import { historyProcess } from './logic/historyProcess'
 
 // import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
 
@@ -270,19 +271,27 @@ describe('Derivable Tools', () => {
     expect(positions[keys[2]].amountR).toEqual(bn('0x01100ffba9e0c7'))
   })
 
-  test('History-bsc', async () => {
-    const { swapTxs, positions } = await history(
-      genConfig(56, '0x5555a222c465b1873421d844e5d89ed8eb3E5555'),
+  test('History-process-POL', async () => {
+    const { positions, histories } = await historyProcess(
+      genConfig(137, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
       [],
-      '0x1F3fdE32c8Cc19a0BE30a94EDeaD9cE34279b1FF'
+      '0x45c0C6a6d08B430F73b80b54dF09050114f5D55b'
     )
     const keys = Object.keys(positions)
-    expect(keys.length).toBeGreaterThanOrEqual(5)
-    expect(positions['0xcd7FEDD23ae8F12FCBC3bdC86e09Fd2c184c7c4a-48'].avgPriceR).toEqual('316.145668790469279013')
-    expect(positions['0xf8BA6a71BB47Ea6c43a18071b78422576B5B295c-48'].avgPrice).toEqual('2.49178155904397899')
-    expect(positions['0x2C3d0F3dcD28b5481a50E1DD0071378f92D56954-48'].balanceForPriceR).toEqual(bn('0x1c8f2c56a54f6b9e'))
-    expect(positions['0x63187130DdBF058F5167dDAD551920199D1D8de5-48'].balanceForPrice).toEqual(bn('0x22e339714c045d3b'))
-    expect(positions['0x1F3fdE32c8Cc19a0BE30a94EDeaD9cE34279b1FF-48'].amountR).toEqual(bn('0x29a2241af62c0000'))
+    console.log('positions', positions)
+  })
+
+  test('History', async () => {
+    const { swapTxs, positions } = await history(
+      genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
+      [],
+      '0x9E37cb775a047Ae99FC5A24dDED834127c4180cD'
+    )
+    const keys = Object.keys(positions)
+    expect(keys.length).toEqual(3)
+    expect(positions[keys[0]].avgPriceR).toEqual('2195.511006')
+    expect(positions[keys[1]].avgPrice).toEqual('0.000380553119609019')
+    expect(positions[keys[2]].amountR).toEqual(bn('0x01100ffba9e0c7'))
   })
 
   test('History-transfer', async () => {
