@@ -1,12 +1,12 @@
 import { BigNumber, ethers } from 'ethers'
 import { LogType, TokenType } from '../types'
 import { NATIVE_ADDRESS, POOL_IDS } from '../utils/constant'
-import { BIG, DIV, IEW, WEI, add, bn, div, getTopics, max, mul, numberToWei, parsePrice, sub, weiToNumber } from '../utils/helper'
+import { BIG, IEW, WEI, bn, formatQ128, getTopics, numberToWei, parsePrice, weiToNumber } from '../utils/helper'
 import { Profile } from '../profile'
 import { IEngineConfig } from '../utils/configs'
 import { M256, Resource } from './resource'
 import Erc20 from '../abi/ERC20.json'
-import { Result } from 'ethers/lib/utils'
+import { defaultAbiCoder, formatEther, getAddress, hexDataSlice, Result } from 'ethers/lib/utils'
 
 const POS_IDS = [POOL_IDS.A, POOL_IDS.B, POOL_IDS.C]
 
@@ -31,6 +31,100 @@ export class History {
     this.account = config.account
     this.RESOURCE = config.RESOURCE
     this.profile = profile
+  }
+
+  process(logs: LogType[][]): any {
+    const TOPICS: { [topic0: string]: string } = {
+      ['0xba5c330f8eb505cee9b4eb08fecf34234a327cfb6f9e480f9d3b4dfae5b23e4d']: 'DERION_POSITION',
+      ['0xf7462f2a86b97b14a4669ae97bf107eb47f1574e511038ba3bb2c0cace5bb227']: 'HELPER_SWAP',
+      ['0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62']: 'TRANSFER_SINGLE',
+      ['TODO']: 'TRANSFER_BATCH',
+    }
+    const positions: { [id: string]: {
+      balance: BigNumber,
+      priceR: BigNumber,
+      priceIdx: BigNumber,
+      rPerBalance: BigNumber,
+    } } = {}
+    for (const txLogs of logs) {
+      for (const log of txLogs) {
+        if (log.address != this.profile.configs.derivable.token) {
+          continue
+        }
+        const topic0 = log.topics?.[0] ?? 'NOTHING'
+        const type = TOPICS[topic0]
+        if (type) {
+          // console.log(type)
+        }
+        if (type != 'TRANSFER_SINGLE' || log.topics?.length != 4) {
+          continue
+        }
+        // const operator = getAddress(hexDataSlice(log.topics[1], 12))
+        const from = getAddress(hexDataSlice(log.topics[2], 12))
+        const to = getAddress(hexDataSlice(log.topics[3], 12))
+        const [id, amount] = defaultAbiCoder.decode(["bytes32", "uint"], log.data)
+        // const pool = getAddress(hexDataSlice(id, 12))
+        // const side = BigNumber.from(hexDataSlice(id, 0, 12)).toNumber()
+        // const posId = pool + '-' + side
+        // console.log({from, to, id, amount})
+        const pos = positions[id] = positions[id] ?? {
+          balance: bn(0),
+          priceR: bn(0),
+          priceIdx: bn(0),
+          rPerBalance: bn(0),
+        }
+        if (to == this.account) {
+          let priceR = bn(0)
+          txLogs.some(log => {
+            const topic0 = log.topics?.[0] ?? 'NOTHING'
+            const type = TOPICS[topic0]
+            if (type != 'HELPER_SWAP') {
+              return false
+            }
+            // const payer = getAddress(hexDataSlice(log.topics[1], 12))
+            // const recipient = getAddress(hexDataSlice(log.topics[2], 12))
+            // const index = getAddress(hexDataSlice(log.topics[3], 12))
+            const datas = defaultAbiCoder.decode(["address", "uint", "uint", "uint", "uint", "uint", "uint"], log.data)
+            priceR = datas[6].mul(datas[6]).shr(128)
+            return true
+          })
+          txLogs.some(log => {
+            const topic0 = log.topics?.[0] ?? 'NOTHING'
+            const type = TOPICS[topic0]
+            if (type != 'DERION_POSITION') {
+              return false
+            }
+            // const payer = getAddress(hexDataSlice(log.topics[1], 12))
+            // const recipient = getAddress(hexDataSlice(log.topics[2], 12))
+            // const index = getAddress(hexDataSlice(log.topics[3], 12))
+            const [posId, amount, maturity, price, valueR] = defaultAbiCoder.decode(["bytes32", "uint", "uint", "uint", "uint"], log.data)
+            if (posId != id) {
+              return false
+            }
+            const newBalance = pos.balance.add(amount)
+            if (price.gt(0)) {
+              const priceIdx = price.mul(price).shr(128)
+              pos.priceIdx = pos.priceIdx.mul(pos.balance).add(amount.mul(priceIdx)).div(newBalance)
+            }
+            const posValueR = pos.rPerBalance.mul(pos.balance)
+            if (valueR.gt(0)) {
+              pos.rPerBalance = posValueR.add(valueR).shl(128).div(newBalance)
+            }
+            if (priceR.gt(0)) {
+              pos.priceR = posValueR.mul(pos.priceR).shr(128).add(priceR.mul(valueR)).div(posValueR.add(valueR))
+            }
+            return true
+          })
+        }
+        if (to == this.account) {
+          pos.balance = pos.balance.add(amount)
+        }
+        if (from == this.account) {
+          pos.balance = pos.balance.sub(amount)
+        }
+      }
+    }
+    console.log(positions)
   }
 
   // TODO: refactor position type

@@ -404,3 +404,7 @@ export function mergeTwoUniqSortedLogs(a: LogType[], b: LogType[]): LogType[] {
   }
   return r;
 }
+
+export function formatQ128(n: BigNumber, PRECISION = 10000): Number {
+  return n.mul(PRECISION).shr(128).toNumber()/PRECISION
+}

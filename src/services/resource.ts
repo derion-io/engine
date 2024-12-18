@@ -128,6 +128,7 @@ export class Resource {
   poolGroups: PoolGroupsType = {}
   pools: PoolsType = {}
   tokens: Array<TokenType> = []
+  logs: Array<LogType> = []
   swapLogs: Array<LogType> = []
   transferLogs: Array<LogType> = []
   bnaLogs: Array<LogType> = []
@@ -310,6 +311,7 @@ export class Resource {
       this.swapLogs = mergeTwoUniqSortedLogs(this.swapLogs, results.swapLogs)
       this.transferLogs = mergeTwoUniqSortedLogs(this.transferLogs, results.transferLogs)
       this.bnaLogs = mergeTwoUniqSortedLogs(this.bnaLogs, results.bnaLogs)
+      this.logs = logs
 
       return results
     } catch (error) {
@@ -391,13 +393,14 @@ export class Resource {
             account,
           })
           return [
+            logs,
             this.parseDdlLogs(swapLogs),
             this.parseDdlLogs(ddlTokenTransferLogs),
             this.parseDdlLogs(transferLogs),
             this.parseDdlLogs(bnaLogs),
           ]
         })
-        .then(async ([swapLogs, ddlTokenTransferLogs, transferLogs, bnaLogs]: Array<Array<LogType>>) => {
+        .then(async ([logs, swapLogs, ddlTokenTransferLogs, transferLogs, bnaLogs]: Array<Array<LogType>>) => {
           const result: ResourceData = {
             pools: {},
             tokens: [],
@@ -436,6 +439,7 @@ export class Resource {
           this.swapLogs = mergeTwoUniqSortedLogs(this.swapLogs, result.swapLogs)
           this.transferLogs = mergeTwoUniqSortedLogs(this.transferLogs, result.transferLogs)
           this.bnaLogs = mergeTwoUniqSortedLogs(this.bnaLogs, result.bnaLogs)
+          this.logs = mergeTwoUniqSortedLogs(this.logs, logs)
 
           return result
         })
