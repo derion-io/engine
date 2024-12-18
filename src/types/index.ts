@@ -65,6 +65,7 @@ export type PoolGroupType = {
   TOKEN: string
   pools: { [key: string]: PoolType }
   ORACLE: string
+  basePriceX128: BigNumber
   basePrice: string
   k: number[]
   states: {
@@ -110,6 +111,7 @@ export type PoolType = {
   poolAddress: string
   quoteId: number
   baseId: number
+  basePriceX128: BigNumber
   basePrice: string
   cPrice: number
   pair: string
@@ -192,4 +194,24 @@ export type SwapAndOpenAggregatorType = {
 export type PendingSwapTransactionType = {
   hash: string
   steps: SwapStepType[]
+}
+
+export type PositionState = {
+  poolAddress: string
+  pool: PoolType
+  side: number
+  balance: BigNumber
+  entryValueR: BigNumber
+  entryValueU: BigNumber
+  entryPrice: BigNumber
+  valueRLinear?: BigNumber
+  valueRCompound?: BigNumber
+  valueU: BigNumber
+  valueR: BigNumber
+  currentPrice: BigNumber
+  dgA: number
+  dgB: number
+  leverage: number
+  effectiveLeverage: number
+  funding: number
 }

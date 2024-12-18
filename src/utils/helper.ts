@@ -12,6 +12,8 @@ export const provider = new ethers.providers.JsonRpcProvider('https://bsc-datase
 
 export const bn = BigNumber.from
 
+export const BIG_E18 = bn(10).pow(18)
+
 export const weiToNumber = (wei: any, decimals: number = 18, decimalToDisplay?: number): string => {
   if (!wei || !Number(wei)) return '0'
   wei = wei.toString()
@@ -155,6 +157,14 @@ export const packId = (kind: string | BigNumber, address: string): BigNumber => 
 
 export const parseUq128x128 = (value: BigNumber, unit = 1000): number => {
   return value.mul(unit).shr(112).toNumber() / unit
+}
+
+export const parsePriceX128 = (encodedPrice: BigNumber, pool?: PoolType): BigNumber => {
+  const exp = pool?.exp ?? 2
+  if (exp == 2) {
+    return encodedPrice.mul(encodedPrice).shr(128)
+  }
+  return encodedPrice
 }
 
 export const parsePrice = (value: BigNumber, baseToken?: TokenType, quoteToken?: TokenType, pool?: PoolType): string => {
@@ -406,5 +416,26 @@ export function mergeTwoUniqSortedLogs(a: LogType[], b: LogType[]): LogType[] {
 }
 
 export function formatQ128(n: BigNumber, PRECISION = 10000): Number {
+  if (n.isNegative()) {
+    return -formatQ128(bn(0).sub(n))
+  }
   return n.mul(PRECISION).shr(128).toNumber()/PRECISION
+}
+
+export function xr(k: number, r: BigNumber, v: BigNumber): number {
+  try {
+    const x = NUM(DIV(r, v))
+    return Math.pow(x, 1 / k)
+  } catch (err) {
+    console.warn(err)
+    return 0
+  }
+}
+
+export const powX128 = (x: BigNumber, k: number): BigNumber => {
+  let y = bn(1).shl(128)
+  for (let i = 0; i < k; ++i) {
+    y = y.mul(x).shr(128)
+  }
+  return y
 }

@@ -38,6 +38,10 @@ export type PositionEntry = {
   maturity: number,
 }
 
+export type AccountPosition = PositionEntry & {
+  id: string,
+}
+
 export type HistoryEntry = {
   txHash: string,
   blockNumber: number,

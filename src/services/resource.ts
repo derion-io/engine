@@ -1,17 +1,18 @@
 import { BigNumber, Contract, ethers } from 'ethers'
 import { LOCALSTORAGE_KEY, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
 import { ContractCallContext, Multicall } from 'ethereum-multicall'
-import { LogType, PoolGroupsType, PoolsType, PoolType, Storage, TokenType } from '../types'
-import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, kx, rateFromHL, parsePrice, mergeTwoUniqSortedLogs } from '../utils/helper'
+import { LogType, PoolGroupsType, PoolsType, PoolType, PositionState, Storage, TokenType } from '../types'
+import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, kx, rateFromHL, parsePrice, mergeTwoUniqSortedLogs, parsePriceX128, xr, DIV, NUM, numberToWei, WEI, BIG_E18, powX128, formatQ128 } from '../utils/helper'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import _, { concat, uniqBy } from 'lodash'
 import { IPairInfo, IPairsInfo, UniV3Pair } from './uniV3Pair'
 import { IDerivableContractAddress, IEngineConfig } from '../utils/configs'
-import { defaultAbiCoder, hexZeroPad } from 'ethers/lib/utils'
+import { defaultAbiCoder, getAddress, hexDataSlice, hexZeroPad } from 'ethers/lib/utils'
 import { Profile } from '../profile'
 import * as OracleSdk from '../utils/OracleSdk'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
 import { unpackId } from '../utils/number'
+import { AccountPosition as FungiblePosition } from './history'
 
 const TOPICS = getTopics()
 
@@ -613,6 +614,7 @@ export class Resource {
           //   spotBase: poolsState[i].spot,
           //   ...poolsState[i],
           // }
+          poolGroups[id].basePriceX128 = parsePriceX128(pools[i].states.spot, pools[i])
           poolGroups[id].basePrice = parsePrice(pools[i].states.spot, baseToken, quoteToken, pools[i])
         }
 
@@ -780,6 +782,7 @@ export class Resource {
       this.pools[poolAddress].states = states
       const baseToken = this.tokens.find((token) => token.address === pool.baseToken)
       const quoteToken = this.tokens.find((token) => token.address === pool.quoteToken)
+      this.poolGroups[pool.pair].basePriceX128 = parsePriceX128(states.spot, pool)
       this.poolGroups[pool.pair].basePrice = parsePrice(states.spot, baseToken, quoteToken, pool)
       this.poolGroups[pool.pair].pools = {
         ...this.poolGroups[pool.pair].pools,
@@ -966,8 +969,8 @@ export class Resource {
         this.unit,
       )
 
-      const interestRate = rateFromHL(pool.INTEREST_HL.toNumber(), power)
-      const maxPremiumRate = rateFromHL(pool.PREMIUM_HL.toNumber(), power)
+      const interestRate = rateFromHL(pool.INTEREST_HL.toNumber(), k)
+      const maxPremiumRate = rateFromHL(pool.PREMIUM_HL.toNumber(), k)
       if (maxPremiumRate > 0) {
         if (rA.gt(rB)) {
           const rDiff = rA.sub(rB)
@@ -1211,6 +1214,124 @@ export class Resource {
       return [pair, quoteTokenIndex, tokenR].join('-')
     } catch (error) {
       throw error
+    }
+  }
+
+  calcPoolSide (
+    pool: PoolType,
+    side: number,
+  ): any {
+    const {
+      states: { a, b, R },
+      exp,
+      MARK,
+    } = pool
+    const poolInfo = this.calcPoolInfo(pool)
+    const { sides } = poolInfo
+
+    const k = pool.k.toNumber()
+
+    const leverage = k / exp
+    const ek = sides[side].k
+    const effectiveLeverage = Math.min(ek, k) / exp
+
+    const xA = xr(k, R.shr(1), a)
+    const xB = xr(-k, R.shr(1), b)
+    const dgA = MARK.mul(WEI(xA)).div(BIG_E18)
+    const dgB = MARK.mul(WEI(xB)).div(BIG_E18)
+  
+    const interest = sides[side].interest
+    const premium = sides[side].premium
+    const funding = interest + premium
+  
+    return {
+      leverage,
+      effectiveLeverage,
+      dgA,
+      dgB,
+      interest,
+      premium,
+      funding,
+    }
+  }
+  
+  getPositionState (
+    position: FungiblePosition,
+    balance = position.balance,
+  ): PositionState | null {
+    const { id, price, priceR, rPerBalance, maturity } = position
+    const poolAddress = getAddress(hexDataSlice(id, 12))
+    const side = BigNumber.from(hexDataSlice(id, 0, 12)).toNumber()
+    // check for position with entry
+    const pool = this.pools[poolAddress]
+    // TODO: OPEN_RATE?
+
+    const entryPrice = price
+    const entryValueR = balance.mul(rPerBalance).shr(128)
+    const entryValueU = entryValueR.mul(priceR).shr(128)
+
+    const rX =
+      side == POOL_IDS.A
+        ? pool.states.rA
+        : side == POOL_IDS.B
+          ? pool.states.rB
+          : pool.states.rC
+
+    const sX =
+      side == POOL_IDS.A
+        ? pool.states.sA
+        : side == POOL_IDS.B
+          ? pool.states.sB
+          : pool.states.sC
+    
+    const valueR = rX.mul(balance).div(sX)
+    const valueU = valueR.mul(priceR).shr(128)
+
+    const poolIndex = Object.keys(this.poolGroups).find(
+      (index) => !!this.poolGroups?.[index]?.pools?.[poolAddress]
+    )
+    const currentPrice = this.poolGroups[poolIndex ?? '']?.basePriceX128 ?? bn(0)
+
+    const { leverage, effectiveLeverage, dgA, dgB, funding } = this.calcPoolSide(pool, side)
+
+    const L =
+      side == POOL_IDS.A
+        ? NUM(leverage)
+        : side == POOL_IDS.B
+          ? -NUM(leverage)
+          : 0
+    let valueRLinear
+    let valueRCompound
+    if (L != 0) {
+      const priceRate = currentPrice.shl(128).div(entryPrice)
+      console.log(
+        formatQ128(currentPrice),
+        formatQ128(entryPrice),
+        L,
+      )
+      const leveragedPriceRate = currentPrice.sub(entryPrice).mul(L).add(entryPrice).shl(128).div(entryPrice)
+      valueRLinear = entryValueR.mul(leveragedPriceRate).shr(128)
+      valueRCompound = entryValueR.mul(powX128(priceRate, L))
+    }
+
+    return {
+      poolAddress,
+      currentPrice,
+      pool,
+      side,
+      balance,
+      entryValueR,
+      entryValueU,
+      entryPrice,
+      valueRLinear,
+      valueRCompound,
+      valueR,
+      valueU,
+      leverage,
+      effectiveLeverage,
+      dgA,
+      dgB,
+      funding,
     }
   }
 }

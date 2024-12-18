@@ -1,6 +1,7 @@
 import { Resource } from './resource'
 import { PoolType } from '../types'
 import { IEngineConfig } from '../utils/configs'
+import { BigNumber } from 'ethers'
 
 export type PoolData = {
   baseToken: string
@@ -11,6 +12,7 @@ export type PoolData = {
   states: any
   powers: Array<number>
   basePrice: string
+  basePriceX128: BigNumber
   poolAddress: string
   baseId: number
   quoteId: number
@@ -26,6 +28,7 @@ export class CurrentPool {
   dTokens: Array<string>
   states: any
   powers: Array<number>
+  basePriceX128: BigNumber
   basePrice: string
   poolAddress?: string
   chainId: number
