@@ -62,7 +62,7 @@ export class Pool {
       gasLimit: bn(1000000),
       gasPrice: bn(3e9),
       callStatic: true,
-      // poolOverride: this.pool
+      poolOverride: this.pool
     })
     return res
   }

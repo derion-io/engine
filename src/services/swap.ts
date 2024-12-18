@@ -33,6 +33,7 @@ export type MultiSwapParameterType = {
     srcDecimals: number
     destDecimals: number
   }
+  poolOverride?:PoolType
 }
 
 export type PoolGroupReturnType = {
@@ -153,11 +154,13 @@ export class Swap {
     submitFetcherV2,
     isCalculate = false,
     fetcherData,
+    poolOverride,
   }: {
     steps: Array<SwapStepType>
     submitFetcherV2: boolean
     isCalculate?: boolean
     fetcherData?: any
+    poolOverride?: PoolType
   }): Promise<{
     params: any
     value: BigNumber
@@ -173,7 +176,7 @@ export class Swap {
       recipient: string | undefined
     }[] = []
     steps.forEach((step) => {
-      const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut)
+      const poolGroup = poolOverride ?? this.getPoolPoolGroup(step.tokenIn, step.tokenOut)
 
       outputs.push({
         recipient: this.account,
@@ -486,6 +489,7 @@ export class Swap {
     onSubmitted,
     submitFetcherV2 = false,
     callStatic = false,
+    poolOverride,
   }: MultiSwapParameterType): Promise<TransactionReceipt> {
     try {
       const { params, value } = await this.convertStepToActions({
