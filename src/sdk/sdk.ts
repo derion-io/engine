@@ -14,6 +14,7 @@ import { Profile } from '../profile'
 import { Aggregator } from '../services/aggregator'
 import {Pool} from './pool'
 import {Position} from './position'
+import _ from 'lodash'
 
 export class DerionSDK {
   chainId: number
@@ -76,20 +77,22 @@ export class DerionSDK {
     const derionPoolSdk = new Pool(pools[derionPoolAddress], this.enginConfigs, this.profile)
     return derionPoolSdk
   }
-  async loadAccountPositions({transferLogs, swaplogs}:{transferLogs: LogType[], swaplogs: LogType[]}) {
-     const { tokens, pools, poolGroups } = await this.RESOURCE.generateData({
-      poolAddresses: [],
-      transferLogs: transferLogs,
-      playMode: false,
-    })
-    const positionsWithEntry = this.HISTORY.generatePositions({
-        tokens: tokens,
-        logs: swaplogs
-    })
-    const positions:{[key: string]: Position} = {}
-    Object.keys(positionsWithEntry).map(key => {
-      positions[key] = new Position(positionsWithEntry[key], key, this.enginConfigs, this.profile)
-    })
+  async loadAccountPositions({logs}:{logs: LogType[]}) {
+    
+    const { tokens, pools, poolGroups } = await this.RESOURCE.getResourceCached(this.enginConfigs.account ?? '', false, logs)
+  const txs = _.groupBy(logs, log => log.transactionHash)
+  const txLogs: LogType[][] = []
+  for (const tx in txs) {
+    txLogs.push(txs[tx])
+  }
+  console.log(Object.keys(this.RESOURCE.pools))
+    const { positions:_positions, histories } = this.HISTORY.process(txLogs)
+    const positions:{[id:string]: Position} = {} 
+    console.log(_positions)
+    for (const id in _positions) {
+      const positionState = this.RESOURCE.getPositionState({ id, ..._positions[id]}, _positions[id].balance, pools, poolGroups)
+      positions[id] = new Position({positionState, positionWithEntry: _positions[id], profile: this.profile, enginConfigs: this.enginConfigs})
+    }
     return positions
   }
 }

@@ -4,13 +4,15 @@ import {Profile} from '../profile'
 import {Aggregator} from '../services/aggregator'
 import {Resource} from '../services/resource'
 import {Swap} from '../services/swap'
-import {LogType, PoolType} from '../types'
+import {LogType, PoolType, PositionState} from '../types'
 import {IEngineConfig} from '../utils/configs'
 import {NATIVE_ADDRESS,POOL_IDS} from '../utils/constant'
 import {bn,numberToWei,packId} from '../utils/helper'
+import {PositionEntry} from '../services/history'
 
 export class Position {
-  position: any
+  positionWithEntry: PositionEntry
+  positionState: PositionState
   key: string
   enginConfigs: IEngineConfig
   profile: Profile
@@ -18,9 +20,9 @@ export class Position {
   AGGREGATOR: Aggregator
   RESOURCE: Resource
 
-  constructor(position: any, key:string,  enginConfigs: IEngineConfig, profile: Profile) {
-    this.position = position
-    this.key = key
+  constructor({positionState, positionWithEntry, enginConfigs, profile}:{positionWithEntry: any, positionState: PositionState | null, enginConfigs: IEngineConfig, profile: Profile}) {
+    this.positionWithEntry = positionWithEntry
+    if(positionState) this.positionState = positionState
     this.enginConfigs = enginConfigs
     this.profile = profile
     const configs = {
@@ -33,5 +35,11 @@ export class Position {
   }
   loadPositionState = async () => {
 
+  }
+  positionData = () => {
+    return {
+      ...this.positionState,
+      ...this.positionWithEntry
+    }
   }
 }

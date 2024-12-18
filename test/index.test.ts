@@ -785,12 +785,14 @@ describe('Derivable Tools', () => {
     const configs: IEngineConfig = genConfig(42161, signer)
     const derion = new DerionSDK(configs)
     await derion.initServices()
-    console.log('####')
     await derion.RESOURCE.fetchResourceData(
       [],
       signer,
     )
-    const positions = await derion.loadAccountPositions({transferLogs: derion.RESOURCE.bnaLogs, swaplogs: derion.RESOURCE.swapLogs})
-    expect(Object.keys(positions).length).toBeGreaterThan(0)
+    const positions = await derion.loadAccountPositions({logs: derion.RESOURCE.logs })
+    const positionData = Object.keys(positions).map(p => {
+      return positions[p].positionData()
+    })
+    expect(positionData.length).toBeGreaterThan(0)
 })
 })

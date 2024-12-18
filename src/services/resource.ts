@@ -225,7 +225,7 @@ export class Resource {
     }
   }
 
-  async getResourceCached(account: string, playMode?: boolean): Promise<ResourceData> {
+  async getResourceCached(account: string, playMode?: boolean, logsOverride?: LogType[]): Promise<ResourceData> {
     try {
       const results: ResourceData = {
         pools: {},
@@ -236,8 +236,8 @@ export class Resource {
         poolGroups: {},
       }
 
-      if (!this.storage || !this.storage.getItem) return results
-      const logs = this.getCachedLogs(account)
+      if (!logsOverride?.length && (!this.storage || !this.storage.getItem)) return results
+      const logs = logsOverride || this.getCachedLogs(account)
       const accountLogs = this.parseDdlLogs(
         logs.filter(
           (data: { topics: Array<string> }) => concat(...Object.values(TOPICS)).includes(data.topics[0]),
@@ -1056,7 +1056,7 @@ export class Resource {
           ...parsedLog,
         }
       } catch (err) {
-        console.warn('Failed to parse log', err, log)
+        // console.warn('Failed to parse log', err, log)
       }
       return undefined
     }).filter((log: any) => log != null)
@@ -1258,12 +1258,15 @@ export class Resource {
   getPositionState (
     position: FungiblePosition,
     balance = position.balance,
+    poolsOverride?: PoolsType,
+    poolGroupOverride?: PoolGroupsType
   ): PositionState | null {
     const { id, price, priceR, rPerBalance, maturity } = position
     const poolAddress = getAddress(hexDataSlice(id, 12))
     const side = BigNumber.from(hexDataSlice(id, 0, 12)).toNumber()
     // check for position with entry
-    const pool = this.pools[poolAddress]
+    const pool = (poolsOverride || this.pools)[poolAddress]
+    if(!pool) return null;
     // TODO: OPEN_RATE?
 
     const entryPrice = price
@@ -1290,7 +1293,7 @@ export class Resource {
     const poolIndex = Object.keys(this.poolGroups).find(
       (index) => !!this.poolGroups?.[index]?.pools?.[poolAddress]
     )
-    const currentPrice = this.poolGroups[poolIndex ?? '']?.basePriceX128 ?? bn(0)
+    const currentPrice =((poolGroupOverride || this.poolGroups)[poolIndex ?? '']?.basePriceX128 ?? bn(0))
 
     const { leverage, effectiveLeverage, dgA, dgB, funding } = this.calcPoolSide(pool, side)
 
