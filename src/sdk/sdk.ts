@@ -78,17 +78,14 @@ export class DerionSDK {
     return derionPoolSdk
   }
   async loadAccountPositions({logs}:{logs: LogType[]}) {
-    
-    const { tokens, pools, poolGroups } = await this.RESOURCE.getResourceCached(this.enginConfigs.account ?? '', false, logs)
+    const { pools, poolGroups } = await this.RESOURCE.getResourceFromOverrideLogs(logs)
   const txs = _.groupBy(logs, log => log.transactionHash)
   const txLogs: LogType[][] = []
   for (const tx in txs) {
     txLogs.push(txs[tx])
   }
-  console.log(Object.keys(this.RESOURCE.pools))
     const { positions:_positions, histories } = this.HISTORY.process(txLogs)
     const positions:{[id:string]: Position} = {} 
-    console.log(_positions)
     for (const id in _positions) {
       const positionState = this.RESOURCE.getPositionState({ id, ..._positions[id]}, _positions[id].balance, pools, poolGroups)
       positions[id] = new Position({positionState, positionId: id, positionWithEntry: _positions[id], profile: this.profile, enginConfigs: this.enginConfigs})

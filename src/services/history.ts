@@ -226,7 +226,6 @@ export class History {
       histories,
     }
   }
-
   // TODO: refactor position type
   generatePositions({ tokens, logs }: PositionGenerateParameterType): any {
     try {

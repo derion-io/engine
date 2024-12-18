@@ -319,7 +319,40 @@ export class Resource {
       throw error
     }
   }
+  async getResourceFromOverrideLogs(logsOverride: LogType[]): Promise<{
+    tokens: TokenType[],
+    pools: PoolsType,
+    poolGroups: PoolGroupsType
+  }> {
+    const accountLogs = this.parseDdlLogs(
+      logsOverride.filter(
+        (data: { topics: Array<string> }) => concat(...Object.values(TOPICS)).includes(data.topics[0]),
+      ),
+    )
 
+    const ddlTokenTransferLogs = accountLogs.filter((log: any) => {
+      return (
+        log.address === this.profile.configs.derivable.token &&
+        log.blockNumber >= this.profile.configs.derivable.startBlock &&
+        (TOPICS.TransferSingle.includes(log.topics[0]) || TOPICS.TransferBatch.includes(log.topics[0]))
+      )
+    })
+    const transferLogs = accountLogs.filter((log: any) => {
+      return log.address && TOPICS.Transfer.includes(log.topics[0])
+    })
+    const poolAddresses = this.poolHasOpeningPosition(ddlTokenTransferLogs)
+    const { tokens, pools, poolGroups } = await this.generateData({
+      poolAddresses,
+      transferLogs: transferLogs,
+      playMode: false,
+    })
+    return {
+      tokens,
+      pools,
+      poolGroups
+    }
+
+  }
   async getNewResource(account: string, playMode?: boolean): Promise<ResourceData> {
     try {
       // TODO: move this part to constructor
