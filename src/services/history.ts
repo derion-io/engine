@@ -20,6 +20,26 @@ export type PositionGenerateParameterType = {
   tokens: Array<TokenType>
   logs: Array<LogType>
 }
+
+export type PositionEntry = {
+  balance: BigNumber,
+  priceR: BigNumber,
+  price: BigNumber,
+  rPerBalance: BigNumber,
+  maturity: number,
+}
+
+export type HistoryEntry = {
+  txHash: string,
+  blockNumber: number,
+  timestamp?: number,
+  netTransfers: { [token: string]: BigNumber }
+  price?: BigNumber,
+  priceR?: BigNumber,
+  rPerAmount?: BigNumber,
+  maturity?: number,
+}
+
 export class History {
   account?: string
   RESOURCE: Resource
@@ -33,30 +53,82 @@ export class History {
     this.profile = profile
   }
 
-  process(logs: LogType[][]): any {
+  process(logs: LogType[][]): {
+    positions: { [id: string]: PositionEntry },
+    histories: HistoryEntry[],
+  } {
+    const pools = this.RESOURCE.pools
     const TOPICS: { [topic0: string]: string } = {
-      ['0xba5c330f8eb505cee9b4eb08fecf34234a327cfb6f9e480f9d3b4dfae5b23e4d']: 'DERION_POSITION',
-      ['0xf7462f2a86b97b14a4669ae97bf107eb47f1574e511038ba3bb2c0cace5bb227']: 'HELPER_SWAP',
-      ['0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62']: 'TRANSFER_SINGLE',
-      ['TODO']: 'TRANSFER_BATCH',
+      ['0xba5c330f8eb505cee9b4eb08fecf34234a327cfb6f9e480f9d3b4dfae5b23e4d']: 'Position',       // Derion Pool
+      ['0xf7462f2a86b97b14a4669ae97bf107eb47f1574e511038ba3bb2c0cace5bb227']: 'Swap',           // Derion Helper
+      ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef']: 'Transfer',       // 20, 721
+      ['0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62']: 'TransferSingle', // 1155
+      ['0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb']: 'TransferBatch',  // 1155
+      ['0x4dfe1bbbcf077ddc3e01291eea2d5c70c2b422b415d95645b9adcfd678cb1d63']: 'LogFeeTransfer', // Polygon Native POL
     }
-    const positions: { [id: string]: {
-      balance: BigNumber,
-      priceR: BigNumber,
-      priceIdx: BigNumber,
-      rPerBalance: BigNumber,
-    } } = {}
+    const positions: { [id: string]: PositionEntry } = {}
+    const histories: HistoryEntry[] = []
     for (const txLogs of logs) {
+      if (!txLogs.length) {
+        continue
+      }
+      const history: HistoryEntry = {
+        txHash: txLogs[0].transactionHash,
+        blockNumber: txLogs[0].blockNumber,
+        timestamp: txLogs[0].timeStamp ? BigNumber.from(txLogs[0].timeStamp).toNumber() : undefined,
+        netTransfers: {},
+      }
+      const _applyTransfer = (token: string, from: string, to: string, amount: BigNumber) => {
+        if (from == this.account) {
+          history.netTransfers[token] = (history.netTransfers[token] ?? bn(0)).sub(amount)
+        }
+        if (to == this.account) {
+          history.netTransfers[token] = (history.netTransfers[token] ?? bn(0)).add(amount)
+        }
+        if (history.netTransfers[token].isZero()) {
+          delete history.netTransfers[token]
+        }
+      }
+      for (const log of txLogs) {
+        const topic0 = log.topics?.[0]
+        const type = TOPICS[topic0]
+        if (type == 'Transfer' && log.topics?.length == 3) {
+          // ERC20
+          const token = getAddress(log.address)
+          const from = getAddress(hexDataSlice(log.topics[1], 12))
+          const to = getAddress(hexDataSlice(log.topics[2], 12))
+          const amount = BigNumber.from(log.data)
+          _applyTransfer(token, from, to, amount)
+        } else if (type == 'TransferSingle') {
+          // ERC1155
+          if (log.address != this.profile.configs.derivable.token) {
+            continue
+          }
+          const from = getAddress(hexDataSlice(log.topics[2], 12))
+          const to = getAddress(hexDataSlice(log.topics[3], 12))
+          const [id, amount] = defaultAbiCoder.decode(["bytes32", "uint"], log.data)
+          _applyTransfer(id, from, to, amount)
+        } else if (type == 'TransferBatch') {
+          // ERC1155
+          if (log.address != this.profile.configs.derivable.token) {
+            continue
+          }
+          const from = getAddress(hexDataSlice(log.topics[2], 12))
+          const to = getAddress(hexDataSlice(log.topics[3], 12))
+          const [ids, amounts] = defaultAbiCoder.decode(["bytes32[]", "uint256[]"], log.data)
+          for (let i = 0; i < ids.length; ++i) {
+            _applyTransfer(ids[i], from, to, amounts[i])
+          }
+        }
+      }
       for (const log of txLogs) {
         if (log.address != this.profile.configs.derivable.token) {
           continue
         }
-        const topic0 = log.topics?.[0] ?? 'NOTHING'
+        const topic0 = log.topics?.[0]
         const type = TOPICS[topic0]
-        if (type) {
-          // console.log(type)
-        }
-        if (type != 'TRANSFER_SINGLE' || log.topics?.length != 4) {
+        if (type != 'TransferSingle') {
+          // Derion does not use batch transfer
           continue
         }
         // const operator = getAddress(hexDataSlice(log.topics[1], 12))
@@ -70,55 +142,63 @@ export class History {
         const pos = positions[id] = positions[id] ?? {
           balance: bn(0),
           priceR: bn(0),
-          priceIdx: bn(0),
+          price: bn(0),
           rPerBalance: bn(0),
         }
         if (to == this.account) {
           let priceR = bn(0)
           txLogs.some(log => {
-            const topic0 = log.topics?.[0] ?? 'NOTHING'
+            const topic0 = log.topics?.[0]
             const type = TOPICS[topic0]
-            if (type != 'HELPER_SWAP') {
+            if (type != 'Swap') {
               return false
             }
             // const payer = getAddress(hexDataSlice(log.topics[1], 12))
             // const recipient = getAddress(hexDataSlice(log.topics[2], 12))
             // const index = getAddress(hexDataSlice(log.topics[3], 12))
             const datas = defaultAbiCoder.decode(["address", "uint", "uint", "uint", "uint", "uint", "uint"], log.data)
-            priceR = datas[6].mul(datas[6]).shr(128)
+            const sqrtPriceR = datas[6]
+            priceR = sqrtPriceR.mul(sqrtPriceR).shr(128)
             return true
           })
           txLogs.some(log => {
             const topic0 = log.topics?.[0] ?? 'NOTHING'
             const type = TOPICS[topic0]
-            if (type != 'DERION_POSITION') {
+            if (type != 'Position') {
               return false
             }
             // const payer = getAddress(hexDataSlice(log.topics[1], 12))
             // const recipient = getAddress(hexDataSlice(log.topics[2], 12))
             // const index = getAddress(hexDataSlice(log.topics[3], 12))
-            const [posId, amount, maturity, price, valueR] = defaultAbiCoder.decode(["bytes32", "uint", "uint", "uint", "uint"], log.data)
+            const [posId, amount, maturity, sqrtPrice, valueR] = defaultAbiCoder.decode(["bytes32", "uint", "uint", "uint", "uint"], log.data)
             if (posId != id) {
               return false
             }
+            history.maturity = maturity.toNumber()
+            pos.maturity = maturity.toNumber()
             const newBalance = pos.balance.add(amount)
-            if (price.gt(0)) {
-              const priceIdx = price.mul(price).shr(128)
-              pos.priceIdx = pos.priceIdx.mul(pos.balance).add(amount.mul(priceIdx)).div(newBalance)
+            if (sqrtPrice.gt(0)) {
+              const price = sqrtPrice.mul(sqrtPrice).shr(128)
+              history.price = price
+              pos.price = pos.price.mul(pos.balance).add(amount.mul(price)).div(newBalance)
+              if (!priceR.gt(0)) {
+                const pool = pools[poolAddress]
+                // special case for INDEX = TOKEN_R / STABLECOIN
+                if (pool.TOKEN_R == pool.baseToken && this.profile.configs.stablecoins.includes(pool.quoteToken)) {
+                  priceR = price
+                }
+              }
             }
             const posValueR = pos.rPerBalance.mul(pos.balance)
             if (valueR.gt(0)) {
+              history.rPerAmount = valueR.shl(128).div(amount)
               pos.rPerBalance = posValueR.add(valueR).shl(128).div(newBalance)
             }
-            if (!priceR.gt(0)) {
-              const pool = pools[poolAddress]
-              // special case for INDEX = TOKEN_R / STABLECOIN
-              if (pool.TOKEN_R == pool.baseToken && this.profile.configs.stablecoins.includes(pool.quoteToken)) {
-                priceR = price
-              }
-            }
             if (priceR.gt(0)) {
-              pos.priceR = posValueR.mul(pos.priceR).shr(128).add(priceR.mul(valueR)).div(posValueR.add(valueR))
+              history.priceR = priceR
+              if (valueR.gt(0)) {
+                pos.priceR = posValueR.mul(pos.priceR).shr(128).add(priceR.mul(valueR)).div(posValueR.add(valueR))
+              }
             }
             return true
           })
@@ -128,10 +208,19 @@ export class History {
         }
         if (from == this.account) {
           pos.balance = pos.balance.sub(amount)
+          if (!pos.balance.gt(0)) {
+            delete positions[id]
+          }
         }
       }
+      if (Object.keys(history.netTransfers).length) {
+        histories.push(history)
+      }
     }
-    console.log(positions)
+    return {
+      positions,
+      histories,
+    }
   }
 
   // TODO: refactor position type
