@@ -753,6 +753,11 @@ describe('Derivable Tools', () => {
       signer,
     })
     expect(swapResult.length).toBe(0)
+    const {cacheResource: {bnaLogs}} = await getResource(
+      configs,
+      poolsLoad,
+    )
+    console.log(bnaLogs)
   })
 })
 
