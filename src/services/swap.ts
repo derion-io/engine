@@ -496,6 +496,7 @@ export class Swap {
         steps: [...steps],
         submitFetcherV2,
         fetcherData,
+        poolOverride,
       })
 
       // await this.callStaticMultiSwap({
