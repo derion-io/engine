@@ -63,7 +63,7 @@ export class History {
         const from = getAddress(hexDataSlice(log.topics[2], 12))
         const to = getAddress(hexDataSlice(log.topics[3], 12))
         const [id, amount] = defaultAbiCoder.decode(["bytes32", "uint"], log.data)
-        // const pool = getAddress(hexDataSlice(id, 12))
+        const poolAddress = getAddress(hexDataSlice(id, 12))
         // const side = BigNumber.from(hexDataSlice(id, 0, 12)).toNumber()
         // const posId = pool + '-' + side
         // console.log({from, to, id, amount})
@@ -109,6 +109,13 @@ export class History {
             const posValueR = pos.rPerBalance.mul(pos.balance)
             if (valueR.gt(0)) {
               pos.rPerBalance = posValueR.add(valueR).shl(128).div(newBalance)
+            }
+            if (!priceR.gt(0)) {
+              const pool = pools[poolAddress]
+              // special case for INDEX = TOKEN_R / STABLECOIN
+              if (pool.TOKEN_R == pool.baseToken && this.profile.configs.stablecoins.includes(pool.quoteToken)) {
+                priceR = price
+              }
             }
             if (priceR.gt(0)) {
               pos.priceR = posValueR.mul(pos.priceR).shr(128).add(priceR.mul(valueR)).div(posValueR.add(valueR))
