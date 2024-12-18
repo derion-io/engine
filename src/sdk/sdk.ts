@@ -1,4 +1,4 @@
-import { PoolsType, PoolType, Storage, SwapLog, TokenType } from '../types'
+import { LogType, PoolsType, PoolType, Storage, SwapLog, TokenType } from '../types'
 import { ethers } from 'ethers'
 import { Price } from '../services/price'
 import { Resource } from '../services/resource'
@@ -74,5 +74,11 @@ export class DerionSDK {
     const {pools} = await this.RESOURCE.loadInitPoolsData([], [derionPoolAddress], false)
     const derionPoolSdk = new Pool(pools[derionPoolAddress], this.enginConfigs, this.profile)
     return derionPoolSdk
+  }
+  async loadPosition(id: string) {
+  }
+  async loadAccountPositions({address, logs}:{address?: string,logs: LogType[]}) {
+    const sdkResourceData = await this.RESOURCE.getResourceCached(address || this.account || '', false, logs)
+    return sdkResourceData
   }
 }

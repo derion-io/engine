@@ -223,7 +223,7 @@ export class Resource {
     }
   }
 
-  async getResourceCached(account: string, playMode?: boolean): Promise<ResourceData> {
+  async getResourceCached(account: string, playMode?: boolean, logsOverride?: LogType[]): Promise<ResourceData> {
     try {
       const results: ResourceData = {
         pools: {},
@@ -234,8 +234,8 @@ export class Resource {
         poolGroups: {},
       }
 
-      if (!this.storage || !this.storage.getItem) return results
-      const logs = this.getCachedLogs(account)
+      if (!logsOverride || (!this.storage || !this.storage.getItem)) return results
+      const logs = logsOverride ?? this.getCachedLogs(account)
       const accountLogs = this.parseDdlLogs(
         logs.filter(
           (data: { topics: Array<string> }) => concat(...Object.values(TOPICS)).includes(data.topics[0]),
