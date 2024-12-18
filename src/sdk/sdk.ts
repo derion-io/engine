@@ -13,6 +13,7 @@ import { IEngineConfig } from '../utils/configs'
 import { Profile } from '../profile'
 import { Aggregator } from '../services/aggregator'
 import {Pool} from './pool'
+import {Position} from './position'
 
 export class DerionSDK {
   chainId: number
@@ -85,6 +86,10 @@ export class DerionSDK {
         tokens: tokens,
         logs: swaplogs
     })
-    return positionsWithEntry
+    const positions:{[key: string]: Position} = {}
+    Object.keys(positionsWithEntry).map(key => {
+      positions[key] = new Position(positionsWithEntry[key], this.enginConfigs, this.profile)
+    })
+    return positions
   }
 }

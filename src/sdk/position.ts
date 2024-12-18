@@ -10,15 +10,17 @@ import {NATIVE_ADDRESS,POOL_IDS} from '../utils/constant'
 import {bn,numberToWei,packId} from '../utils/helper'
 
 export class Position {
-  position: PoolType
+  position: any
+  key: string
   enginConfigs: IEngineConfig
   profile: Profile
   SWAP: Swap
   AGGREGATOR: Aggregator
   RESOURCE: Resource
 
-  constructor(position: PoolType, enginConfigs: IEngineConfig, profile: Profile) {
+  constructor(position: any, key:string,  enginConfigs: IEngineConfig, profile: Profile) {
     this.position = position
+    this.key = key
     this.enginConfigs = enginConfigs
     this.profile = profile
     const configs = {
