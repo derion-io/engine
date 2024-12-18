@@ -222,12 +222,12 @@ export const getTopics = (): { [key: string]: string[] } => {
   return topics
 }
 
-export const rateToHL = (r: number, k: number, DURATION = SECONDS_PER_DAY): number => {
-  return Math.ceil((DURATION * Math.LN2) / r / k / k)
+export const rateToHL = (r: number, power: number, DURATION = SECONDS_PER_DAY): number => {
+  return Math.ceil((DURATION * Math.LN2) / power / r)
 }
 
-export const rateFromHL = (HL: number, k: number, DURATION = SECONDS_PER_DAY): number => {
-  return (DURATION * Math.LN2) / HL / k / k
+export const rateFromHL = (HL: number, power: number, DURATION = SECONDS_PER_DAY): number => {
+  return (DURATION * Math.LN2) / power / HL
 }
 
 export const kx = (k: number, R: BigNumber, v: BigNumber, spot: BigNumber, MARK: BigNumber): number => {
