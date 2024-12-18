@@ -75,8 +75,6 @@ export class DerionSDK {
     const derionPoolSdk = new Pool(pools[derionPoolAddress], this.enginConfigs, this.profile)
     return derionPoolSdk
   }
-  async loadPosition(id: string) {
-  }
   async loadAccountPositions({transferLogs, swaplogs}:{transferLogs: LogType[], swaplogs: LogType[]}) {
      const { tokens, pools, poolGroups } = await this.RESOURCE.generateData({
       poolAddresses: [],

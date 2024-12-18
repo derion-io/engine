@@ -1,4 +1,4 @@
-import {BigNumber,ethers,Wallet} from 'ethers'
+import {BigNumber,Contract,ethers,Wallet} from 'ethers'
 import TokenAbi from '../../src/abi/Token.json'
 import {Profile} from '../profile'
 import {Aggregator} from '../services/aggregator'
@@ -28,7 +28,5 @@ export class Position {
     this.AGGREGATOR = new Aggregator(configs, this.profile)
     this.RESOURCE = new Resource(this.enginConfigs, this.profile)
     this.SWAP = new Swap({ ...this.enginConfigs, RESOURCE: this.RESOURCE, AGGREGATOR: this.AGGREGATOR }, this.profile)
-  }
-  async loadPosition(id: string){
   }
 }
