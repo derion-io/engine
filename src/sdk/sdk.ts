@@ -88,7 +88,7 @@ export class DerionSDK {
     })
     const positions:{[key: string]: Position} = {}
     Object.keys(positionsWithEntry).map(key => {
-      positions[key] = new Position(positionsWithEntry[key], this.enginConfigs, this.profile)
+      positions[key] = new Position(positionsWithEntry[key], key, this.enginConfigs, this.profile)
     })
     return positions
   }

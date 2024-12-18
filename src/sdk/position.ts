@@ -31,4 +31,7 @@ export class Position {
     this.RESOURCE = new Resource(this.enginConfigs, this.profile)
     this.SWAP = new Swap({ ...this.enginConfigs, RESOURCE: this.RESOURCE, AGGREGATOR: this.AGGREGATOR }, this.profile)
   }
+  loadPositionState = async () => {
+
+  }
 }
