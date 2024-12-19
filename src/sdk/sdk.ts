@@ -1,5 +1,5 @@
 import { LogType, Storage } from '../types'
-import { ethers } from 'ethers'
+import { ethers, Signer, Wallet } from 'ethers'
 import { Price } from '../services/price'
 import { Resource } from '../services/resource'
 import { BnA } from '../services/balanceAndAllowance'
@@ -15,6 +15,7 @@ import { Aggregator } from '../services/aggregator'
 import {Pool} from './pool'
 import {Position} from './position'
 import _ from 'lodash'
+import {Account} from './account'
 
 export class DerionSDK {
   chainId: number
@@ -75,19 +76,14 @@ export class DerionSDK {
     const derionPoolSdk = new Pool(pools[derionPoolAddress], this.configs, this.profile)
     return derionPoolSdk
   }
-  async loadAccountPositions({logs}:{logs: LogType[]}) {
-    const { pools, poolGroups } = await this.RESOURCE.getResourceFromOverrideLogs(logs)
-  const txs = _.groupBy(logs, log => log.transactionHash)
-  const txLogs: LogType[][] = []
-  for (const tx in txs) {
-    txLogs.push(txs[tx])
-  }
-    const { positions:_positions, histories } = this.HISTORY.process(txLogs)
-    const positions:{[id:string]: Position} = {} 
-    for (const id in _positions) {
-      const positionState = this.RESOURCE.getPositionState({ id, ..._positions[id]}, _positions[id].balance, pools, poolGroups)
-      positions[id] = new Position({positionState, positionId: id, positionWithEntry: _positions[id], profile: this.profile, enginConfigs: this.configs})
-    }
-    return positions
+
+  createAccount = (address: string | Signer) => {
+    const account = new Account(address, {
+      positions: {},
+      histories: [],
+      balances: {},
+      allowance: {}
+    }, this.configs)
+    return account
   }
 }

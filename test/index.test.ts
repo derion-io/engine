@@ -791,6 +791,7 @@ describe('Derivable Tools', () => {
     const positionData = Object.keys(positions).map(p => {
       return positions[p].positionData()
     })
+    console.log(positionData)
     expect(positionData.length).toBeGreaterThan(0)
   })
 })
