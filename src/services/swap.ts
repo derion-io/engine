@@ -34,6 +34,7 @@ export type MultiSwapParameterType = {
     destDecimals: number
   }
   poolOverride?:PoolType
+  signerOverride?: string | Signer
 }
 
 export type PoolGroupReturnType = {
@@ -490,6 +491,7 @@ export class Swap {
     submitFetcherV2 = false,
     callStatic = false,
     poolOverride,
+    signerOverride,
   }: MultiSwapParameterType): Promise<TransactionReceipt> {
     try {
       const { params, value } = await this.convertStepToActions({
@@ -505,7 +507,7 @@ export class Swap {
       //   gasLimit,
       //   gasPrice: gasPrice || undefined
       // })
-      const utr = this.getRouterContract(this.signer)
+      const utr = this.getRouterContract(signerOverride || this.signer)
       params.push({
         value,
         gasLimit: gasLimit || undefined,

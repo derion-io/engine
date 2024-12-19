@@ -4,9 +4,11 @@ import { Aggregator } from '../services/aggregator'
 import { History, HistoryEntry } from '../services/history'
 import { Resource } from '../services/resource'
 import { Swap } from '../services/swap'
-import { PoolsType } from '../types'
+import { PendingSwapTransactionType, PoolsType } from '../types'
 import { ProfileConfigs } from '../utils/configs'
 import { Position } from './position'
+import {bn} from '../utils/helper'
+import {decodeErc1155Address, isErc1155Address} from './utils'
 
 export class Swapper {
   configs: ProfileConfigs
@@ -32,6 +34,7 @@ export class Swapper {
 
   simulate = async ({
     tokenIn,
+    amount,
     tokenOut,
     deps,
   }: {
@@ -43,11 +46,33 @@ export class Swapper {
       signer: string | Signer
     }
   }): Promise<any> => {
-    return {
-      tokenIn,
-      tokenOut,
-      deps,
-    }
+    const pools = deps.pools
+    const tx: any = await this.SWAP.multiSwap(
+        {
+          steps: [
+            {
+              tokenIn,
+              tokenOut,
+              amountIn: bn(amount),
+              amountOutMin: 0,
+              useSweep: !!(
+                isErc1155Address(tokenOut)
+                && pools?.[decodeErc1155Address(tokenOut)?.address]?.MATURITY?.gt(0)
+                // && tokenOutMaturity?.gt(0)
+                // && balances[tokenOut]?.gt(0)
+              ),
+            //   currentBalanceOut: balances[tokenOut]
+            }
+          ],
+          onSubmitted: (pendingTx: PendingSwapTransactionType) => {
+          },
+          callStatic: true,
+          signerOverride: deps.signer
+        //   fetcherData: fetcherData || await refreshFetcherData(),
+        //   submitFetcherV2
+        }
+      )
+    return tx
   }
   swap = async ({
     tokenIn,
