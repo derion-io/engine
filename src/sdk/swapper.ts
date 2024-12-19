@@ -1,12 +1,12 @@
-import {BigNumber,Signer} from 'ethers'
-import {Profile} from '../profile'
-import {Aggregator} from '../services/aggregator'
-import {History,HistoryEntry} from '../services/history'
-import {Resource} from '../services/resource'
-import {Swap} from '../services/swap'
-import {PoolsType} from '../types'
-import {ProfileConfigs} from '../utils/configs'
-import {Position} from './position'
+import { BigNumber, Signer } from 'ethers'
+import { Profile } from '../profile'
+import { Aggregator } from '../services/aggregator'
+import { History, HistoryEntry } from '../services/history'
+import { Resource } from '../services/resource'
+import { Swap } from '../services/swap'
+import { PoolsType } from '../types'
+import { ProfileConfigs } from '../utils/configs'
+import { Position } from './position'
 
 export class Swapper {
   configs: ProfileConfigs
@@ -33,39 +33,39 @@ export class Swapper {
   simulate = async ({
     tokenIn,
     tokenOut,
-    deps
+    deps,
   }: {
     tokenIn: string
     tokenOut: string
     amount: string
     deps: {
-        pools: PoolsType,
-        signer: string | Signer
+      pools: PoolsType
+      signer: string | Signer
     }
   }): Promise<any> => {
     return {
-        tokenIn,
-        tokenOut,
-        deps
+      tokenIn,
+      tokenOut,
+      deps,
     }
-    }
+  }
   swap = async ({
     tokenIn,
     tokenOut,
-    deps
+    deps,
   }: {
     tokenIn: string
     tokenOut: string
     amount: string
     deps: {
-        pools: PoolsType,
-        signer: Signer
+      pools: PoolsType
+      signer: Signer
     }
   }): Promise<any> => {
     return {
-        tokenIn,
-        tokenOut,
-        deps
+      tokenIn,
+      tokenOut,
+      deps,
     }
     // const currentPool = this.pool
     // const poolOut = currentPool.poolAddress
