@@ -13,9 +13,10 @@ import { ProfileConfigs } from '../utils/configs'
 import { Profile } from '../profile'
 import { Aggregator } from '../services/aggregator'
 import {Pool} from './pool'
-import {Position} from './position'
-import _ from 'lodash'
 import {Account} from './account'
+import { StateLoader } from './stateLoader'
+import { Networkish } from '@ethersproject/providers'
+import { ConnectionInfo } from 'ethers/lib/utils'
 
 export class DerionSDK {
   chainId: number
@@ -43,6 +44,7 @@ export class DerionSDK {
   }
 
   profile: Profile
+  stateLoader: StateLoader
 
   async init() {
     await this.profile.loadConfig()
@@ -61,6 +63,10 @@ export class DerionSDK {
     this.HISTORY = new History(configs, this.profile)
     this.AGGREGATOR = new Aggregator(configs, this.profile)
     this.SWAP = new Swap({ ...configs, AGGREGATOR: this.AGGREGATOR }, this.profile)
+  }
+
+  getStateLoader(url?: ConnectionInfo | string, network?: Networkish) {
+    return this.stateLoader = this.stateLoader ?? new StateLoader(this.profile, url, network)
   }
 
   extractPoolAddresses = (txLogs: LogType[][]): string[] => {

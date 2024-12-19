@@ -215,3 +215,37 @@ export type PositionState = {
   effectiveLeverage: number
   funding: number
 }
+
+export type DerionPoolConfig = {
+  address: string
+  FETCHER: string
+  ORACLE: string
+  TOKEN_R: string
+  K: number
+  MARK: BigNumber
+  INTEREST_HL: number
+  PREMIUM_HL: number
+  MATURITY: number
+  MATURITY_VEST: number
+  MATURITY_RATE: BigNumber
+  OPEN_RATE: BigNumber
+  state?: {
+    R: BigNumber
+    a: BigNumber
+    b: BigNumber
+  }
+  view?: {
+    sA: BigNumber
+    sB: BigNumber
+    sC: BigNumber
+    rA: BigNumber
+    rB: BigNumber
+    rC: BigNumber
+    twap: BigNumber
+    spot: BigNumber
+  }
+}
+
+export type DerionPoolConfigs = {
+  [address: string]: DerionPoolConfig
+}

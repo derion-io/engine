@@ -41,8 +41,11 @@ describe('Derion SDK', () => {
     })
     
     const txLogs = Object.values(groupBy(logs, 'transactionHash'))
-    const poolAddress = sdk.extractPoolAddresses(txLogs)
-    const pools = await sdk.createPools(poolAddress)
+    const poolAdrs = sdk.extractPoolAddresses(txLogs)
+
+    const stateLoader = sdk.getStateLoader(rpcUrl)
+
+    const pools = await stateLoader.loadPools(poolAdrs)
 
     console.log(pools)
   })
