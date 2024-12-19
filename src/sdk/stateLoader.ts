@@ -2,7 +2,7 @@ import { JsonRpcProvider, Networkish } from '@ethersproject/providers'
 import { CallReturnContext, ContractCallContext, Multicall } from 'ethereum-multicall';
 import { ConnectionInfo } from 'ethers/lib/utils';
 import { Profile } from '../profile';
-import { DerionPoolConfigs } from "../types"
+import { SdkPools } from "../types"
 import { BigNumber } from 'ethers';
 
 export class StateLoader {
@@ -16,48 +16,19 @@ export class StateLoader {
     this.mc = new Multicall({ ethersProvider: this.provider, tryAggregate: true });
   }
 
-  async loadPools(addresses: string[]): Promise<DerionPoolConfigs> {
-    const { abi } = this.profile.getAbi('View')
-    const pools: DerionPoolConfigs = {}
-    await this._multicall(addresses.map(poolAddress => ({
-      reference: poolAddress,
-      contractAddress: poolAddress,
-      abi,
-      calls: [{
-        reference: 'loadConfig',
-        methodName: "loadConfig",
-        methodParameters: [],
-      }],
-      context: (callsReturnContext: CallReturnContext[]) => {
-        for (const ret of callsReturnContext) {
-          const [
-            FETCHER, ORACLE, TOKEN_R, K, MARK, INTEREST_HL, PREMIUM_HL, MATURITY, MATURITY_VEST, MATURITY_RATE, OPEN_RATE
-          ] = ret.returnValues.map(v => v.type == 'BigNumber' ? BigNumber.from(v.hex) : v)
-          pools[poolAddress] = {
-            address: poolAddress,
-            FETCHER,
-            ORACLE,
-            TOKEN_R,
-            K: K.toNumber(),
-            MARK,
-            INTEREST_HL: INTEREST_HL.toNumber(),
-            PREMIUM_HL: PREMIUM_HL.toNumber(),
-            MATURITY: MATURITY.toNumber(),
-            MATURITY_VEST: MATURITY_VEST.toNumber(),
-            MATURITY_RATE,
-            OPEN_RATE,
-          }
-        }
-        return callsReturnContext
-      },
-    })))
+  async loadPools(addresses: string[]): Promise<SdkPools> {
+    const pools: SdkPools = {}
+    addresses.forEach(address => {
+      pools[address] = { address }
+    })
+    await this.update({ pools })
     return pools
   }
 
   async update({
     pools,
   }: {
-    pools?: DerionPoolConfigs,
+    pools?: SdkPools,
   }) {
     const { abi, deployedBytecode: code } = this.profile.getAbi('View')
     this.provider.setStateOverride({
@@ -81,10 +52,23 @@ export class StateLoader {
           const [
             config, state, sA, sB, sC, rA, rB, rC, twap, spot
           ] = ret.returnValues.map(v => v.type == 'BigNumber' ? BigNumber.from(v.hex) : v)
-          const [ R, a, b ] = state
-          console.log(pool.address, {
-            config, state, sA, sB, sC, rA, rB, rC, twap, spot
-          })
+          const [ R, a, b ] = state.map((v: any) => v.type == 'BigNumber' ? BigNumber.from(v.hex) : v)
+          const [
+            FETCHER, ORACLE, TOKEN_R, K, MARK, INTEREST_HL, PREMIUM_HL, MATURITY, MATURITY_VEST, MATURITY_RATE, OPEN_RATE
+          ] = config.map((v: any) => v.type == 'BigNumber' ? BigNumber.from(v.hex) : v)
+          pool.config = {
+            FETCHER,
+            ORACLE,
+            TOKEN_R,
+            K: K.toNumber(),
+            MARK,
+            INTEREST_HL: INTEREST_HL.toNumber(),
+            PREMIUM_HL: PREMIUM_HL.toNumber(),
+            MATURITY: MATURITY.toNumber(),
+            MATURITY_VEST: MATURITY_VEST.toNumber(),
+            MATURITY_RATE,
+            OPEN_RATE,
+          }
           pool.state = { R, a, b }
           pool.view = { sA, sB, sC, rA, rB, rC, twap, spot }
         }

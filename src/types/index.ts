@@ -216,19 +216,21 @@ export type PositionState = {
   funding: number
 }
 
-export type DerionPoolConfig = {
+export type SdkPool = {
   address: string
-  FETCHER: string
-  ORACLE: string
-  TOKEN_R: string
-  K: number
-  MARK: BigNumber
-  INTEREST_HL: number
-  PREMIUM_HL: number
-  MATURITY: number
-  MATURITY_VEST: number
-  MATURITY_RATE: BigNumber
-  OPEN_RATE: BigNumber
+  config?: {
+    FETCHER: string
+    ORACLE: string
+    TOKEN_R: string
+    K: number
+    MARK: BigNumber
+    INTEREST_HL: number
+    PREMIUM_HL: number
+    MATURITY: number
+    MATURITY_VEST: number
+    MATURITY_RATE: BigNumber
+    OPEN_RATE: BigNumber
+  }
   state?: {
     R: BigNumber
     a: BigNumber
@@ -246,6 +248,6 @@ export type DerionPoolConfig = {
   }
 }
 
-export type DerionPoolConfigs = {
-  [address: string]: DerionPoolConfig
+export type SdkPools = {
+  [address: string]: SdkPool
 }
