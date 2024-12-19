@@ -9,7 +9,6 @@ export interface ProfileConfigs {
 export interface IEngineConfig extends ProfileConfigs {
   account?: string
   signer?: ethers.providers.JsonRpcSigner
-  storage: Storage
   scanApiKey?: string
 }
 
