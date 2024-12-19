@@ -66,6 +66,31 @@ export class History {
     this.profile = profile
   }
 
+  extractPoolAddresses(txLogs: LogType[][]): string[] {
+    const poolAddresses: { [key: string]: boolean } = {}
+    for (const logs of txLogs) {
+      for (const log of logs) {
+        if (log.address != this.profile.configs.derivable.token) {
+          continue
+        }
+        const topic0 = log.topics?.[0]
+        const type = TOPICS[topic0]
+        if (type == 'TransferSingle') {
+          const [id] = defaultAbiCoder.decode(["bytes32", "uint"], log.data)
+          const poolAddress = getAddress(hexDataSlice(id, 12))
+          poolAddresses[poolAddress] = true
+        } else if (type == 'TransferBatch') {
+          const [ids] = defaultAbiCoder.decode(["bytes32[]", "uint256[]"], log.data)
+          for (let i = 0; i < ids.length; ++i) {
+            const poolAddress = getAddress(hexDataSlice(ids[i], 12))
+            poolAddresses[poolAddress] = true
+          }
+        }
+      }
+    }
+    return Object.keys(poolAddresses)
+  }
+
   process(logs: LogType[][]): {
     positions: { [id: string]: PositionEntry },
     histories: HistoryEntry[],

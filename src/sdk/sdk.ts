@@ -63,6 +63,10 @@ export class DerionSDK {
     this.SWAP = new Swap({ ...configs, AGGREGATOR: this.AGGREGATOR }, this.profile)
   }
 
+  extractPoolAddresses = (txLogs: LogType[][]): string[] => {
+    return this.HISTORY.extractPoolAddresses(txLogs)
+  }
+
   createAccount = (address: string | Signer) => {
     const account = new Account(address, {
       positions: {},
