@@ -29,49 +29,12 @@ export class Pool {
     this.RESOURCE = new Resource(this.configs, this.profile)
     this.SWAP = new Swap({ ...this.configs, RESOURCE: this.RESOURCE, AGGREGATOR: this.AGGREGATOR }, this.profile)
   }
-  async swap({amountIn, tokenIn = NATIVE_ADDRESS, tokenInDecimals = 18, poolSide = POOL_IDS.C, signer}:{
-    poolSide: number,
-    amountIn: number,
-    tokenIn: string,
-    tokenInDecimals: number
-    signer: string,
-    // callStatic?: boolean,
-  }): Promise<any> {
-    const currentPool = this.pool
-    const poolOut = currentPool.poolAddress
-    const provider = this.RESOURCE.provider
-    const tokenContract = new ethers.Contract(this.profile.configs.derivable.token, TokenAbi, provider)
-    const currentBalanceOut = await tokenContract.balanceOf(signer, packId(poolSide.toString(), poolOut))
-    const steps = [
-      {
-        amountIn: bn(numberToWei(amountIn, tokenInDecimals)),
-        tokenIn,
-        tokenOut: poolOut + '-' + POOL_IDS.C,
-        amountOutMin: 0,
-        currentBalanceOut,
-        useSweep: true,
-      },
-    ]
-  
-    const fetcherV2 = await this.SWAP.needToSubmitFetcher(currentPool)
-    const fetcherData = await this.SWAP.fetchPriceTx(currentPool)
-    const res = await this.SWAP.multiSwap({
-      fetcherData,
-      submitFetcherV2: fetcherV2,
-      steps,
-      gasLimit: bn(1000000),
-      gasPrice: bn(3e9),
-      callStatic: true,
-      poolOverride: this.pool
-    })
-    return res
-  }
   async calcAmountOuts ({amountIn, sideOut, signer}:{
     amountIn: number | BigNumber,
     sideOut: number,
     signer: string
   }): Promise<[any[], BigNumber]> {
-    const account = signer ?? this.enginConfigs.account ?? this.enginConfigs.signer?._address
+    const account = signer
 
     const poolOut = this.pool.poolAddress
     const provider = this.RESOURCE.provider
