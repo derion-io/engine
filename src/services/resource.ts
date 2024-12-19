@@ -152,7 +152,7 @@ export class Resource {
     this.scanApi = profile.configs.scanApi
     this.scanApiKey = engineConfigs.scanApiKey
     this.account = engineConfigs.account
-    this.storage = engineConfigs.storage
+    // this.storage = engineConfigs.storage
     this.account = engineConfigs.account
     this.providerToGetLog = new JsonRpcProvider(profile.configs.rpcGetLog || profile.configs.rpc)
     this.provider = new JsonRpcProvider(profile.configs.rpc)
