@@ -737,11 +737,9 @@ describe('Derivable Tools', () => {
   })
 
   test('derion-sdk-load-pool', async () => {
-    const signer = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
-    const configs: IEngineConfig = genConfig(42161, signer)
     const poolsLoad = ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B', '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE']
-    const derion = new DerionSDK(configs)
-    await derion.initServices()
+    const derion = new DerionSDK({ chainId: 42161 })
+    await derion.init()
     const derionPools = await derion.loadPools(poolsLoad)
     expect(Object.keys(derionPools).length).toBeGreaterThan(1)
     const derionPool = await derion.loadPool(poolsLoad[0])
@@ -753,7 +751,7 @@ describe('Derivable Tools', () => {
     const configs: IEngineConfig = genConfig(42161, signer)
     const poolsLoad = ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B', '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE']
     const derion = new DerionSDK(configs)
-    await derion.initServices()
+    await derion.init()
     const derionPools = await derion.loadPools(poolsLoad)
     expect(Object.keys(derionPools).length).toBeGreaterThan(1)
     const derionPool = await derion.loadPool(poolsLoad[0])
@@ -769,7 +767,7 @@ describe('Derivable Tools', () => {
     const configs: IEngineConfig = genConfig(42161, signer)
     const poolsLoad = ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B', '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE']
     const derion = new DerionSDK(configs)
-    await derion.initServices()
+    await derion.init()
     const derionPool = await derion.loadPool(poolsLoad[0])
     const swapResult = await derionPool.swap({
       amountIn: 0.1,
@@ -784,7 +782,7 @@ describe('Derivable Tools', () => {
     const signer = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
     const configs: IEngineConfig = genConfig(42161, signer)
     const derion = new DerionSDK(configs)
-    await derion.initServices()
+    await derion.init()
     await derion.RESOURCE.fetchResourceData(
       [],
       signer,
@@ -794,5 +792,5 @@ describe('Derivable Tools', () => {
       return positions[p].positionData()
     })
     expect(positionData.length).toBeGreaterThan(0)
-})
+  })
 })

@@ -1,4 +1,4 @@
-import { LogType, PoolsType, PoolType, Storage, SwapLog, TokenType } from '../types'
+import { LogType, Storage } from '../types'
 import { ethers } from 'ethers'
 import { Price } from '../services/price'
 import { Resource } from '../services/resource'
@@ -9,7 +9,7 @@ import { Swap } from '../services/swap'
 import { CurrentPool } from '../services/currentPool'
 import { CreatePool } from '../services/createPool'
 import { UniV3Pair } from '../services/uniV3Pair'
-import { IEngineConfig } from '../utils/configs'
+import { ProfileConfigs } from '../utils/configs'
 import { Profile } from '../profile'
 import { Aggregator } from '../services/aggregator'
 import {Pool} from './pool'
@@ -34,27 +34,25 @@ export class DerionSDK {
   CURRENT_POOL: CurrentPool
   CREATE_POOL: CreatePool
   AGGREGATOR: Aggregator
-  enginConfigs: IEngineConfig
+  configs: ProfileConfigs
 
-  constructor(enginConfigs: IEngineConfig, profile = Profile) {
-    this.enginConfigs = enginConfigs
-    this.account = enginConfigs.account
-    // this.providerToGetLog = this.config.providerToGetLog
-    this.profile = new profile(enginConfigs)
+  constructor(configs: ProfileConfigs) {
+    this.configs = configs
+    this.profile = new Profile(configs)
   }
 
   profile: Profile
 
-  async initServices() {
+  async init() {
     await this.profile.loadConfig()
-    this.UNIV2PAIR = new UniV2Pair(this.enginConfigs, this.profile)
-    this.UNIV3PAIR = new UniV3Pair(this.enginConfigs, this.profile)
-    this.RESOURCE = new Resource(this.enginConfigs, this.profile)
-    this.CURRENT_POOL = new CurrentPool(this.enginConfigs)
-    this.CREATE_POOL = new CreatePool(this.enginConfigs, this.profile)
+    this.UNIV2PAIR = new UniV2Pair(this.configs, this.profile)
+    this.UNIV3PAIR = new UniV3Pair(this.configs, this.profile)
+    this.RESOURCE = new Resource(this.configs, this.profile)
+    this.CURRENT_POOL = new CurrentPool(this.configs)
+    this.CREATE_POOL = new CreatePool(this.configs, this.profile)
 
     const configs = {
-      ...this.enginConfigs,
+      ...this.configs,
       RESOURCE: this.RESOURCE,
     }
     this.BNA = new BnA(configs, this.profile)
@@ -68,13 +66,13 @@ export class DerionSDK {
     const {pools} = await this.RESOURCE.loadInitPoolsData([], derionPoolsAddress, false)
     const derionPoolsSdk: {[key: string]: Pool} = {}
     Object.keys(pools).map(key => {
-      derionPoolsSdk[key] = new Pool(pools[key],this.enginConfigs, this.profile)
+      derionPoolsSdk[key] = new Pool(pools[key],this.configs, this.profile)
     })
     return derionPoolsSdk
   }
   async loadPool(derionPoolAddress: string): Promise<Pool> {
     const {pools} = await this.RESOURCE.loadInitPoolsData([], [derionPoolAddress], false)
-    const derionPoolSdk = new Pool(pools[derionPoolAddress], this.enginConfigs, this.profile)
+    const derionPoolSdk = new Pool(pools[derionPoolAddress], this.configs, this.profile)
     return derionPoolSdk
   }
   async loadAccountPositions({logs}:{logs: LogType[]}) {
@@ -88,7 +86,7 @@ export class DerionSDK {
     const positions:{[id:string]: Position} = {} 
     for (const id in _positions) {
       const positionState = this.RESOURCE.getPositionState({ id, ..._positions[id]}, _positions[id].balance, pools, poolGroups)
-      positions[id] = new Position({positionState, positionId: id, positionWithEntry: _positions[id], profile: this.profile, enginConfigs: this.enginConfigs})
+      positions[id] = new Position({positionState, positionId: id, positionWithEntry: _positions[id], profile: this.profile, enginConfigs: this.configs})
     }
     return positions
   }

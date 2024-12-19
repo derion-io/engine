@@ -1,4 +1,4 @@
-import { IEngineConfig, INetworkConfig } from './utils/configs'
+import { INetworkConfig, ProfileConfigs } from './utils/configs'
 import { EventDataAbis } from './utils/constant'
 import BnA from './abi/BnA.json'
 import ERC20 from './abi/ERC20.json'
@@ -17,7 +17,6 @@ import FetcherV2 from './abi/FetcherV2.json'
 import UTROverride from './abi/UTROverride.json'
 import FetcherV2Override from './abi/FetcherV2Override.json'
 import fetch from 'node-fetch'
-import { PoolType } from './types'
 
 const abis = {
   BnA,
@@ -53,9 +52,9 @@ export class Profile {
   }
   whitelistPools: string[]
 
-  constructor(engineConfig: IEngineConfig) {
-    this.chainId = engineConfig.chainId
-    this.env = engineConfig.env || 'production'
+  constructor(configs: ProfileConfigs) {
+    this.chainId = configs.chainId
+    this.env = configs.env || 'production'
   }
 
   async loadConfig() {

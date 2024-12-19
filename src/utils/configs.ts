@@ -1,13 +1,16 @@
 import { Storage } from '../types'
 import { ethers, Signer } from 'ethers'
 
-export interface IEngineConfig {
+export interface ProfileConfigs {
   env?: 'development' | 'production'
+  chainId: number
+}
+
+export interface IEngineConfig extends ProfileConfigs {
   account?: string
   signer?: ethers.providers.JsonRpcSigner
-  scanApiKey?: string
-  chainId: number
   storage: Storage
+  scanApiKey?: string
 }
 
 export interface INetworkConfig {
