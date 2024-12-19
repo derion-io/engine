@@ -54,6 +54,44 @@ export class StateLoader {
     return pools
   }
 
+  async update({
+    pools,
+  }: {
+    pools?: DerionPoolConfigs,
+  }) {
+    const { abi, deployedBytecode: code } = this.profile.getAbi('View')
+    this.provider.setStateOverride({
+      [this.profile.configs.derivable.logic]: { code },
+    })
+    await this._multicall(Object.values(pools ?? {}).map(pool => ({
+      reference: pool.address,
+      contractAddress: pool.address,
+      abi,
+      calls: [{
+        reference: 'compute',
+        methodName: "compute",
+        methodParameters: [
+          this.profile.configs.derivable.token,
+          this.profile.configs.derivable.feeRate ?? 5,
+          0, 0, // twap and spot
+        ],
+      }],
+      context: (callsReturnContext: CallReturnContext[]) => {
+        for (const ret of callsReturnContext) {
+          const [
+            config, state, sA, sB, sC, rA, rB, rC, twap, spot
+          ] = ret.returnValues.map(v => v.type == 'BigNumber' ? BigNumber.from(v.hex) : v)
+          const [ R, a, b ] = state
+          console.log(pool.address, {
+            config, state, sA, sB, sC, rA, rB, rC, twap, spot
+          })
+          pool.state = { R, a, b }
+          pool.view = { sA, sB, sC, rA, rB, rC, twap, spot }
+        }
+      },
+    })))
+  }
+
   async _multicall(
     contexts: ContractCallContext[],
   ): Promise<any[]> {

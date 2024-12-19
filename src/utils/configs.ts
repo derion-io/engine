@@ -52,6 +52,7 @@ export interface IUniswapContractAddress {
 }
 
 export interface IDerivableContractAddress {
+  feeRate?: number
   version: number
   startBlock: number
   poolFactory: string

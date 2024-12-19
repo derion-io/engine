@@ -46,7 +46,7 @@ describe('Derion SDK', () => {
     const stateLoader = sdk.getStateLoader(rpcUrl)
 
     const pools = await stateLoader.loadPools(poolAdrs)
-
-    console.log(pools)
+    await stateLoader.update({ pools })
+    console.log(Object.values(pools).map(pool => pool.view))
   })
 })
