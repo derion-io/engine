@@ -1,4 +1,4 @@
-import { BigNumber, Signer } from 'ethers'
+import { BigNumber, Contract, Signer } from 'ethers'
 import { Profile } from '../profile'
 import { Aggregator } from '../services/aggregator'
 import { History, HistoryEntry } from '../services/history'
@@ -7,8 +7,8 @@ import { Swap } from '../services/swap'
 import { PendingSwapTransactionType, PoolsType } from '../types'
 import { ProfileConfigs } from '../utils/configs'
 import { Position } from './position'
-import {bn} from '../utils/helper'
-import {decodeErc1155Address, isErc1155Address} from './utils'
+import { bn, packId } from '../utils/helper'
+import { decodeErc1155Address, isErc1155Address } from './utils'
 
 export class Swapper {
   configs: ProfileConfigs
@@ -37,6 +37,7 @@ export class Swapper {
     amount,
     tokenOut,
     deps,
+    gasLimit,
   }: {
     tokenIn: string
     tokenOut: string
@@ -45,33 +46,39 @@ export class Swapper {
       pools: PoolsType
       signer: string | Signer
     }
+    gasLimit?: BigNumber
   }): Promise<any> => {
     const pools = deps.pools
-    const tx: any = await this.SWAP.multiSwap(
+    const isOpenPos = isErc1155Address(tokenOut) ? tokenOut : tokenIn
+    const poolSwapAddress = isOpenPos ? tokenOut : tokenIn
+    const poolSwap = pools[poolSwapAddress]
+    if (!poolSwap) throw 'invalid pool'
+    const fetcherV2 = await this.SWAP.needToSubmitFetcher(poolSwap)
+    const fetcherData = await this.SWAP.fetchPriceTx(poolSwap)
+    // const tokenContract = new Contract(this.profile.configs.derivable.token, TokenAbi, this.RESOURCE.provider)
+    // const currentBalanceOut = await tokenContract.balanceOf(deps.signer, packId(poolSide.toString(), poolOut))
+    const tx: any = await this.SWAP.multiSwap({
+      steps: [
         {
-          steps: [
-            {
-              tokenIn,
-              tokenOut,
-              amountIn: bn(amount),
-              amountOutMin: 0,
-              useSweep: !!(
-                isErc1155Address(tokenOut)
-                && pools?.[decodeErc1155Address(tokenOut)?.address]?.MATURITY?.gt(0)
-                // && tokenOutMaturity?.gt(0)
-                // && balances[tokenOut]?.gt(0)
-              ),
-            //   currentBalanceOut: balances[tokenOut]
-            }
-          ],
-          onSubmitted: (pendingTx: PendingSwapTransactionType) => {
-          },
-          callStatic: true,
-          signerOverride: deps.signer
-        //   fetcherData: fetcherData || await refreshFetcherData(),
-        //   submitFetcherV2
-        }
-      )
+          tokenIn,
+          tokenOut,
+          amountIn: bn(amount),
+          amountOutMin: 0,
+          useSweep: !!(
+            (isErc1155Address(tokenOut) && pools?.[decodeErc1155Address(tokenOut)?.address]?.MATURITY?.gt(0))
+            // && tokenOutMaturity?.gt(0)
+            // && balances[tokenOut]?.gt(0)
+          ),
+          //   currentBalanceOut: balances[tokenOut]
+        },
+      ],
+      onSubmitted: (pendingTx: PendingSwapTransactionType) => {},
+      gasLimit: gasLimit ?? bn(1000000),
+      callStatic: true,
+      signerOverride: deps.signer,
+      fetcherData: fetcherData,
+      submitFetcherV2: fetcherV2,
+    })
     return tx
   }
   swap = async ({
