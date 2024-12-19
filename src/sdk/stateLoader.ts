@@ -7,6 +7,7 @@ import {Swap} from '../services/swap'
 import {PoolsType} from '../types'
 import {ProfileConfigs} from '../utils/configs'
 import {Position} from './position'
+import {Pool} from './pool'
 
 export class StateLoader {
   configs: ProfileConfigs
@@ -29,6 +30,14 @@ export class StateLoader {
 
     this.SWAP = new Swap({ ...this.configs, RESOURCE: this.RESOURCE, AGGREGATOR: this.AGGREGATOR }, this.profile)
   }
-  loadPools = async () => {}
-  loadPositions = async () => {}
+  loadPools = async (poolsObject: {[key: string]: Pool}) => {
+    const { pools } = await this.RESOURCE.loadInitPoolsData([], Object.keys(poolsObject), false)
+    Object.keys(poolsObject).map(key => {
+        poolsObject[key].updateState(pools[key])
+    })
+    return poolsObject
+  }
+  loadPositions = async (positions: {[key:string]:Position}) => {
+
+  }
 }

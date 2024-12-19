@@ -63,9 +63,7 @@ export class Pool {
     }
     return await this.SWAP.calculateAmountOuts(params)
   }
-  async loadState(derionPoolAddress: string, resource: Resource): Promise<PoolType> {
-    const { pools } = await resource.loadInitPoolsData([], [derionPoolAddress], false)
-    this.pool = pools[derionPoolAddress] as PoolType
-    return this.pool
+  updateState = (poolState: PoolType) => {
+    this.pool = poolState
   }
 }
