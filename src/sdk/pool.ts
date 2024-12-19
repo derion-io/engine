@@ -5,29 +5,29 @@ import {Aggregator} from '../services/aggregator'
 import {Resource} from '../services/resource'
 import {Swap} from '../services/swap'
 import {PoolType} from '../types'
-import {IEngineConfig} from '../utils/configs'
+import {IEngineConfig, ProfileConfigs} from '../utils/configs'
 import {NATIVE_ADDRESS,POOL_IDS} from '../utils/constant'
 import {bn,numberToWei,packId} from '../utils/helper'
 
 export class Pool {
   pool: PoolType
-  enginConfigs: IEngineConfig
+  configs: ProfileConfigs
   profile: Profile
   SWAP: Swap
   AGGREGATOR: Aggregator
   RESOURCE: Resource
 
-  constructor(pool: PoolType, enginConfigs: IEngineConfig, profile: Profile) {
+  constructor(pool: PoolType, configs: ProfileConfigs, profile: Profile) {
     this.pool = pool
-    this.enginConfigs = enginConfigs
+    this.configs = configs
     this.profile = profile
-    const configs = {
-      ...this.enginConfigs,
+    const _configs = {
+      ...this.configs,
       RESOURCE: this.RESOURCE,
     }
-    this.AGGREGATOR = new Aggregator(configs, this.profile)
-    this.RESOURCE = new Resource(this.enginConfigs, this.profile)
-    this.SWAP = new Swap({ ...this.enginConfigs, RESOURCE: this.RESOURCE, AGGREGATOR: this.AGGREGATOR }, this.profile)
+    this.AGGREGATOR = new Aggregator(_configs, this.profile)
+    this.RESOURCE = new Resource(this.configs, this.profile)
+    this.SWAP = new Swap({ ...this.configs, RESOURCE: this.RESOURCE, AGGREGATOR: this.AGGREGATOR }, this.profile)
   }
   async swap({amountIn, tokenIn = NATIVE_ADDRESS, tokenInDecimals = 18, poolSide = POOL_IDS.C, signer}:{
     poolSide: number,

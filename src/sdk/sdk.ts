@@ -63,20 +63,6 @@ export class DerionSDK {
     this.SWAP = new Swap({ ...configs, AGGREGATOR: this.AGGREGATOR }, this.profile)
   }
 
-  async loadPools(derionPoolsAddress: string[]): Promise<{[key: string]: Pool}> {
-    const {pools} = await this.RESOURCE.loadInitPoolsData([], derionPoolsAddress, false)
-    const derionPoolsSdk: {[key: string]: Pool} = {}
-    Object.keys(pools).map(key => {
-      derionPoolsSdk[key] = new Pool(pools[key],this.configs, this.profile)
-    })
-    return derionPoolsSdk
-  }
-  async loadPool(derionPoolAddress: string): Promise<Pool> {
-    const {pools} = await this.RESOURCE.loadInitPoolsData([], [derionPoolAddress], false)
-    const derionPoolSdk = new Pool(pools[derionPoolAddress], this.configs, this.profile)
-    return derionPoolSdk
-  }
-
   createAccount = (address: string | Signer) => {
     const account = new Account(address, {
       positions: {},
@@ -85,5 +71,21 @@ export class DerionSDK {
       allowance: {}
     }, this.configs)
     return account
+  }
+  createPools = async (poolsAddress: string[]):Promise<{[key:string]: Pool}> => {
+    const {pools} = await this.RESOURCE.loadInitPoolsData([], poolsAddress, false)
+    const derionPoolsSdk: {[key: string]: Pool} = {}
+    Object.keys(pools).map(key => {
+      derionPoolsSdk[key] = new Pool(pools[key],this.configs, this.profile)
+    })
+    return derionPoolsSdk
+  }
+  createPoolsFromLogs = async (logs: LogType[]):Promise<{[key:string]: Pool}> => {
+    const { pools } = await this.RESOURCE.getResourceFromOverrideLogs(logs)
+    const poolsObjects: {[key:string]: Pool} = {}
+    Object.keys(pools).map(k => {
+      poolsObjects[k] = new Pool(pools[k], this.configs, this.profile)
+    })
+    return poolsObjects
   }
 }
