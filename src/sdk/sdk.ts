@@ -7,6 +7,7 @@ import { StateLoader } from './stateLoader'
 import { Networkish } from '@ethersproject/providers'
 import { ConnectionInfo } from 'ethers/lib/utils'
 import { extractPoolAddresses } from './utils/logs'
+import {Swapper} from './swapper'
 
 export class DerionSDK {
   configs: ProfileConfigs
@@ -33,6 +34,10 @@ export class DerionSDK {
 
   createAccount = (address: string, signer?: Signer) => {
     return new Account(this.profile, address, signer)
+  }
+
+  createSwapper = (url?: ConnectionInfo | string, network?: Networkish) => {
+    return new Swapper(this.configs, this.profile, url, network)
   }
 
   // createPools = async (poolsAddress: string[]):Promise<{[key:string]: Pool}> => {

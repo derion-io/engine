@@ -1,15 +1,15 @@
-import { JsonRpcProvider, Networkish } from '@ethersproject/providers'
+import { JsonRpcProvider, Networkish, TransactionReceipt } from '@ethersproject/providers'
 import { BigNumber, Contract, Signer, utils } from 'ethers'
 import { ConnectionInfo, isAddress } from 'ethers/lib/utils'
 import { Profile } from '../profile'
 import { Q128 } from '../services/resource'
-import { PendingSwapTransactionType, PoolsType, PoolType, SwapStepType } from '../types'
+import { PendingSwapTransactionType, SdkPool, SdkPools } from '../types'
 import { ProfileConfigs } from '../utils/configs'
 import { NATIVE_ADDRESS, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
 import { bn, packId } from '../utils/helper'
 import * as OracleSdk from '../utils/OracleSdk'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
-import { getAddressByErc1155Address, getIdByAddress, isErc1155Address } from './utils'
+import { decodeErc1155Address, getAddressByErc1155Address, getIdByAddress, isErc1155Address } from './utils'
 const PAYMENT = 0
 const TRANSFER = 1
 const CALL_VALUE = 2
@@ -33,7 +33,16 @@ export type rateDataAggregatorType = {
   ignoreGasEstimate?: boolean
   ignoreAllowance?: boolean
 }
-
+export type SwapStepType = {
+  tokenIn: string
+  tokenOut: string
+  amountIn: BigNumber
+  payloadAmountIn?: BigNumber
+  amountOutMin: BigNumber | string | number
+  useSweep?: boolean
+  currentBalanceOut?: BigNumber
+  uniPool?: string
+}
 export type PriceTxReturnType = {
   inputs: Array<any>
   code: string
@@ -52,12 +61,14 @@ export type MultiSwapParameterType = {
     srcDecimals: number
     destDecimals: number
   }
-  poolOverride?: PoolType
-  signerOverride?: string | Signer
+  deps: {
+    signer: Signer
+    pools: SdkPools
+  }
 }
 
 export type PoolGroupReturnType = {
-  pools: { [key: string]: PoolType }
+  pools: SdkPools
   TOKEN_R: string
 }
 
@@ -70,7 +81,7 @@ export type SwapCallDataParameterType = {
   idOut: BigNumber
   deps: {
     signer: Signer
-    pools: PoolsType
+    pools: SdkPools
   }
 }
 export type SwapCallDataInputType = {
@@ -99,13 +110,17 @@ export class Swapper {
   paraDataBaseURL: string
   paraBuildTxBaseURL: string
   paraDataBaseVersion: string
-  constructor(configs: ProfileConfigs, url?: ConnectionInfo | string, network?: Networkish) {
-    this.profile = new Profile(configs)
+  constructor(configs: ProfileConfigs, profile: Profile, url?: ConnectionInfo | string, network?: Networkish) {
+    this.profile = profile
     this.configs = configs
     this.provider = new JsonRpcProvider(url, network)
     this.overrideProvider = new JsonRpcProvider(url, network)
     this.overridedProvider()
-    this.helperContract = new Contract(this.helperContract.address as string, this.profile.getAbi('Helper'), this.provider)
+    this.helperContract = new Contract(
+      this.profile.configs.derivable.stateCalHelper as string,
+      this.profile.getAbi('Helper'),
+      this.provider,
+    )
     this.paraDataBaseURL = PARA_DATA_BASE_URL
     this.paraBuildTxBaseURL = PARA_BUILD_TX_BASE_URL
     this.paraDataBaseVersion = PARA_VERSION
@@ -136,7 +151,7 @@ export class Swapper {
     }
   }
 
-  getPoolPoolGroup(addressIn: string, addressOut: string, pools: PoolsType): PoolGroupReturnType {
+  getPoolPoolGroup(addressIn: string, addressOut: string, pools: SdkPools): PoolGroupReturnType {
     try {
       const poolIn = isErc1155Address(addressIn) ? pools[addressIn.split('-')[0]] : null
 
@@ -146,18 +161,18 @@ export class Swapper {
         throw 'Cannot detect pool to swap'
       }
 
-      if (poolIn && poolOut && poolIn.TOKEN_R !== poolOut.TOKEN_R) {
+      if (poolIn && poolOut && poolIn?.config?.TOKEN_R !== poolOut?.config?.TOKEN_R) {
         throw 'Cannot swap throw multi pool (need to same Token R)'
       }
 
-      const result: { pools: { [key: string]: PoolType }; TOKEN_R: string } = { pools: {}, TOKEN_R: '' }
+      const result: { pools: { [key: string]: SdkPool }; TOKEN_R: string } = { pools: {}, TOKEN_R: '' }
       if (poolIn) {
-        result.pools[poolIn.poolAddress] = poolIn
-        result.TOKEN_R = poolIn.TOKEN_R
+        result.pools[poolIn.address] = poolIn
+        result.TOKEN_R = poolIn.config?.TOKEN_R || ''
       }
       if (poolOut) {
-        result.pools[poolOut.poolAddress] = poolOut
-        result.TOKEN_R = poolOut.TOKEN_R
+        result.pools[poolOut.address] = poolOut
+        result.TOKEN_R = poolOut.config?.TOKEN_R || ''
       }
 
       return result
@@ -346,7 +361,7 @@ export class Swapper {
           }),
         )
       } else {
-        const OPEN_RATE = pools[poolOut]?.OPEN_RATE
+        const OPEN_RATE = pools[poolOut]?.config?.OPEN_RATE
         if (OPEN_RATE && [POOL_IDS.A, POOL_IDS.B].includes(idOut.toNumber())) {
           amountIn = amountIn.mul(OPEN_RATE).div(Q128)
         }
@@ -415,17 +430,15 @@ export class Swapper {
     submitFetcherV2,
     isCalculate = false,
     fetcherData,
-    poolOverride,
     deps: { signer, pools },
   }: {
     steps: Array<SwapStepType>
     submitFetcherV2: boolean
     isCalculate?: boolean
     fetcherData?: any
-    poolOverride: PoolType
     deps: {
       signer: Signer
-      pools: PoolsType
+      pools: SdkPools
     }
   }): Promise<{
     params: any
@@ -523,7 +536,7 @@ export class Swapper {
 
       if (submitFetcherV2 && !fetcherData) {
         const pool = isErc1155Address(step.tokenIn) ? pools[poolIn] : pools[poolOut]
-        if (pool?.window) {
+        if ((pool as any)?.window) {
           promises.push(isCalculate ? this.fetchPriceMockTx({ pool, signer }) : this.fetchPriceTx({ pool, signer }))
         }
       }
@@ -634,37 +647,39 @@ export class Swapper {
     ).json()
     return swapData
   }
-  async fetchPriceTx({ pool, blockNumber, signer }: { pool: PoolType; blockNumber?: number; signer: Signer }): Promise<PriceTxReturnType> {
+  async fetchPriceTx({ pool, blockNumber, signer }: { pool: SdkPool; blockNumber?: number; signer: Signer }): Promise<PriceTxReturnType> {
     try {
       if (blockNumber == null) {
         blockNumber = await this.provider.getBlockNumber()
       }
-      const getProof = OracleSdkAdapter.getProofFactory(this.provider)
-      const getBlockByNumber = OracleSdkAdapter.getBlockByNumberFactory(this.overrideProvider)
-      // get the proof from the SDK
-      const proof = await OracleSdk.getProof(
-        getProof,
-        getBlockByNumber,
-        pool.pair,
-        pool.quoteTokenIndex,
-        blockNumber - (pool.window.toNumber() >> 1),
-      )
-      // Connect to the network
-      const contractWithSigner = new Contract(pool.FETCHER, this.profile.getAbi('FetcherV2'), signer)
-      const data = await contractWithSigner.populateTransaction.submit(pool.ORACLE, proof)
+      // const getProof = OracleSdkAdapter.getProofFactory(this.provider)
+      // const getBlockByNumber = OracleSdkAdapter.getBlockByNumberFactory(this.overrideProvider)
+      // // get the proof from the SDK
+      // const proof = await OracleSdk.getProof(
+      //   getProof,
+      //   getBlockByNumber,
+      //   pool.pair,
+      //   pool.quoteTokenIndex,
+      //   blockNumber - (pool.window.toNumber() >> 1),
+      // )
+      // // Connect to the network
+      // const contractWithSigner = new Contract(pool.FETCHER, this.profile.getAbi('FetcherV2'), signer)
+      // const data = await contractWithSigner.populateTransaction.submit(pool.ORACLE, proof)
       return {
         inputs: [],
-        code: pool.FETCHER,
-        data: data.data,
+        code: '',
+        // pool.FETCHER,
+        data: '',
+        // data.data,
       }
     } catch (error) {
       throw error
     }
   }
-  async needToSubmitFetcher(pool: PoolType, signer: Signer): Promise<boolean> {
+  async needToSubmitFetcher(pool: SdkPool, signer: Signer): Promise<boolean> {
     try {
-      const fetcherContract = new Contract(pool.FETCHER, this.profile.getAbi('FetcherV2'), signer)
-      await fetcherContract.callStatic.fetch(pool.ORACLE)
+      const fetcherContract = new Contract(pool.config?.FETCHER || '', this.profile.getAbi('FetcherV2'), signer)
+      await fetcherContract.callStatic.fetch(pool?.config?.ORACLE || '')
     } catch (e) {
       if (e?.reason === 'OLD') {
         return true
@@ -677,7 +692,7 @@ export class Swapper {
     blockNumber,
     signer,
   }: {
-    pool: PoolType
+    pool: SdkPool
     blockNumber?: number
     signer: Signer
   }): Promise<PriceTxReturnType> {
@@ -685,25 +700,69 @@ export class Swapper {
       if (blockNumber == null) {
         blockNumber = await this.provider.getBlockNumber()
       }
-      const targetBlock = blockNumber - (pool.window.toNumber() >> 1)
-      const getStorageAt = OracleSdkAdapter.getStorageAtFactory(this.overrideProvider)
-      const accumulator = await OracleSdk.getAccumulatorPrice(getStorageAt, pool.pair, pool.quoteTokenIndex, targetBlock)
+      // const targetBlock = blockNumber - (pool.window.toNumber() >> 1)
+      // const getStorageAt = OracleSdkAdapter.getStorageAtFactory(this.overrideProvider)
+      // const accumulator = await OracleSdk.getAccumulatorPrice(getStorageAt, pool.pair, pool.quoteTokenIndex, targetBlock)
 
-      // Connect to the network
-      const contractWithSigner = new Contract(pool.FETCHER, this.profile.getAbi('FetcherV2Mock').abi, signer)
-      const data = await contractWithSigner.populateTransaction.submitPrice(
-        pool.ORACLE,
-        bn(accumulator.price),
-        targetBlock,
-        accumulator.timestamp,
-      )
+      // // Connect to the network
+      // const contractWithSigner = new Contract(pool?.config?.FETCHER || '', this.profile.getAbi('FetcherV2Mock').abi, signer)
+      // const data = await contractWithSigner.populateTransaction.submitPrice(
+      //   pool?.config?.ORACLE,
+      //   bn(accumulator.price),
+      //   targetBlock,
+      //   accumulator.timestamp,
+      // )
       return {
         inputs: [],
-        code: pool.FETCHER,
-        data: data.data,
+        code: pool?.config?.FETCHER || '',
+        data: '',
       }
     } catch (error) {
       throw error
+    }
+  }
+  async multiSwap({
+    steps,
+    gasLimit,
+    gasPrice,
+    fetcherData,
+    onSubmitted,
+    submitFetcherV2 = false,
+    callStatic = false,
+    deps,
+  }: MultiSwapParameterType): Promise<TransactionReceipt> {
+    try {
+      const { params, value } = await this.convertStepToActions({
+        steps: [...steps],
+        submitFetcherV2,
+        fetcherData,
+        deps,
+      })
+
+      // await this.callStaticMultiSwap({
+      //   params,
+      //   value,
+      //   gasLimit,
+      //   gasPrice: gasPrice || undefined
+      // })
+      const utr = new Contract(this.profile.configs.helperContract.utr as string, this.profile.getAbi('UTR'), deps.signer)
+      params.push({
+        value,
+        gasLimit: gasLimit || undefined,
+        gasPrice: gasPrice || undefined,
+      })
+      if (callStatic) {
+        return await utr.callStatic.exec(...params)
+      }
+      const res = await utr.exec(...params)
+      if (onSubmitted) {
+        onSubmitted({ hash: res.hash, steps })
+      }
+      const tx = await res.wait(1)
+      console.log('tx', tx)
+      return tx
+    } catch (e) {
+      throw e
     }
   }
   swap = async ({
@@ -712,49 +771,63 @@ export class Swapper {
     tokenOut,
     deps,
     gasLimit,
+    callStatic,
   }: {
     tokenIn: string
     tokenOut: string
     amount: string
     deps: {
-      pools: PoolsType
+      pools: SdkPools
       signer: Signer
     }
+    callStatic?: boolean
     gasLimit?: BigNumber
   }): Promise<any> => {
     const pools = deps.pools
     const isOpenPos = isErc1155Address(tokenOut) ? tokenOut : tokenIn
     const poolSwapAddress = isOpenPos ? tokenOut : tokenIn
-    const poolSwap = pools[poolSwapAddress]
+    const poolSwap = pools[decodeErc1155Address(poolSwapAddress).address]
     if (!poolSwap) throw 'invalid pool'
     const fetcherV2 = await this.needToSubmitFetcher(poolSwap, deps.signer)
     const fetcherData = await this.fetchPriceTx({ pool: poolSwap, signer: deps.signer })
 
-    // const tokenContract = new Contract(this.profile.configs.derivable.token, TokenAbi, this.RESOURCE.provider)
+    // const tokenContract = new Contract(this.profile.configs.derivable.token, TokenAbi, this.provider)
     // const currentBalanceOut = await tokenContract.balanceOf(deps.signer, packId(poolSide.toString(), poolOut))
-    // const tx: any = await this.multiSwap({
-    //   steps: [
-    //     {
-    //       tokenIn,
-    //       tokenOut,
-    //       amountIn: bn(amount),
-    //       amountOutMin: 0,
-    //       useSweep: !!(
-    //         (isErc1155Address(tokenOut) && pools?.[decodeErc1155Address(tokenOut)?.address]?.MATURITY?.gt(0))
-    //         // && tokenOutMaturity?.gt(0)
-    //         // && balances[tokenOut]?.gt(0)
-    //       ),
-    //       //   currentBalanceOut: balances[tokenOut]
-    //     },
-    //   ],
-    //   onSubmitted: (pendingTx: PendingSwapTransactionType) => {},
-    //   gasLimit: gasLimit ?? bn(1000000),
-    //   callStatic: true,
-    //   signerOverride: deps.signer,
-    //   fetcherData: fetcherData,
-    //   submitFetcherV2: fetcherV2,
-    // })
-    // return tx
+    const tx: any = await this.multiSwap({
+      steps: [
+        {
+          tokenIn,
+          tokenOut,
+          amountIn: bn(amount),
+          amountOutMin: 0,
+          useSweep: !!(
+            (isErc1155Address(tokenOut) && (pools?.[decodeErc1155Address(tokenOut)?.address]?.config?.MATURITY || 0) > 0)
+            // && tokenOutMaturity?.gt(0)
+            // && balances[tokenOut]?.gt(0)
+          ),
+          //   currentBalanceOut: balances[tokenOut]
+        },
+      ],
+      onSubmitted: (pendingTx: PendingSwapTransactionType) => {},
+      gasLimit: gasLimit ?? bn(1000000),
+      callStatic,
+      deps,
+      fetcherData: fetcherData,
+      submitFetcherV2: fetcherV2,
+    })
+    return tx
+  }
+  simulate = async (params: {
+    tokenIn: string
+    tokenOut: string
+    amount: string
+    deps: {
+      pools: SdkPools
+      signer: Signer
+    }
+    gasLimit?: BigNumber
+  }): Promise<any> => {
+    return await this.swap({...params, callStatic: true})
   }
   //   swap = async ({
   //     tokenIn,
@@ -765,7 +838,7 @@ export class Swapper {
   //     tokenOut: string
   //     amount: string
   //     deps: {
-  //       pools: PoolsType
+  //       pools: SdkPools
   //       signer: Signer
   //     }
   //   }): Promise<any> => {

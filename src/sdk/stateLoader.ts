@@ -52,6 +52,7 @@ export class StateLoader {
           const [
             config, state, sA, sB, sC, rA, rB, rC, twap, spot
           ] = ret.returnValues.map(v => v.type == 'BigNumber' ? BigNumber.from(v.hex) : v)
+          if(!state) return;
           const [ R, a, b ] = state.map((v: any) => v.type == 'BigNumber' ? BigNumber.from(v.hex) : v)
           const [
             FETCHER, ORACLE, TOKEN_R, K, MARK, INTEREST_HL, PREMIUM_HL, MATURITY, MATURITY_VEST, MATURITY_RATE, OPEN_RATE

@@ -57,3 +57,7 @@ export const throwError = (reason: string = 'MISSING DATA'): any => {
       throw error
     }
   }
+
+  export const errorEncode = (err: any):any => {
+    return err?.response?.data || `${err?.code}: ${err?.reason || err?.msg || err?.message}`
+  }
