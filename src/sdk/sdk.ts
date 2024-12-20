@@ -1,5 +1,5 @@
-import { LogType } from '../types'
-import { Signer } from 'ethers'
+import { LogType, SdkPools } from '../types'
+import { BigNumber, Signer } from 'ethers'
 import { ProfileConfigs } from '../utils/configs'
 import { Profile } from '../profile'
 import { Account } from './account'
@@ -32,7 +32,7 @@ export class DerionSDK {
     return extractPoolAddresses(txLogs, this.profile.configs.derivable.token)
   }
 
-  createAccount = (address: string, signer?: Signer) => {
+  createAccount(address: string, signer?: Signer): Account {
     return new Account(this.profile, address, signer)
   }
 

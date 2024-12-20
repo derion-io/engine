@@ -1,12 +1,12 @@
 import { BigNumber, ethers } from 'ethers'
 import { LogType, TokenType } from '../types'
 import { NATIVE_ADDRESS, POOL_IDS } from '../utils/constant'
-import { BIG, IEW, WEI, bn, formatQ128, getTopics, numberToWei, parsePrice, weiToNumber } from '../utils/helper'
+import { BIG, IEW, WEI, bn, getTopics, numberToWei, parsePrice, weiToNumber } from '../utils/helper'
 import { Profile } from '../profile'
 import { IEngineConfig } from '../utils/configs'
 import { M256, Resource } from './resource'
 import Erc20 from '../abi/ERC20.json'
-import { defaultAbiCoder, formatEther, getAddress, hexDataSlice, Result } from 'ethers/lib/utils'
+import { defaultAbiCoder, getAddress, hexDataSlice, Result } from 'ethers/lib/utils'
 
 const POS_IDS = [POOL_IDS.A, POOL_IDS.B, POOL_IDS.C]
 
@@ -30,16 +30,13 @@ export type PositionGenerateParameterType = {
   logs: Array<LogType>
 }
 
-export type PositionEntry = {
+export type FungiblePosition = {
+  id: string,
   balance: BigNumber,
   priceR: BigNumber,
   price: BigNumber,
   rPerBalance: BigNumber,
   maturity: number,
-}
-
-export type AccountPosition = PositionEntry & {
-  id: string,
 }
 
 export type Transition = {
@@ -92,10 +89,10 @@ export class History {
   }
 
   process(logs: LogType[][]): {
-    positions: { [id: string]: PositionEntry },
+    positions: { [id: string]: FungiblePosition },
     histories: Transition[],
   } {
-    const positions: { [id: string]: PositionEntry } = {}
+    const positions: { [id: string]: FungiblePosition } = {}
     const histories: Transition[] = []
     for (const txLogs of logs) {
       if (!txLogs.length) {

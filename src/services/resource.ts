@@ -12,7 +12,7 @@ import { Profile } from '../profile'
 import * as OracleSdk from '../utils/OracleSdk'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
 import { unpackId } from '../utils/number'
-import { AccountPosition as FungiblePosition } from './history'
+import { FungiblePosition } from './history'
 
 const TOPICS = getTopics()
 

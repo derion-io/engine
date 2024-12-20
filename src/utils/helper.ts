@@ -13,6 +13,7 @@ export const provider = new ethers.providers.JsonRpcProvider('https://bsc-datase
 export const bn = BigNumber.from
 
 export const BIG_E18 = bn(10).pow(18)
+export const BIG_0 = bn(0)
 
 export const weiToNumber = (wei: any, decimals: number = 18, decimalToDisplay?: number): string => {
   if (!wei || !Number(wei)) return '0'
@@ -369,6 +370,18 @@ export const DIV = (a: BigNumber, b: BigNumber, precision = 4): string => {
   return mdp(c, d - precision)
 }
 
+export const SHL = (a: BigNumber, b: number): BigNumber => {
+  const neg = a.isNegative()
+  if (neg) {
+    a = BIG_0.sub(a)
+  }
+  a = b > 0 ? a.shl(b) : a.shr(-b)
+  if (neg) {
+    a = BIG_0.sub(a)
+  }
+  return a
+}
+
 export function compareLog(a: LogType, b: LogType): number {
   if (a.blockNumber < b.blockNumber) {
     return -2
@@ -415,7 +428,7 @@ export function mergeTwoUniqSortedLogs(a: LogType[], b: LogType[]): LogType[] {
   return r;
 }
 
-export function formatQ128(n: BigNumber, PRECISION = 10000): Number {
+export function formatQ128(n: BigNumber, PRECISION = 10000): number {
   if (n.isNegative()) {
     return -formatQ128(bn(0).sub(n))
   }

@@ -1,12 +1,13 @@
 import { DerionSDK } from '../src/sdk/sdk'
-import { errorEncode, groupBy, throwError } from '../src/sdk/utils'
+import { groupBy, throwError } from '../src/sdk/utils'
 import { Interceptor } from './shared/libs/interceptor'
 import { AssistedJsonRpcProvider } from 'assisted-json-rpc-provider'
 import { hexZeroPad } from 'ethers/lib/utils'
 import { JsonRpcProvider } from '@ethersproject/providers'
-import {NATIVE_ADDRESS, POOL_IDS} from '../src/utils/constant'
-import {numberToWei} from '../src/utils/helper'
-import {Signer, Wallet} from 'ethers'
+import { NATIVE_ADDRESS, POOL_IDS } from '../src/utils/constant'
+import { numberToWei } from '../src/utils/helper'
+import { Wallet } from 'ethers'
+import { calcPositionState, formatPositionView } from '../src/sdk/utils/positions'
 
 const interceptor = new Interceptor()
 
@@ -52,11 +53,18 @@ describe('Derion SDK', () => {
 
     const account = sdk.createAccount(accountAddress)
     account.processLogs(txLogs)
-    account.processLogs(txLogs)
+    account.processLogs(txLogs) // the second call does nothing
+    
+    const posViews = Object.values(account.positions).map(pos => calcPositionState(pos, pools))
+
+
+    console.log(posViews)
+
+    console.log(...posViews.map(pv => formatPositionView(pv)))
 
     // await stateLoader.update({ pools }) // not nessesary here
     // console.log(Object.values(pools))
-    console.log(Object.values(account.positions))
+    // console.log(Object.values(account.positions))
   })
     test('derion-sdk-swap', async () => {
       const chainId = 42161
