@@ -7,7 +7,7 @@ import { JsonRpcProvider } from '@ethersproject/providers'
 import { NATIVE_ADDRESS, POOL_IDS } from '../src/utils/constant'
 import { numberToWei } from '../src/utils/helper'
 import { Wallet } from 'ethers'
-import { calcPositionState, formatPositionView } from '../src/sdk/utils/positions'
+import { formatPositionView } from '../src/sdk/utils/positions'
 
 const interceptor = new Interceptor()
 
@@ -45,18 +45,17 @@ describe('Derion SDK', () => {
     })
 
     const txLogs = Object.values(groupBy(logs, 'transactionHash'))
-    const poolAdrs = sdk.extractPoolAddresses(txLogs)
+    const { poolAddresses } = sdk.extractLogs(txLogs)
 
     const stateLoader = sdk.getStateLoader(rpcUrl)
 
-    const pools = await stateLoader.loadPools(poolAdrs)
+    const pools = await stateLoader.loadPools(poolAddresses)
 
     const account = sdk.createAccount(accountAddress)
     account.processLogs(txLogs)
     account.processLogs(txLogs) // the second call does nothing
     
-    const posViews = Object.values(account.positions).map(pos => calcPositionState(pos, pools))
-
+    const posViews = Object.values(account.positions).map(pos => sdk.calcPositionState(pos, pools))
 
     console.log(posViews)
 
@@ -97,7 +96,7 @@ describe('Derion SDK', () => {
       })
       console.log(logs.length)
       const txLogs = Object.values(groupBy(logs, 'transactionHash'))
-      const poolAdrs = sdk.extractPoolAddresses(txLogs)
+      const poolAdrs = sdk.extractLogs(txLogs)
       console.log(poolAdrs)
 
       const stateLoader = sdk.getStateLoader(rpcUrl)
@@ -152,7 +151,7 @@ describe('Derion SDK', () => {
       })
       console.log(logs.length)
       const txLogs = Object.values(groupBy(logs, 'transactionHash'))
-      const poolAdrs = sdk.extractPoolAddresses(txLogs)
+      const poolAdrs = sdk.extractLogs(txLogs)
       console.log(poolAdrs)
 
       const stateLoader = sdk.getStateLoader(rpcUrl)

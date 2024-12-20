@@ -17,7 +17,7 @@ export type PositionView = {
   entryPrice: BigNumber
   valueRLinear?: BigNumber
   valueRCompound?: BigNumber
-  // valueU: BigNumber
+  valueU: BigNumber
   valueR: BigNumber
   currentPrice: BigNumber
   dgA: BigNumber
@@ -124,6 +124,7 @@ export function calcPoolSide(
 export function calcPositionState(
   position: FungiblePosition,
   pools: SdkPools,
+  currentPriceR: BigNumber,
   balance = position.balance,
 ): PositionView {
   const { id, price, priceR, rPerBalance, maturity } = position
@@ -146,7 +147,7 @@ export function calcPositionState(
   const sX = side == POOL_IDS.A ? sA : side == POOL_IDS.B ? sB : sC
 
   const valueR = rX.mul(balance).div(sX)
-  // const valueU = valueR.mul(currentPriceR).shr(128)
+  const valueU = valueR.mul(currentPriceR).shr(128)
 
   const { leverage, effectiveLeverage, dgA, dgB, funding } = calcPoolSide(pool, side)
 
@@ -191,7 +192,7 @@ export function calcPositionState(
     valueRLinear,
     valueRCompound,
     valueR,
-    // valueU,
+    valueU,
   }
 }
 

@@ -8,6 +8,8 @@ import { Networkish } from '@ethersproject/providers'
 import { ConnectionInfo } from 'ethers/lib/utils'
 import { extractPoolAddresses } from './utils/logs'
 import {Swapper} from './swapper'
+import { FungiblePosition } from '../services/history'
+import { calcPositionState, PositionView } from './utils/positions'
 
 export class DerionSDK {
   configs: ProfileConfigs
@@ -28,8 +30,10 @@ export class DerionSDK {
     return this.stateLoader = this.stateLoader ?? new StateLoader(this.profile, url, network)
   }
 
-  extractPoolAddresses = (txLogs: LogType[][]): string[] => {
-    return extractPoolAddresses(txLogs, this.profile.configs.derivable.token)
+  extractLogs = (txLogs: LogType[][]): { poolAddresses: string[] } => {
+    return {
+      poolAddresses: extractPoolAddresses(txLogs, this.profile.configs.derivable.token),
+    }
   }
 
   createAccount(address: string, signer?: Signer): Account {
@@ -40,21 +44,12 @@ export class DerionSDK {
     return new Swapper(this.configs, this.profile, url, network)
   }
 
-  // createPools = async (poolsAddress: string[]):Promise<{[key:string]: Pool}> => {
-  //   const {pools} = await this.RESOURCE.loadInitPoolsData([], poolsAddress, false)
-  //   const derionPoolsSdk: {[key: string]: Pool} = {}
-  //   Object.keys(pools).map(key => {
-  //     derionPoolsSdk[key] = new Pool(pools[key],this.configs, this.profile)
-  //   })
-  //   return derionPoolsSdk
-  // }
-
-  // createPoolsFromLogs = async (logs: LogType[]):Promise<{[key:string]: Pool}> => {
-  //   const { pools } = await this.RESOURCE.getResourceFromOverrideLogs(logs)
-  //   const poolsObjects: {[key:string]: Pool} = {}
-  //   Object.keys(pools).map(k => {
-  //     poolsObjects[k] = new Pool(pools[k], this.configs, this.profile)
-  //   })
-  //   return poolsObjects
-  // }
+  calcPositionState = (
+    position: FungiblePosition,
+    pools: SdkPools,
+    currentPriceR = position.priceR,
+    balance = position.balance,
+  ): PositionView => {
+    return calcPositionState(position, pools, currentPriceR, balance)
+  }
 }
