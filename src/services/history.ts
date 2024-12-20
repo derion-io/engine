@@ -42,7 +42,7 @@ export type AccountPosition = PositionEntry & {
   id: string,
 }
 
-export type HistoryEntry = {
+export type Transition = {
   txHash: string,
   blockNumber: number,
   timestamp?: number,
@@ -93,15 +93,15 @@ export class History {
 
   process(logs: LogType[][]): {
     positions: { [id: string]: PositionEntry },
-    histories: HistoryEntry[],
+    histories: Transition[],
   } {
     const positions: { [id: string]: PositionEntry } = {}
-    const histories: HistoryEntry[] = []
+    const histories: Transition[] = []
     for (const txLogs of logs) {
       if (!txLogs.length) {
         continue
       }
-      const history: HistoryEntry = {
+      const history: Transition = {
         txHash: txLogs[0].transactionHash,
         blockNumber: txLogs[0].blockNumber,
         timestamp: txLogs[0].timeStamp ? BigNumber.from(txLogs[0].timeStamp).toNumber() : undefined,

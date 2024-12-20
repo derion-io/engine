@@ -1,65 +1,45 @@
-import {BigNumber,Signer} from 'ethers'
-import _ from 'lodash'
-import {Profile} from '../profile'
-import {Aggregator} from '../services/aggregator'
-import {History,HistoryEntry} from '../services/history'
-import {Resource} from '../services/resource'
-import {Swap} from '../services/swap'
-import {LogType} from '../types'
-import {ProfileConfigs} from '../utils/configs'
-import {Position} from './position'
+import { Signer } from 'ethers'
+import { Profile } from '../profile'
+import { Transition, PositionEntry } from '../services/history'
+import { LogType } from '../types'
+import { processLogs } from './utils/logs'
 
-export type AccountState = {
-  positions: { [id: string]: Position }
-  histories: HistoryEntry[]
-  balances: { [key: string]: BigNumber }
-  allowance: any
-}
 export class Account {
-  account: string | Signer
-  accountState: AccountState
-  configs: ProfileConfigs
   profile: Profile
-  SWAP: Swap
-  AGGREGATOR: Aggregator
-  RESOURCE: Resource
-  HISTORY: History
+  address: string
+  signer?: Signer
+  blockNumber: number = 0
+  logIndex: number = 0
+  positions: { [id: string]: PositionEntry } = {}
+  transitions: Transition[] = []
 
-  constructor(account: string | Signer, accountState: AccountState, configs: ProfileConfigs) {
-    this.accountState = accountState
-    this.account = account
-    this.profile = new Profile(configs)
-    const _configs = {
-      ...configs,
-      RESOURCE: this.RESOURCE,
-    }
-    this.AGGREGATOR = new Aggregator(_configs, this.profile)
-    this.RESOURCE = new Resource(this.configs, this.profile)
-    this.HISTORY = new History(_configs, this.profile)
+  constructor(profile: Profile, address: string, signer?: Signer) {
+    this.profile = profile
+    this.address = address
+    this.signer = signer
+  }
 
-    this.SWAP = new Swap({ ...this.configs, RESOURCE: this.RESOURCE, AGGREGATOR: this.AGGREGATOR }, this.profile)
-  }
-  processLogs = async (logs: LogType[]) => {
-    const { pools, poolGroups } = await this.RESOURCE.getResourceFromOverrideLogs(logs)
-    const txs = _.groupBy(logs, (log) => log.transactionHash)
-    const txLogs: LogType[][] = []
-    for (const tx in txs) {
-      txLogs.push(txs[tx])
+  processLogs = async (txLogs: LogType[][]) => {
+    txLogs = txLogs.filter(logs => logs.some(log =>
+      log.blockNumber > this.blockNumber ||
+      (log.blockNumber == this.blockNumber && log.logIndex > this.logIndex)
+    ))
+    if (!txLogs.length) {
+      return
     }
-    const { positions: _positions, histories } = this.HISTORY.process(txLogs)
-    for (const id in _positions) {
-      const positionState = this.RESOURCE.getPositionState({ id, ..._positions[id] }, _positions[id].balance, pools, poolGroups)
-      const positionObject = new Position({
-        positionState,
-        positionId: id,
-        positionWithEntry: _positions[id],
-        profile: this.profile,
-        enginConfigs: this.configs,
-      })
-      this.accountState.positions[id] = positionObject
-    }
-    this.accountState.histories = histories
-    return { positions: this.accountState.positions, histories: this.accountState.histories }
+    
+    processLogs(
+      this.positions,
+      this.transitions,
+      txLogs,
+      this.profile.configs.derivable.token,
+      this.address,
+    )
+    const lastTx = txLogs[txLogs.length-1]
+    const lastLog = lastTx[lastTx.length-1]
+    this.blockNumber = lastLog.blockNumber
+    this.logIndex = lastLog.logIndex
   }
-  importPositions = async (ids: string[]) => {}
+
+  // importPositions = async (ids: string[]) => {}
 }

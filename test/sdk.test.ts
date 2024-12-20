@@ -14,7 +14,7 @@ describe('Derion SDK', () => {
 
   test('sdk-flow', async () => {
     const chainId = 137
-    const account = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
+    const accountAddress = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
 
     const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
     const scanApi = process.env['SCAN_API_' + chainId] ?? throwError()
@@ -28,7 +28,7 @@ describe('Derion SDK', () => {
         apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
       }
     )
-    const accTopic = hexZeroPad(account, 32)
+    const accTopic = hexZeroPad(accountAddress, 32)
     const logs = await provider.getLogs({
       fromBlock: 0,
       toBlock: Number.MAX_SAFE_INTEGER,
@@ -39,14 +39,20 @@ describe('Derion SDK', () => {
         [null, null, null, accTopic],
       ],
     })
-    
+
     const txLogs = Object.values(groupBy(logs, 'transactionHash'))
     const poolAdrs = sdk.extractPoolAddresses(txLogs)
 
     const stateLoader = sdk.getStateLoader(rpcUrl)
 
     const pools = await stateLoader.loadPools(poolAdrs)
+
+    const account = sdk.createAccount(accountAddress)
+    account.processLogs(txLogs)
+    account.processLogs(txLogs)
+
     // await stateLoader.update({ pools }) // not nessesary here
-    console.log(Object.values(pools))
+    // console.log(Object.values(pools))
+    console.log(Object.values(account.positions))
   })
 })
