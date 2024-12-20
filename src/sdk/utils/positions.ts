@@ -17,7 +17,7 @@ export type PositionView = {
   entryPrice: BigNumber
   valueRLinear?: BigNumber
   valueRCompound?: BigNumber
-  valueU: BigNumber
+  // valueU: BigNumber
   valueR: BigNumber
   currentPrice: BigNumber
   dgA: BigNumber
@@ -134,45 +134,44 @@ export function calcPositionState(
   if (!pool?.view || !pool?.state) {
     throw new Error('missing pool state')
   }
-  const { spot: currentPrice, rA, rB, rC, sA, sB, sC } = pool.view
+  const { spot, rA, rB, rC, sA, sB, sC } = pool.view
   // TODO: OPEN_RATE?
 
+  const currentPrice = spot.mul(spot).shr(128)
   const entryPrice = price
   const entryValueR = balance.mul(rPerBalance).shr(128)
   const entryValueU = entryValueR.mul(priceR).shr(128)
 
-  const rX =
-    side == POOL_IDS.A
-      ? rA
-      : side == POOL_IDS.B
-        ? rB
-        : rC
-
-  const sX =
-    side == POOL_IDS.A
-      ? sA
-      : side == POOL_IDS.B
-        ? sB
-        : sC
+  const rX = side == POOL_IDS.A ? rA : side == POOL_IDS.B ? rB : rC
+  const sX = side == POOL_IDS.A ? sA : side == POOL_IDS.B ? sB : sC
 
   const valueR = rX.mul(balance).div(sX)
-  const valueU = valueR.mul(priceR).shr(128)
+  // const valueU = valueR.mul(currentPriceR).shr(128)
 
   const { leverage, effectiveLeverage, dgA, dgB, funding } = calcPoolSide(pool, side)
 
   const L =
-    side == POOL_IDS.A
-      ? NUM(leverage)
-      : side == POOL_IDS.B
-        ? -NUM(leverage)
-        : 0
+    side == POOL_IDS.A ? NUM(leverage) :
+    side == POOL_IDS.B ? -NUM(leverage) : 0
+
   let valueRLinear
   let valueRCompound
   if (L != 0) {
     const priceRate = currentPrice.shl(128).div(entryPrice)
-    const leveragedPriceRate = SHL(currentPrice.sub(entryPrice).mul(L).add(entryPrice), 128).div(entryPrice)
-    valueRLinear = SHL(entryValueR.mul(leveragedPriceRate), -128)
-    valueRCompound = SHL(entryValueR.mul(powX128(priceRate, L)), -128)
+    const linearPriceRate = SHL(currentPrice.sub(entryPrice).mul(L).add(entryPrice), 128).div(entryPrice)
+    valueRLinear = SHL(entryValueR.mul(linearPriceRate), -128)
+    const powerPriceRate = powX128(priceRate, L)
+    valueRCompound = SHL(entryValueR.mul(powerPriceRate), -128)
+
+    if (entryValueR.gt(0)) {
+      const pnl = SHL(valueR.sub(entryValueR), 128).div(entryValueR)
+      const simulatedPnL = {
+        linear: SHL(valueRLinear.sub(entryValueR), 128).div(entryValueR),
+        power: SHL(valueRCompound.sub(entryValueR), 128).div(entryValueR),
+        powerToLinear: SHL(valueRCompound.sub(valueRLinear), 128).div(entryValueR),
+        funding: SHL(valueR.sub(valueRCompound), 128).div(entryValueR),
+      }
+    }
   }
 
   return {
@@ -192,7 +191,7 @@ export function calcPositionState(
     valueRLinear,
     valueRCompound,
     valueR,
-    valueU,
+    // valueU,
   }
 }
 

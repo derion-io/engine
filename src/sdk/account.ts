@@ -1,4 +1,4 @@
-import { Signer } from 'ethers'
+import { BigNumber, Signer } from 'ethers'
 import { Profile } from '../profile'
 import { Transition, FungiblePosition } from '../services/history'
 import { LogType } from '../types'
@@ -12,6 +12,7 @@ export class Account {
   logIndex: number = 0
   positions: { [id: string]: FungiblePosition } = {}
   transitions: Transition[] = []
+  balances: { [token: string]: BigNumber } = {}
 
   constructor(profile: Profile, address: string, signer?: Signer) {
     this.profile = profile
@@ -27,10 +28,11 @@ export class Account {
     if (!txLogs.length) {
       return
     }
-    
+
     processLogs(
       this.positions,
       this.transitions,
+      this.balances,
       txLogs,
       this.profile.configs.derivable.token,
       this.address,

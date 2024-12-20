@@ -1,6 +1,6 @@
 import { BigNumber } from 'ethers'
 import { LogType } from '../../types'
-import { bn } from '../../utils/helper'
+import { BIG_0, bn } from '../../utils/helper'
 import { defaultAbiCoder, getAddress, hexDataSlice } from 'ethers/lib/utils'
 import { Transition, FungiblePosition } from '../../services/history'
 
@@ -41,32 +41,150 @@ export function extractPoolAddresses(txLogs: LogType[][], tokenDerion: string): 
 export function processLogs(
   positions: { [id: string]: FungiblePosition },
   transitions: Transition[],
-  logs: LogType[][],
+  balances: { [token: string]: BigNumber },
+  txLogs: LogType[][],
   tokenDerion: string,
   account: string,
 ) {
-  for (const txLogs of logs) {
-    if (!txLogs.length) {
+  for (const logs of txLogs) {
+    if (!logs.length) {
       continue
     }
     const transition: Transition = {
-      txHash: txLogs[0].transactionHash,
-      blockNumber: txLogs[0].blockNumber,
-      timestamp: txLogs[0].timeStamp ? BigNumber.from(txLogs[0].timeStamp).toNumber() : undefined,
+      txHash: logs[0].transactionHash,
+      blockNumber: logs[0].blockNumber,
+      timestamp: logs[0].timeStamp ? BigNumber.from(logs[0].timeStamp).toNumber() : undefined,
       netTransfers: {},
     }
-    const _applyTransfer = (token: string, from: string, to: string, amount: BigNumber) => {
-      if (from == account) {
-        transition.netTransfers[token] = (transition.netTransfers[token] ?? bn(0)).sub(amount)
-      }
-      if (to == account) {
-        transition.netTransfers[token] = (transition.netTransfers[token] ?? bn(0)).add(amount)
-      }
-      if (transition.netTransfers[token].isZero()) {
-        delete transition.netTransfers[token]
+    const bingo = logs.some(log => {
+      if (log.address != tokenDerion) return false
+      const topic0 = log.topics?.[0]
+      const type = TOPICS[topic0]
+      if (type != 'TransferSingle') return false
+      const to = getAddress(hexDataSlice(log.topics[3], 12))
+      if (account != to) return false
+      return true
+    })
+    if (bingo) {
+      for (const log of logs) {
+        if (log.address != tokenDerion) {
+          continue
+        }
+        const topic0 = log.topics?.[0]
+        const type = TOPICS[topic0]
+        if (type != 'TransferSingle') {
+          // Derion does not use batch transfer
+          continue
+        }
+        // const operator = getAddress(hexDataSlice(log.topics[1], 12))
+        const from = getAddress(hexDataSlice(log.topics[2], 12))
+        const to = getAddress(hexDataSlice(log.topics[3], 12))
+        const [id, amount] = defaultAbiCoder.decode(["bytes32", "uint"], log.data)
+        const poolAddress = getAddress(hexDataSlice(id, 12))
+        // const side = BigNumber.from(hexDataSlice(id, 0, 12)).toNumber()
+        // const posId = pool + '-' + side
+        // console.log({from, to, id, amount})
+        const pos = positions[id] = positions[id] ?? {
+          id,
+          balance: balances[id] ?? BIG_0,
+          priceR: BIG_0,
+          price: BIG_0,
+          rPerBalance: BIG_0,
+        }
+        if (to == account) {
+          let priceR = BIG_0
+          logs.some(log => {
+            const topic0 = log.topics?.[0]
+            const type = TOPICS[topic0]
+            if (type != 'Swap') {
+              return false
+            }
+            // const payer = getAddress(hexDataSlice(log.topics[1], 12))
+            // const recipient = getAddress(hexDataSlice(log.topics[2], 12))
+            // const index = getAddress(hexDataSlice(log.topics[3], 12))
+            const datas = defaultAbiCoder.decode(["address", "uint", "uint", "uint", "uint", "uint", "uint"], log.data)
+            const sqrtPriceR = datas[6]
+            priceR = sqrtPriceR.mul(sqrtPriceR).shr(128)
+            return true
+          })
+          logs.some(log => {
+            const topic0 = log.topics?.[0] ?? 'NOTHING'
+            const type = TOPICS[topic0]
+            if (type != 'Position') {
+              return false
+            }
+            // const payer = getAddress(hexDataSlice(log.topics[1], 12))
+            // const recipient = getAddress(hexDataSlice(log.topics[2], 12))
+            // const index = getAddress(hexDataSlice(log.topics[3], 12))
+            const [posId, amount, maturity, sqrtPrice, valueR] = defaultAbiCoder.decode(["bytes32", "uint", "uint", "uint", "uint"], log.data)
+            if (posId != id) {
+              return false
+            }
+            transition.maturity = maturity.toNumber()
+            pos.maturity = maturity.toNumber()
+            const newBalance = pos.balance.add(amount)
+            if (sqrtPrice.gt(0)) {
+              const price = sqrtPrice.mul(sqrtPrice).shr(128)
+              transition.price = price
+              if (pos.price.gt(0)) {
+                pos.price = pos.price.mul(pos.balance).add(amount.mul(price)).div(newBalance)
+              } else {
+                pos.price = price
+              }
+              // if (!priceR.gt(0)) {
+              //   const pool = pools[poolAddress]
+              //   // special case for INDEX = TOKEN_R / STABLECOIN
+              //   if (pool.config.TOKEN_R == pool.baseToken && stablecoins.includes(pool.quoteToken)) {
+              //     priceR = price
+              //   }
+              // }
+            }
+            const posValueR = pos.rPerBalance.mul(pos.balance).shr(128)
+            if (valueR.gt(0)) {
+              transition.rPerAmount = valueR.shl(128).div(amount)
+              pos.rPerBalance = posValueR.add(valueR).shl(128).div(newBalance)
+            }
+            if (priceR.gt(0)) {
+              transition.priceR = priceR
+              if (valueR.gt(0)) {
+                if (posValueR.gt(0)) {
+                  pos.priceR = pos.priceR.mul(posValueR).add(priceR.mul(valueR)).div(posValueR.add(valueR))
+                } else {
+                  pos.priceR = priceR
+                }
+              }
+            }
+            return true
+          })
+        }
       }
     }
-    for (const log of txLogs) {
+    const _applyTransfer = (token: string, from: string, to: string, amount: BigNumber) => {
+      if (!amount?.gt(0)) {
+        return
+      }
+      if (bingo) {
+        if (from == account) {
+          transition.netTransfers[token] = (transition.netTransfers[token] ?? BIG_0).sub(amount)
+        }
+        if (to == account) {
+          transition.netTransfers[token] = (transition.netTransfers[token] ?? BIG_0).add(amount)
+        }
+        if (transition.netTransfers[token].isZero()) {
+          delete transition.netTransfers[token]
+        }
+      }
+      if (to == account) {
+        balances[token] = (balances[token] ?? BIG_0).add(amount)
+      }
+      if (from == account) {
+        balances[token] = (balances[token] ?? BIG_0).sub(amount)
+      }
+      if ([from, to].includes(account) && positions[token]) {
+        positions[token].balance = balances[token]
+      }
+    }
+    for (const log of logs) {
       const topic0 = log.topics?.[0]
       const type = TOPICS[topic0]
       if (type == 'Transfer' && log.topics?.length == 3) {
@@ -78,116 +196,17 @@ export function processLogs(
         _applyTransfer(token, from, to, amount)
       } else if (type == 'TransferSingle') {
         // ERC1155
-        if (log.address != tokenDerion) {
-          continue
-        }
         const from = getAddress(hexDataSlice(log.topics[2], 12))
         const to = getAddress(hexDataSlice(log.topics[3], 12))
         const [id, amount] = defaultAbiCoder.decode(["bytes32", "uint"], log.data)
         _applyTransfer(id, from, to, amount)
       } else if (type == 'TransferBatch') {
         // ERC1155
-        if (log.address != tokenDerion) {
-          continue
-        }
         const from = getAddress(hexDataSlice(log.topics[2], 12))
         const to = getAddress(hexDataSlice(log.topics[3], 12))
         const [ids, amounts] = defaultAbiCoder.decode(["bytes32[]", "uint256[]"], log.data)
         for (let i = 0; i < ids.length; ++i) {
           _applyTransfer(ids[i], from, to, amounts[i])
-        }
-      }
-    }
-    for (const log of txLogs) {
-      if (log.address != tokenDerion) {
-        continue
-      }
-      const topic0 = log.topics?.[0]
-      const type = TOPICS[topic0]
-      if (type != 'TransferSingle') {
-        // Derion does not use batch transfer
-        continue
-      }
-      // const operator = getAddress(hexDataSlice(log.topics[1], 12))
-      const from = getAddress(hexDataSlice(log.topics[2], 12))
-      const to = getAddress(hexDataSlice(log.topics[3], 12))
-      const [id, amount] = defaultAbiCoder.decode(["bytes32", "uint"], log.data)
-      const poolAddress = getAddress(hexDataSlice(id, 12))
-      // const side = BigNumber.from(hexDataSlice(id, 0, 12)).toNumber()
-      // const posId = pool + '-' + side
-      // console.log({from, to, id, amount})
-      const pos = positions[id] = positions[id] ?? {
-        id,
-        balance: bn(0),
-        priceR: bn(0),
-        price: bn(0),
-        rPerBalance: bn(0),
-      }
-      if (to == account) {
-        let priceR = bn(0)
-        txLogs.some(log => {
-          const topic0 = log.topics?.[0]
-          const type = TOPICS[topic0]
-          if (type != 'Swap') {
-            return false
-          }
-          // const payer = getAddress(hexDataSlice(log.topics[1], 12))
-          // const recipient = getAddress(hexDataSlice(log.topics[2], 12))
-          // const index = getAddress(hexDataSlice(log.topics[3], 12))
-          const datas = defaultAbiCoder.decode(["address", "uint", "uint", "uint", "uint", "uint", "uint"], log.data)
-          const sqrtPriceR = datas[6]
-          priceR = sqrtPriceR.mul(sqrtPriceR).shr(128)
-          return true
-        })
-        txLogs.some(log => {
-          const topic0 = log.topics?.[0] ?? 'NOTHING'
-          const type = TOPICS[topic0]
-          if (type != 'Position') {
-            return false
-          }
-          // const payer = getAddress(hexDataSlice(log.topics[1], 12))
-          // const recipient = getAddress(hexDataSlice(log.topics[2], 12))
-          // const index = getAddress(hexDataSlice(log.topics[3], 12))
-          const [posId, amount, maturity, sqrtPrice, valueR] = defaultAbiCoder.decode(["bytes32", "uint", "uint", "uint", "uint"], log.data)
-          if (posId != id) {
-            return false
-          }
-          transition.maturity = maturity.toNumber()
-          pos.maturity = maturity.toNumber()
-          const newBalance = pos.balance.add(amount)
-          if (sqrtPrice.gt(0)) {
-            const price = sqrtPrice.mul(sqrtPrice).shr(128)
-            transition.price = price
-            pos.price = pos.price.mul(pos.balance).add(amount.mul(price)).div(newBalance)
-            // if (!priceR.gt(0)) {
-            //   const pool = pools[poolAddress]
-            //   // special case for INDEX = TOKEN_R / STABLECOIN
-            //   if (pool.config.TOKEN_R == pool.baseToken && stablecoins.includes(pool.quoteToken)) {
-            //     priceR = price
-            //   }
-            // }
-          }
-          const posValueR = pos.rPerBalance.mul(pos.balance)
-          if (valueR.gt(0)) {
-            transition.rPerAmount = valueR.shl(128).div(amount)
-            pos.rPerBalance = posValueR.add(valueR).shl(128).div(newBalance)
-          }
-          if (priceR.gt(0)) {
-            transition.priceR = priceR
-            if (valueR.gt(0)) {
-              pos.priceR = posValueR.mul(pos.priceR).shr(128).add(priceR.mul(valueR)).div(posValueR.add(valueR))
-            }
-          }
-          return true
-        })
-      }
-      if (to == account) {
-        pos.balance = pos.balance.add(amount)
-      }
-      if (from == account) {
-        pos.balance = pos.balance.sub(amount)
-        if (!pos.balance.gt(0)) {
-          delete positions[id]
         }
       }
     }

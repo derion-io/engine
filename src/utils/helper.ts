@@ -12,8 +12,11 @@ export const provider = new ethers.providers.JsonRpcProvider('https://bsc-datase
 
 export const bn = BigNumber.from
 
+export const BIG_Q128 = bn(1).shl(128)
+export const BIG_Q256M = bn(1).shl(256).sub(1)
 export const BIG_E18 = bn(10).pow(18)
 export const BIG_0 = bn(0)
+export const BIG_M1 = bn(-1)
 
 export const weiToNumber = (wei: any, decimals: number = 18, decimalToDisplay?: number): string => {
   if (!wei || !Number(wei)) return '0'
@@ -446,9 +449,16 @@ export function xr(k: number, r: BigNumber, v: BigNumber): number {
 }
 
 export const powX128 = (x: BigNumber, k: number): BigNumber => {
-  let y = bn(1).shl(128)
+  let y = BIG_Q128
+  const neg = k < 0
+  if (neg) {
+    k = -k;
+  }
   for (let i = 0; i < k; ++i) {
     y = y.mul(x).shr(128)
+  }
+  if (neg) {
+    return BIG_Q256M.div(y)
   }
   return y
 }
