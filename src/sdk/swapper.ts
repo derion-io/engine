@@ -333,7 +333,7 @@ export class Swapper {
           poolId: idOut.toNumber(),
         }
         // const helper = new Contract(this.helperContract.address as string, this.profile.getAbi('Helper'), this.provider)
-        const { openTx } = await this.getAggRateAndBuildTxSwapApi(getRateData, openData, signer)
+        const { openTx, swapData, rateData } = await this.getAggRateAndBuildTxSwapApi(getRateData, openData, signer)
         // console.log(openTx)
         populateTxData.push(openTx)
 
@@ -401,7 +401,6 @@ export class Swapper {
   }: SwapCallDataParameterType): Promise<SwapCallDataReturnType> {
     try {
       const swapCallData = await this.getSwapCallData({ step, poolGroup, poolIn, poolOut, idIn, idOut, deps: { signer, pools } })
-
       const inputs = [
         {
           mode: TRANSFER,
@@ -479,7 +478,7 @@ export class Swapper {
     const promises: any = []
     const fetchStepPromise = steps.map(async (step) => {
       const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut, pools)
-      console.log(poolGroup)
+      // console.log(poolGroup)
       // if (
       //   (step.tokenIn === NATIVE_ADDRESS || step.tokenOut === NATIVE_ADDRESS) &&
       //   poolGroup.TOKEN_R !== this.profile.configs.wrappedTokenAddress
@@ -520,7 +519,7 @@ export class Swapper {
 
         promises.push(...populateTxData)
       } else {
-        console.log('SwapCall')
+        // console.log('SwapCall')
         const { inputs, populateTxData } = await this.getSwapCallData({
           step,
           poolGroup,
@@ -584,8 +583,8 @@ export class Swapper {
         throw new Error(swapData.error)
       }
       let openTx = null
-      if (helperOverride) {
-        openTx = await helperOverride.populateTransaction.aggregateAndOpen({
+      // if (helperOverride) {
+        openTx = await this.helperContract.populateTransaction.aggregateAndOpen({
           token: getRateData.srcToken,
           tokenOperator: rateData.priceRoute.tokenTransferProxy,
           aggregator: swapData.to,
@@ -595,8 +594,8 @@ export class Swapper {
           payer: address, // for event Swap.payer
           recipient: address,
           INDEX_R: this.getIndexR(getRateData.destToken), // TOKEN_R
-        })
-      }
+        // })
+      })
       return {
         rateData,
         swapData,
@@ -612,7 +611,7 @@ export class Swapper {
     const amount = getRateData?.srcAmount || getRateData.destAmount
     const rateData = await (
       await fetch(
-        `${this.paraDataBaseURL}/?version=${this.paraDataBaseVersion}&srcToken=${getRateData.srcToken}&srcDecimals=${6}&destToken=${
+        `${this.paraDataBaseURL}/?version=${this.paraDataBaseVersion}&srcToken=${getRateData.srcToken}&srcDecimals=${18}&destToken=${
           getRateData.destToken
         }&destDecimals=${18}&amount=${amount}&side=${getRateData.side}&excludeDirectContractMethods=${
           getRateData.excludeDirectContractMethods || false
@@ -755,7 +754,6 @@ export class Swapper {
         gasPrice: gasPrice || undefined,
       })
       if (callStatic) {
-        console.log(callStatic)
         return await utr.callStatic.exec(...params)
       }
       const res = await utr.exec(...params)
