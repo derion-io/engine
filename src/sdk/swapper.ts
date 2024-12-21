@@ -1,5 +1,5 @@
 import { JsonRpcProvider, Networkish, TransactionReceipt } from '@ethersproject/providers'
-import { BigNumber, Contract, Signer, utils } from 'ethers'
+import { BigNumber, Contract, Signer, utils, VoidSigner } from 'ethers'
 import { ConnectionInfo, isAddress } from 'ethers/lib/utils'
 import { Profile } from '../profile'
 import { Q128 } from '../services/resource'
@@ -128,22 +128,37 @@ export class Swapper {
   overridedProvider(): JsonRpcProvider {
     try {
       const stateOverride: any = {}
-      // poolAddresses.forEach((address: string) => {
-      stateOverride[this.profile.configs.derivable.logic as string] = {
-        code: this.profile.getAbi('View').deployedBytecode,
-      }
-      if (this.profile.configs.derivable.uniswapV2Fetcher) {
-        stateOverride[this.profile.configs.derivable.uniswapV2Fetcher as string] = {
-          code: this.profile.getAbi('FetcherV2Override').deployedBytecode,
-        }
-      }
-
+      const router = this.profile.configs.helperContract.utr as string
+      const fetcherV2 = this.profile.configs.derivable.uniswapV2Fetcher as string
       this.overrideProvider.setStateOverride({
-        ...stateOverride,
-        [`0x${this.profile.getAbi('TokensInfo').deployedBytecode.slice(-40)}` as string]: {
-          code: this.profile.getAbi('TokensInfo').deployedBytecode,
+        [router]: {
+          code: this.profile.getAbi('UTROverride').deployedBytecode,
         },
+        ...(fetcherV2
+          ? {
+              [fetcherV2]: {
+                code: this.profile.getAbi('FetcherV2Mock').deployedBytecode,
+              },
+            }
+          : {}),
       })
+
+      // poolAddresses.forEach((address: string) => {
+      // stateOverride[this.profile.configs.derivable.logic as string] = {
+      //   code: this.profile.getAbi('View').deployedBytecode,
+      // }
+      // if (this.profile.configs.derivable.uniswapV2Fetcher) {
+      //   stateOverride[this.profile.configs.derivable.uniswapV2Fetcher as string] = {
+      //     code: this.profile.getAbi('FetcherV2Override').deployedBytecode,
+      //   }
+      // }
+
+      // this.overrideProvider.setStateOverride({
+      //   ...stateOverride,
+      //   [`0x${this.profile.getAbi('TokensInfo').deployedBytecode.slice(-40)}` as string]: {
+      //     code: this.profile.getAbi('TokensInfo').deployedBytecode,
+      //   },
+      // })
       return this.overrideProvider
     } catch (error) {
       throw error
@@ -740,7 +755,10 @@ export class Swapper {
       //   gasLimit,
       //   gasPrice: gasPrice || undefined
       // })
-      const utr = new Contract(this.profile.configs.helperContract.utr as string, this.profile.getAbi('UTR'), deps.signer)
+      const address = await deps.signer.getAddress()
+      const overrideUTRSigner = new VoidSigner(address, this.overrideProvider);
+
+      const utr = new Contract(this.profile.configs.helperContract.utr as string, this.profile.getAbi('UTR'), callStatic ? overrideUTRSigner : signer)
       params.push({
         value,
         gasLimit: gasLimit || undefined,
