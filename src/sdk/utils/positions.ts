@@ -1,7 +1,7 @@
 import { getAddress, hexDataSlice } from "ethers/lib/utils"
-import { PositionState, SdkPool, SdkPools } from "../../types"
+import { SdkPool, SdkPools } from "../../types"
 import { BigNumber } from "ethers"
-import { BIG_0, BIG_E18, formatQ128, IEW, kx, NUM, powX128, rateFromHL, SHL, WEI, xr } from "../../utils/helper"
+import { BIG_E18, formatPercentage, formatQ128, IEW, kx, NUM, powX128, rateFromHL, SHL, thousandsInt, WEI, xr } from "../../utils/helper"
 import { POOL_IDS } from "../../utils/constant"
 import { FungiblePosition } from "../../services/history"
 
@@ -9,22 +9,28 @@ const { A, B, C } = POOL_IDS
 
 export type PositionView = {
   poolAddress: string
-  pool: SdkPool
   side: number
   balance: BigNumber
   entryValueR: BigNumber
   entryValueU: BigNumber
   entryPrice: BigNumber
+  currentPrice: BigNumber
   valueRLinear?: BigNumber
   valueRCompound?: BigNumber
-  valueU: BigNumber
+  valueU?: BigNumber
   valueR: BigNumber
-  currentPrice: BigNumber
-  dgA: BigNumber
-  dgB: BigNumber
+  deleveragePriceA: BigNumber
+  deleveragePriceB: BigNumber
   leverage: number
   effectiveLeverage: number
   funding: number
+  netPnL?: BigNumber
+  simPnL?: {
+    linear: BigNumber
+    power: BigNumber
+    powerBenefit: BigNumber
+    funding: BigNumber
+  }
 }
 
 export function calcPoolInfo(pool: SdkPool): any {
@@ -34,7 +40,12 @@ export function calcPoolInfo(pool: SdkPool): any {
   const { MARK, K, INTEREST_HL, PREMIUM_HL } = pool.config
   const { R, a, b } = pool.state
   const { rA, rB, rC, spot } = pool.view
-  const exp = 2 // only Uniswap v3
+
+  const xA = xr(K, R.shr(1), a)
+  const xB = xr(-K, R.shr(1), b)
+  const dgA = MARK.mul(WEI(xA)).div(BIG_E18)
+  const dgB = MARK.mul(WEI(xB)).div(BIG_E18)
+
   const sides = {
     [A]: {} as any,
     [B]: {} as any,
@@ -80,6 +91,8 @@ export function calcPoolInfo(pool: SdkPool): any {
     sides,
     interestRate,
     maxPremiumRate,
+    dgA,
+    dgB,
   }
 }
 
@@ -90,21 +103,15 @@ export function calcPoolSide(
   if (!pool?.config || !pool?.view || !pool?.state) {
     throw new Error('missing pool data')
   }
-  const { MARK, K } = pool.config
-  const { a, b, R } = pool.state
+  const { K } = pool.config
 
   const poolInfo = calcPoolInfo(pool)
-  const { sides } = poolInfo
+  const { sides, dgA, dgB } = poolInfo
 
   const exp = 2 // always Uniswap v3
-  const leverage = K / exp
   const ek = sides[side].k
+  const leverage = K / 2
   const effectiveLeverage = Math.min(ek, K) / exp
-
-  const xA = xr(K, R.shr(1), a)
-  const xB = xr(-K, R.shr(1), b)
-  const dgA = MARK.mul(WEI(xA)).div(BIG_E18)
-  const dgB = MARK.mul(WEI(xB)).div(BIG_E18)
 
   const interest = sides[side].interest
   const premium = sides[side].premium
@@ -124,7 +131,7 @@ export function calcPoolSide(
 export function calcPositionState(
   position: FungiblePosition,
   pools: SdkPools,
-  currentPriceR: BigNumber,
+  currentPriceR?: BigNumber,
   balance = position.balance,
 ): PositionView {
   const { id, price, priceR, rPerBalance, maturity } = position
@@ -143,65 +150,82 @@ export function calcPositionState(
   const entryValueR = balance.mul(rPerBalance).shr(128)
   const entryValueU = entryValueR.mul(priceR).shr(128)
 
-  const rX = side == POOL_IDS.A ? rA : side == POOL_IDS.B ? rB : rC
-  const sX = side == POOL_IDS.A ? sA : side == POOL_IDS.B ? sB : sC
+  const rX = side == A ? rA : side == B ? rB : rC
+  const sX = side == A ? sA : side == B ? sB : sC
 
   const valueR = rX.mul(balance).div(sX)
-  const valueU = valueR.mul(currentPriceR).shr(128)
+  const valueU = currentPriceR ? valueR.mul(currentPriceR).shr(128) : undefined
 
   const { leverage, effectiveLeverage, dgA, dgB, funding } = calcPoolSide(pool, side)
 
   const L =
-    side == POOL_IDS.A ? NUM(leverage) :
-    side == POOL_IDS.B ? -NUM(leverage) : 0
-
-  let valueRLinear
-  let valueRCompound
-  if (L != 0) {
-    const priceRate = currentPrice.shl(128).div(entryPrice)
-    const linearPriceRate = SHL(currentPrice.sub(entryPrice).mul(L).add(entryPrice), 128).div(entryPrice)
-    valueRLinear = SHL(entryValueR.mul(linearPriceRate), -128)
-    const powerPriceRate = powX128(priceRate, L)
-    valueRCompound = SHL(entryValueR.mul(powerPriceRate), -128)
-
-    if (entryValueR.gt(0)) {
-      const pnl = SHL(valueR.sub(entryValueR), 128).div(entryValueR)
-      const simulatedPnL = {
-        linear: SHL(valueRLinear.sub(entryValueR), 128).div(entryValueR),
-        power: SHL(valueRCompound.sub(entryValueR), 128).div(entryValueR),
-        powerToLinear: SHL(valueRCompound.sub(valueRLinear), 128).div(entryValueR),
-        funding: SHL(valueR.sub(valueRCompound), 128).div(entryValueR),
-      }
-    }
-  }
-
-  return {
+    side == A ? NUM(leverage) :
+    side == B ? -NUM(leverage) : 0
+  
+  const result: PositionView = {
     poolAddress,
     side,
-    pool,
     balance,
     leverage,
     effectiveLeverage,
-    dgA,
-    dgB,
+    deleveragePriceA: dgA,
+    deleveragePriceB: dgB,
     funding,
     entryPrice,
     currentPrice,
     entryValueR,
     entryValueU,
-    valueRLinear,
-    valueRCompound,
     valueR,
     valueU,
   }
+
+  if (L != 0) {
+    const priceRate = currentPrice.shl(128).div(entryPrice)
+    const linearPriceRate = SHL(currentPrice.sub(entryPrice).mul(L).add(entryPrice), 128).div(entryPrice)
+    result.valueRLinear = SHL(entryValueR.mul(linearPriceRate), -128)
+    const powerPriceRate = powX128(priceRate, L)
+    result.valueRCompound = SHL(entryValueR.mul(powerPriceRate), -128)
+
+    if (entryValueR.gt(0)) {
+      result.netPnL = SHL(valueR.sub(entryValueR), 128).div(entryValueR)
+      result.simPnL = {
+        linear: SHL(result.valueRLinear.sub(entryValueR), 128).div(entryValueR),
+        power: SHL(result.valueRCompound.sub(entryValueR), 128).div(entryValueR),
+        powerBenefit: SHL(result.valueRCompound.sub(result.valueRLinear), 128).div(entryValueR),
+        funding: SHL(valueR.sub(result.valueRCompound), 128).div(entryValueR),
+      }
+    }
+  }
+
+  return result
 }
 
 export function formatPositionView(
   pv: PositionView
 ): any {
-  return {
+  const res: any = {
+    name: `${pv.side == A ? 'Long' : pv.side == B ? 'Short' : 'LP'} x${pv.leverage}`,
+    pool: pv.poolAddress,
+    balance: thousandsInt(pv.balance.toString(), 6),
     entryPrice: formatQ128(pv.entryPrice),
     currentPrice: formatQ128(pv.currentPrice),
-    range: formatQ128(pv.dgB) + '-' + formatQ128(pv.dgA),
+    entryValueR: thousandsInt(pv.entryValueR.toString(), 6),
+    valueR: thousandsInt(pv.valueR.toString(), 6),
+    entryValueU: thousandsInt(pv.entryValueU.toString(), 6),
+    valueU: pv.valueU ? thousandsInt(pv.valueU.toString(), 6) : 'missing reserve token price',
+    range: [formatQ128(pv.deleveragePriceB), formatQ128(pv.deleveragePriceA)],
+    fundingRate: formatPercentage(pv.funding),
   }
+  if (pv.netPnL) {
+    res.netPnL = formatPercentage(formatQ128(pv.netPnL))
+  }
+  if (pv.simPnL) {
+    res.simPnL = {
+      linear: formatPercentage(formatQ128(pv.simPnL.linear)),
+      power: formatPercentage(formatQ128(pv.simPnL.power)),
+      powerBenefit: formatPercentage(formatQ128(pv.simPnL.powerBenefit)),
+      fundingPaid: formatPercentage(formatQ128(pv.simPnL.funding)),
+    }
+  }
+  return res
 }

@@ -438,6 +438,18 @@ export function formatQ128(n: BigNumber, PRECISION = 10000): number {
   return n.mul(PRECISION).shr(128).toNumber()/PRECISION
 }
 
+export function formatPercentage(n: number, precision = 2): string {
+  return (n * 100).toFixed(precision) + '%'
+}
+
+export const thousandsInt = (int: string, count = 3): string => {
+  const regExp = new RegExp(String.raw`(\d+)(\d{${count}})`)
+  while (regExp.test(int)) {
+    int = int.replace(regExp, '$1' + ',' + '$2')
+  }
+  return int
+}
+
 export function xr(k: number, r: BigNumber, v: BigNumber): number {
   try {
     const x = NUM(DIV(r, v))

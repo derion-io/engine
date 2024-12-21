@@ -57,13 +57,7 @@ describe('Derion SDK', () => {
     
     const posViews = Object.values(account.positions).map(pos => sdk.calcPositionState(pos, pools))
 
-    console.log(posViews)
-
     console.log(...posViews.map(pv => formatPositionView(pv)))
-
-    // await stateLoader.update({ pools }) // not nessesary here
-    // console.log(Object.values(pools))
-    // console.log(Object.values(account.positions))
   })
     test('derion-sdk-swap', async () => {
       const chainId = 42161
