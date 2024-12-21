@@ -7,10 +7,7 @@ import { PendingSwapTransactionType, SdkPool, SdkPools } from '../types'
 import { ProfileConfigs } from '../utils/configs'
 import { NATIVE_ADDRESS, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
 import { bn, packId } from '../utils/helper'
-import TokenAbi from '../../src/abi/Token.json'
 
-import * as OracleSdk from '../utils/OracleSdk'
-import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
 import { decodeErc1155Address, getAddressByErc1155Address, getIdByAddress, isErc1155Address } from './utils'
 const PAYMENT = 0
 const TRANSFER = 1

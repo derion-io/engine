@@ -6,7 +6,7 @@ import { hexZeroPad } from 'ethers/lib/utils'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { NATIVE_ADDRESS, POOL_IDS } from '../src/utils/constant'
 import { numberToWei } from '../src/utils/helper'
-import { Wallet } from 'ethers'
+import { VoidSigner } from 'ethers'
 import { formatPositionView } from '../src/sdk/utils/positions'
 
 const interceptor = new Interceptor()
@@ -62,10 +62,8 @@ describe('Derion SDK', () => {
   test('derion-sdk-swap', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
-    const poolsLoad = ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B', '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE']
     const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
     const scanApi = process.env['SCAN_API_' + chainId] ?? throwError()
-    const privateKey = process.env['PRIVATE_KEY'] ?? throwError()
     const sdk = new DerionSDK({ chainId })
     await sdk.init()
 
@@ -75,7 +73,7 @@ describe('Derion SDK', () => {
       apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
     }
     )
-    const signer = new Wallet(privateKey, new JsonRpcProvider(rpcUrl));
+    const signer = new VoidSigner(accountAddress, new JsonRpcProvider(rpcUrl));
 
     const accTopic = hexZeroPad(accountAddress, 32)
     const logs = await provider.getLogs({
@@ -116,10 +114,8 @@ describe('Derion SDK', () => {
   test('derion-sdk-agg', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
-    const poolsLoad = ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B', '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE']
     const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
     const scanApi = process.env['SCAN_API_' + chainId] ?? throwError()
-    const privateKey = process.env['PRIVATE_KEY'] ?? throwError()
     const sdk = new DerionSDK({ chainId })
     await sdk.init()
 
@@ -129,7 +125,7 @@ describe('Derion SDK', () => {
       apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
     }
     )
-    const signer = new Wallet(privateKey, new JsonRpcProvider(rpcUrl));
+    const signer = new VoidSigner(accountAddress, new JsonRpcProvider(rpcUrl));
 
     const accTopic = hexZeroPad(accountAddress, 32)
     const logs = await provider.getLogs({
