@@ -5,7 +5,7 @@ import { AssistedJsonRpcProvider } from 'assisted-json-rpc-provider'
 import { hexZeroPad } from 'ethers/lib/utils'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { NATIVE_ADDRESS, POOL_IDS } from '../src/utils/constant'
-import { numberToWei, thousandsInt } from '../src/utils/helper'
+import { numberToWei, packId, thousandsInt } from '../src/utils/helper'
 import { VoidSigner } from 'ethers'
 import { formatPositionView } from '../src/sdk/utils/positions'
 
@@ -163,7 +163,6 @@ describe('Derion SDK', () => {
     const scanApi = process.env['SCAN_API_' + chainId] ?? throwError()
     const sdk = new DerionSDK({ chainId })
     await sdk.init()
-
     const provider = new AssistedJsonRpcProvider(
       new JsonRpcProvider(rpcUrl), {
       url: scanApi,
@@ -190,14 +189,20 @@ describe('Derion SDK', () => {
     const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
     const account = sdk.createAccount(accountAddress)
     account.processLogs(txLogs)
+    const posKey = Object.keys(account.positions).filter(pos => {
+      return account.positions[pos].balance.gt(0)
+    })
+    const positionPoolAddress = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd'
+    const positionSide = POOL_IDS.A
+    const position = account.positions[Object.keys(account.positions).filter(key => key.includes(positionPoolAddress.toLowerCase().slice(2, 100)))[0]]
     const swapper = sdk.createSwapper(rpcUrl)
     const { amountOuts } = await swapper.simulate({
-      tokenIn: NATIVE_ADDRESS,
-      tokenOut: packPosId(`0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd`, POOL_IDS.A),
-      amount: numberToWei(0.0001, 18),
+      tokenIn: packPosId(positionPoolAddress, positionSide),
+      tokenOut: NATIVE_ADDRESS,
+      amount: position.balance.toString(),
       deps: {
         signer,
-        pools,
+        pools
       }
     })
     const amountOut = amountOuts[amountOuts.length-1]
