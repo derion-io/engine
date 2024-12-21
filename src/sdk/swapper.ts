@@ -211,10 +211,10 @@ export class Swapper {
     types: Array<string> = ['uniswap3'],
   ):
     | {
-        quoteTokenIndex: number
-        stablecoin: string
-        address: string
-      }
+      quoteTokenIndex: number
+      stablecoin: string
+      address: string
+    }
     | undefined {
     try {
       const {
@@ -285,31 +285,31 @@ export class Swapper {
       const inputs =
         step.tokenIn === NATIVE_ADDRESS
           ? [
-              {
-                mode: CALL_VALUE,
-                token: ZERO_ADDRESS,
-                eip: 0,
-                id: 0,
-                amountIn: step.amountIn,
-                recipient: ZERO_ADDRESS,
-              },
-            ]
+            {
+              mode: CALL_VALUE,
+              token: ZERO_ADDRESS,
+              eip: 0,
+              id: 0,
+              amountIn: step.amountIn,
+              recipient: ZERO_ADDRESS,
+            },
+          ]
           : [
-              {
-                mode: !needAggregator ? PAYMENT : TRANSFER,
-                eip: isErc1155Address(step.tokenIn) ? 1155 : 20,
-                token: isErc1155Address(step.tokenIn) ? this.profile.configs.derivable.token : step.tokenIn,
-                id: isErc1155Address(step.tokenIn) ? packId(idIn.toString(), poolIn) : 0,
-                amountIn: step.amountIn,
-                recipient:
-                  isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R
-                    ? this.helperContract.address
-                    : // this.getUniPool(step.tokenIn, poolGroup.TOKEN_R)
-                    isErc1155Address(step.tokenIn)
+            {
+              mode: !needAggregator ? PAYMENT : TRANSFER,
+              eip: isErc1155Address(step.tokenIn) ? 1155 : 20,
+              token: isErc1155Address(step.tokenIn) ? this.profile.configs.derivable.token : step.tokenIn,
+              id: isErc1155Address(step.tokenIn) ? packId(idIn.toString(), poolIn) : 0,
+              amountIn: step.amountIn,
+              recipient:
+                isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R
+                  ? this.helperContract.address
+                  : // this.getUniPool(step.tokenIn, poolGroup.TOKEN_R)
+                  isErc1155Address(step.tokenIn)
                     ? poolIn
                     : poolOut,
-              },
-            ]
+            },
+          ]
 
       const populateTxData = []
 
@@ -465,9 +465,9 @@ export class Swapper {
         token: isErc1155Address(step.tokenOut) ? (this.profile.configs.derivable.token as string) : step.tokenOut,
         id: isErc1155Address(step.tokenOut)
           ? packId(
-              getIdByAddress(step.tokenOut, poolGroup.TOKEN_R, this.profile.configs.wrappedTokenAddress).toString(),
-              getAddressByErc1155Address(step.tokenOut, poolGroup.TOKEN_R, this.profile.configs.wrappedTokenAddress),
-            )
+            getIdByAddress(step.tokenOut, poolGroup.TOKEN_R, this.profile.configs.wrappedTokenAddress).toString(),
+            getAddressByErc1155Address(step.tokenOut, poolGroup.TOKEN_R, this.profile.configs.wrappedTokenAddress),
+          )
           : bn(0),
         amountOutMin: step.amountOutMin,
       })
@@ -584,16 +584,16 @@ export class Swapper {
       }
       let openTx = null
       // if (helperOverride) {
-        openTx = await this.helperContract.populateTransaction.aggregateAndOpen({
-          token: getRateData.srcToken,
-          tokenOperator: rateData.priceRoute.tokenTransferProxy,
-          aggregator: swapData.to,
-          aggregatorData: swapData.data,
-          pool: openData?.poolAddress,
-          side: openData?.poolId,
-          payer: address, // for event Swap.payer
-          recipient: address,
-          INDEX_R: this.getIndexR(getRateData.destToken), // TOKEN_R
+      openTx = await this.helperContract.populateTransaction.aggregateAndOpen({
+        token: getRateData.srcToken,
+        tokenOperator: rateData.priceRoute.tokenTransferProxy,
+        aggregator: swapData.to,
+        aggregatorData: swapData.data,
+        pool: openData?.poolAddress,
+        side: openData?.poolId,
+        payer: address, // for event Swap.payer
+        recipient: address,
+        INDEX_R: this.getIndexR(getRateData.destToken), // TOKEN_R
         // })
       })
       return {
@@ -611,12 +611,9 @@ export class Swapper {
     const amount = getRateData?.srcAmount || getRateData.destAmount
     const rateData = await (
       await fetch(
-        `${this.paraDataBaseURL}/?version=${this.paraDataBaseVersion}&srcToken=${getRateData.srcToken}&srcDecimals=${18}&destToken=${
-          getRateData.destToken
-        }&destDecimals=${18}&amount=${amount}&side=${getRateData.side}&excludeDirectContractMethods=${
-          getRateData.excludeDirectContractMethods || false
-        }&otherExchangePrices=${getRateData.otherExchangePrices || true}&partner=${getRateData.partner}&network=${
-          this.configs.chainId
+        `${this.paraDataBaseURL}/?version=${this.paraDataBaseVersion}&srcToken=${getRateData.srcToken}&srcDecimals=${18}&destToken=${getRateData.destToken
+        }&destDecimals=${18}&amount=${amount}&side=${getRateData.side}&excludeDirectContractMethods=${getRateData.excludeDirectContractMethods || false
+        }&otherExchangePrices=${getRateData.otherExchangePrices || true}&partner=${getRateData.partner}&network=${this.configs.chainId
         }&userAddress=${address}`,
         {
           method: 'GET',
@@ -631,8 +628,7 @@ export class Swapper {
     myHeaders.append('Content-Type', 'application/json')
     const swapData = await (
       await fetch(
-        `${this.paraBuildTxBaseURL}/${this.configs.chainId}?ignoreGasEstimate=${getRateData.ignoreGasEstimate || true}&ignoreAllowance=${
-          getRateData.ignoreAllowance || true
+        `${this.paraBuildTxBaseURL}/${this.configs.chainId}?ignoreGasEstimate=${getRateData.ignoreGasEstimate || true}&ignoreAllowance=${getRateData.ignoreAllowance || true
         }&gasPrice=${rateData.priceRoute.gasCost}`,
         {
           method: 'POST',
@@ -806,9 +802,9 @@ export class Swapper {
           amountOutMin: 0,
           useSweep: false
           // useSweep: !!(
-            // (isErc1155Address(tokenOut) && (pools?.[decodeErc1155Address(tokenOut)?.address]?.config?.MATURITY || 0) > 0)
-            // && tokenOutMaturity?.gt(0)
-            // && balances[tokenOut]?.gt(0)
+          // (isErc1155Address(tokenOut) && (pools?.[decodeErc1155Address(tokenOut)?.address]?.config?.MATURITY || 0) > 0)
+          // && tokenOutMaturity?.gt(0)
+          // && balances[tokenOut]?.gt(0)
           // ),
           //   currentBalanceOut: balances[tokenOut]
         },
@@ -831,7 +827,7 @@ export class Swapper {
     }
     gasLimit?: BigNumber
   }): Promise<any> => {
-    return await this.swap({...params, callStatic: true})
+    return await this.swap({ ...params, callStatic: true })
   }
   //   swap = async ({
   //     tokenIn,

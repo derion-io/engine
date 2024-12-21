@@ -28,9 +28,9 @@ describe('Derion SDK', () => {
 
     const provider = new AssistedJsonRpcProvider(
       new JsonRpcProvider(rpcUrl), {
-        url: scanApi,
-        apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
-      }
+      url: scanApi,
+      apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
+    }
     )
     const accTopic = hexZeroPad(accountAddress, 32)
     const logs = await provider.getLogs({
@@ -54,116 +54,116 @@ describe('Derion SDK', () => {
     const account = sdk.createAccount(accountAddress)
     account.processLogs(txLogs)
     account.processLogs(txLogs) // the second call does nothing
-    
+
     const posViews = Object.values(account.positions).map(pos => sdk.calcPositionState(pos, pools))
 
     console.log(...posViews.map(pv => formatPositionView(pv)))
   })
-    test('derion-sdk-swap', async () => {
-      const chainId = 42161
-      const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
-      const poolsLoad = ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B', '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE']
-      const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
-      const scanApi = process.env['SCAN_API_' + chainId] ?? throwError()
-      const privateKey = process.env['PRIVATE_KEY'] ?? throwError()
-      const sdk = new DerionSDK({ chainId })
-      await sdk.init()
-  
-      const provider = new AssistedJsonRpcProvider(
-        new JsonRpcProvider(rpcUrl), {
-          url: scanApi,
-          apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
-        }
-      )
-      const signer = new Wallet(privateKey, new JsonRpcProvider(rpcUrl));
+  test('derion-sdk-swap', async () => {
+    const chainId = 42161
+    const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
+    const poolsLoad = ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B', '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE']
+    const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
+    const scanApi = process.env['SCAN_API_' + chainId] ?? throwError()
+    const privateKey = process.env['PRIVATE_KEY'] ?? throwError()
+    const sdk = new DerionSDK({ chainId })
+    await sdk.init()
 
-      const accTopic = hexZeroPad(accountAddress, 32)
-      const logs = await provider.getLogs({
-        fromBlock: 0,
-        toBlock: Number.MAX_SAFE_INTEGER,
-        topics: [
-          [],
-          [null, accTopic],
-          [null, null, accTopic],
-          [null, null, null, accTopic],
-        ],
-      })
-      const txLogs = Object.values(groupBy(logs, 'transactionHash'))
-      const poolAdrs = sdk.extractLogs(txLogs)
+    const provider = new AssistedJsonRpcProvider(
+      new JsonRpcProvider(rpcUrl), {
+      url: scanApi,
+      apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
+    }
+    )
+    const signer = new Wallet(privateKey, new JsonRpcProvider(rpcUrl));
 
-      const stateLoader = sdk.getStateLoader(rpcUrl)
-      const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
-      const account = sdk.createAccount(accountAddress)
-      account.processLogs(txLogs)
-      const swapper = sdk.createSwapper(rpcUrl)
-      // console.log(account.positions, pools)
-      try {
-        const swapResult = await swapper.simulate({
-          tokenIn: NATIVE_ADDRESS,
-          tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
-          amount: numberToWei(0.0001, 18),
-          deps: {
-            signer,
-            pools
-          }
-        })
-        console.log(swapResult)
-        expect(swapResult.length).toEqual(0)
-      } catch (error) {
-        console.log(error)
-      }
+    const accTopic = hexZeroPad(accountAddress, 32)
+    const logs = await provider.getLogs({
+      fromBlock: 0,
+      toBlock: Number.MAX_SAFE_INTEGER,
+      topics: [
+        [],
+        [null, accTopic],
+        [null, null, accTopic],
+        [null, null, null, accTopic],
+      ],
     })
-    test('derion-sdk-agg', async () => {
-      const chainId = 42161
-      const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
-      const poolsLoad = ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B', '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE']
-      const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
-      const scanApi = process.env['SCAN_API_' + chainId] ?? throwError()
-      const privateKey = process.env['PRIVATE_KEY'] ?? throwError()
-      const sdk = new DerionSDK({ chainId })
-      await sdk.init()
-  
-      const provider = new AssistedJsonRpcProvider(
-        new JsonRpcProvider(rpcUrl), {
-          url: scanApi,
-          apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
+    const txLogs = Object.values(groupBy(logs, 'transactionHash'))
+    const poolAdrs = sdk.extractLogs(txLogs)
+
+    const stateLoader = sdk.getStateLoader(rpcUrl)
+    const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
+    const account = sdk.createAccount(accountAddress)
+    account.processLogs(txLogs)
+    const swapper = sdk.createSwapper(rpcUrl)
+    // console.log(account.positions, pools)
+    try {
+      const swapResult = await swapper.simulate({
+        tokenIn: NATIVE_ADDRESS,
+        tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
+        amount: numberToWei(0.0001, 18),
+        deps: {
+          signer,
+          pools
         }
-      )
-      const signer = new Wallet(privateKey, new JsonRpcProvider(rpcUrl));
-
-      const accTopic = hexZeroPad(accountAddress, 32)
-      const logs = await provider.getLogs({
-        fromBlock: 0,
-        toBlock: Number.MAX_SAFE_INTEGER,
-        topics: [
-          [],
-          [null, accTopic],
-          [null, null, accTopic],
-          [null, null, null, accTopic],
-        ],
       })
-      const txLogs = Object.values(groupBy(logs, 'transactionHash'))
-      const poolAdrs = sdk.extractLogs(txLogs)
+      console.log(swapResult)
+      expect(swapResult.length).toEqual(0)
+    } catch (error) {
+      console.log(error)
+    }
+  })
+  test('derion-sdk-agg', async () => {
+    const chainId = 42161
+    const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
+    const poolsLoad = ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B', '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE']
+    const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
+    const scanApi = process.env['SCAN_API_' + chainId] ?? throwError()
+    const privateKey = process.env['PRIVATE_KEY'] ?? throwError()
+    const sdk = new DerionSDK({ chainId })
+    await sdk.init()
 
-      const stateLoader = sdk.getStateLoader(rpcUrl)
-      const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
-      const account = sdk.createAccount(accountAddress)
-      account.processLogs(txLogs)
-      const swapper = sdk.createSwapper(rpcUrl)
-      // console.log(account.positions, pools)
-      try {
-        const swapResult = await swapper.simulate({
-          tokenIn: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', // USDC
-          tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
-          amount: "100000",
-          deps: {
-            signer,
-            pools
-          }
-        })
-        expect(swapResult.length).toEqual(0)
-      } catch (error) {
-        console.log(error)
-      }
+    const provider = new AssistedJsonRpcProvider(
+      new JsonRpcProvider(rpcUrl), {
+      url: scanApi,
+      apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
+    }
+    )
+    const signer = new Wallet(privateKey, new JsonRpcProvider(rpcUrl));
+
+    const accTopic = hexZeroPad(accountAddress, 32)
+    const logs = await provider.getLogs({
+      fromBlock: 0,
+      toBlock: Number.MAX_SAFE_INTEGER,
+      topics: [
+        [],
+        [null, accTopic],
+        [null, null, accTopic],
+        [null, null, null, accTopic],
+      ],
     })
+    const txLogs = Object.values(groupBy(logs, 'transactionHash'))
+    const poolAdrs = sdk.extractLogs(txLogs)
+
+    const stateLoader = sdk.getStateLoader(rpcUrl)
+    const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
+    const account = sdk.createAccount(accountAddress)
+    account.processLogs(txLogs)
+    const swapper = sdk.createSwapper(rpcUrl)
+    // console.log(account.positions, pools)
+    try {
+      const swapResult = await swapper.simulate({
+        tokenIn: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', // USDC
+        tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
+        amount: "100000",
+        deps: {
+          signer,
+          pools
+        }
+      })
+      expect(swapResult.length).toEqual(0)
+    } catch (error) {
+      console.log(error)
+    }
+  })
 })
