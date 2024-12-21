@@ -93,7 +93,6 @@ describe('Derion SDK', () => {
     const account = sdk.createAccount(accountAddress)
     account.processLogs(txLogs)
     const swapper = sdk.createSwapper(rpcUrl)
-    // console.log(account.positions, pools)
     try {
       const swapResult = await swapper.simulate({
         tokenIn: NATIVE_ADDRESS,
@@ -104,7 +103,8 @@ describe('Derion SDK', () => {
           pools
         }
       })
-      expect(swapResult.length).toEqual(0)
+      expect(Number(swapResult.amountOuts)).toBeGreaterThan(0)
+      expect(Number(swapResult.gasLeft)).toBeGreaterThan(0)
     } catch (error) {
       console.log(error)
     }
@@ -156,7 +156,8 @@ describe('Derion SDK', () => {
           pools
         }
       })
-      expect(swapResult.length).toEqual(0)
+      expect(Number(swapResult.amountOuts)).toBeGreaterThan(0)
+      expect(Number(swapResult.gasLeft)).toBeGreaterThan(0)
     } catch (error) {
       console.log(error)
     }

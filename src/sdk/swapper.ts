@@ -134,31 +134,15 @@ export class Swapper {
         [router]: {
           code: this.profile.getAbi('UTROverride').deployedBytecode,
         },
-        ...(fetcherV2
-          ? {
-              [fetcherV2]: {
-                code: this.profile.getAbi('FetcherV2Mock').deployedBytecode,
-              },
-            }
-          : {}),
+        // ...(fetcherV2
+        //   ? {
+        //       [fetcherV2]: {
+        //         code: this.profile.getAbi('FetcherV2Mock').deployedBytecode,
+        //       },
+        //     }
+        //   : {}),
       })
 
-      // poolAddresses.forEach((address: string) => {
-      // stateOverride[this.profile.configs.derivable.logic as string] = {
-      //   code: this.profile.getAbi('View').deployedBytecode,
-      // }
-      // if (this.profile.configs.derivable.uniswapV2Fetcher) {
-      //   stateOverride[this.profile.configs.derivable.uniswapV2Fetcher as string] = {
-      //     code: this.profile.getAbi('FetcherV2Override').deployedBytecode,
-      //   }
-      // }
-
-      // this.overrideProvider.setStateOverride({
-      //   ...stateOverride,
-      //   [`0x${this.profile.getAbi('TokensInfo').deployedBytecode.slice(-40)}` as string]: {
-      //     code: this.profile.getAbi('TokensInfo').deployedBytecode,
-      //   },
-      // })
       return this.overrideProvider
     } catch (error) {
       throw error
@@ -757,15 +741,16 @@ export class Swapper {
       // })
       const address = await deps.signer.getAddress()
       const overrideUTRSigner = new VoidSigner(address, this.overrideProvider);
-
-      const utr = new Contract(this.profile.configs.helperContract.utr as string, this.profile.getAbi('UTR'), callStatic ? overrideUTRSigner : signer)
+      const utr = callStatic ? new Contract(this.profile.configs.helperContract.utr as string, this.profile.getAbi('UTROverride').abi, overrideUTRSigner)
+                  : new Contract(this.profile.configs.helperContract.utr as string, this.profile.getAbi('UTR').abi, deps.signer)
       params.push({
         value,
         gasLimit: gasLimit || undefined,
         gasPrice: gasPrice || undefined,
       })
       if (callStatic) {
-        return await utr.callStatic.exec(...params)
+        const res = await utr.callStatic.exec(...params)
+        return res
       }
       const res = await utr.exec(...params)
       if (onSubmitted) {
