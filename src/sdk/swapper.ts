@@ -316,6 +316,7 @@ export class Swapper {
 
       let amountIn = step.payloadAmountIn ? step.payloadAmountIn : step.amountIn
       const account = await signer.getAddress()
+      console.log(poolGroup)
 
       if (needAggregator) {
         // TODO: handle payloadAmountIn or inputTolerance for aggreateAndOpen
@@ -799,13 +800,13 @@ export class Swapper {
     callStatic?: boolean
     gasLimit?: BigNumber
   }): Promise<any> => {
-    const pools = deps.pools
-    const isOpenPos = isErc1155Address(tokenOut) ? tokenOut : tokenIn
-    const poolSwapAddress = isOpenPos ? tokenOut : tokenIn
-    const poolSwap = pools[decodeErc1155Address(poolSwapAddress).address]
-    if (!poolSwap) throw 'invalid pool'
-    const fetcherV2 = await this.needToSubmitFetcher(poolSwap, deps.signer)
-    const fetcherData = await this.fetchPriceTx({ pool: poolSwap, signer: deps.signer })
+    // const pools = deps.pools
+    // const isOpenPos = isErc1155Address(tokenOut) ? true : false
+    // const poolSwapAddress = isOpenPos ? tokenOut : tokenIn
+    // const poolSwap = pools[decodeErc1155Address(poolSwapAddress).address]
+    // if (!poolSwap) throw 'invalid pool'
+    // const fetcherV2 = await this.needToSubmitFetcher(poolSwap, deps.signer)
+    // const fetcherData = await this.fetchPriceTx({ pool: poolSwap, signer: deps.signer })
 
     // const tokenContract = new Contract(this.profile.configs.derivable.token, TokenAbi, this.provider)
     // const address = deps.signer.getAddress()
@@ -834,8 +835,8 @@ export class Swapper {
       gasLimit: gasLimit ?? bn(1000000),
       callStatic,
       deps,
-      fetcherData: fetcherData,
-      submitFetcherV2: fetcherV2,
+      // fetcherData: fetcherData,
+      // submitFetcherV2: fetcherV2,
     })
     return tx
   }

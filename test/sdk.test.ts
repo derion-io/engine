@@ -1,13 +1,14 @@
 import { DerionSDK } from '../src/sdk/sdk'
-import { groupBy, throwError } from '../src/sdk/utils'
+import { decodeErc1155Address, encodeErc1155Address, groupBy, throwError } from '../src/sdk/utils'
 import { Interceptor } from './shared/libs/interceptor'
 import { AssistedJsonRpcProvider } from 'assisted-json-rpc-provider'
 import { hexZeroPad } from 'ethers/lib/utils'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { NATIVE_ADDRESS, POOL_IDS } from '../src/utils/constant'
-import { numberToWei } from '../src/utils/helper'
+import { bn, numberToWei, packId } from '../src/utils/helper'
 import { BigNumber, VoidSigner } from 'ethers'
 import { formatPositionView } from '../src/sdk/utils/positions'
+import {unpackId} from '../src/utils/number'
 
 const interceptor = new Interceptor()
 describe('Derion SDK', () => {
@@ -173,7 +174,6 @@ describe('Derion SDK', () => {
     const scanApi = process.env['SCAN_API_' + chainId] ?? throwError()
     const sdk = new DerionSDK({ chainId })
     await sdk.init()
-
     const provider = new AssistedJsonRpcProvider(
       new JsonRpcProvider(rpcUrl), {
       url: scanApi,
@@ -200,18 +200,24 @@ describe('Derion SDK', () => {
     const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
     const account = sdk.createAccount(accountAddress)
     account.processLogs(txLogs)
-    console.log(account.positions)
+    const posKey = Object.keys(account.positions).filter(pos => {
+      return account.positions[pos].balance.gt(0)
+    })
+    const positionPoolAddress = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd'
+    const positionSide = POOL_IDS.A
+    const position = account.positions[Object.keys(account.positions).filter(key => key.includes(positionPoolAddress.toLowerCase().slice(2, 100)))[0]]
     const swapper = sdk.createSwapper(rpcUrl)
     try {
       const swapResult = await swapper.simulate({
-        tokenIn: NATIVE_ADDRESS,
-        tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
-        amount: numberToWei(0.0001, 18),
+        tokenIn: encodeErc1155Address(positionPoolAddress, positionSide),
+        tokenOut: NATIVE_ADDRESS,
+        amount: position.balance.toString(),
         deps: {
           signer,
           pools
         }
       })
+      console.log(swapResult)
       expect(Number(swapResult.amountOuts)).toBeGreaterThan(0)
       expect(Number(swapResult.gasLeft)).toBeGreaterThan(0)
     } catch (error) {
