@@ -20,11 +20,11 @@ export type rateDataAggregatorType = {
   userAddress: string
   ignoreChecks: boolean
   srcToken: string
-  //   srcDecimals: number
+    srcDecimals?: number
   srcAmount?: string
   destAmount?: string
   destToken: string
-  //   destDecimals: number
+    destDecimals?: number
   partner: string
   side: string
   excludeDirectContractMethods?: boolean
@@ -57,8 +57,8 @@ export type MultiSwapParameterType = {
   submitFetcherV2?: boolean
   callStatic?: boolean
   tokenDecimals?: {
-    srcDecimals: number
-    destDecimals: number
+    srcDecimals?: number
+    destDecimals?: number
   }
   deps: {
     signer: Signer
@@ -78,6 +78,10 @@ export type SwapCallDataParameterType = {
   poolOut: string
   idIn: BigNumber
   idOut: BigNumber
+  tokenDecimals?: {
+    srcDecimals?: number
+    destDecimals?: number
+  },
   deps: {
     signer: Signer
     pools: SdkPools
@@ -274,6 +278,7 @@ export class Swapper {
     poolOut,
     idIn,
     idOut,
+    tokenDecimals,
     deps: { signer, pools },
   }: SwapCallDataParameterType): Promise<SwapCallDataReturnType> {
     try {
@@ -318,6 +323,8 @@ export class Swapper {
           userAddress: this.helperContract.address,
           ignoreChecks: true,
           srcToken: step.tokenIn,
+          srcDecimals: tokenDecimals?.srcDecimals ||  18,
+          desDecimals: tokenDecimals?.destDecimals || 18,
           srcAmount: amountIn.toString(),
           destToken: poolGroup.TOKEN_R,
           partner: 'derion.io',
@@ -427,12 +434,17 @@ export class Swapper {
     submitFetcherV2,
     isCalculate = false,
     fetcherData,
+    tokenDecimals,
     deps: { signer, pools },
   }: {
     steps: Array<SwapStepType>
     submitFetcherV2: boolean
     isCalculate?: boolean
     fetcherData?: any
+    tokenDecimals?: {
+      srcDecimals?: number
+      destDecimals?: number
+    }
     deps: {
       signer: Signer
       pools: SdkPools
@@ -519,6 +531,7 @@ export class Swapper {
         const { inputs, populateTxData } = await this.getSwapCallData({
           step,
           poolGroup,
+          tokenDecimals,
           poolIn,
           poolOut,
           idIn,
@@ -607,8 +620,8 @@ export class Swapper {
     const amount = getRateData?.srcAmount || getRateData.destAmount
     const rateData = await (
       await fetch(
-        `${this.paraDataBaseURL}/?version=${this.paraDataBaseVersion}&srcToken=${getRateData.srcToken}&srcDecimals=${18}&destToken=${getRateData.destToken
-        }&destDecimals=${18}&amount=${amount}&side=${getRateData.side}&excludeDirectContractMethods=${getRateData.excludeDirectContractMethods || false
+        `${this.paraDataBaseURL}/?version=${this.paraDataBaseVersion}&srcToken=${getRateData.srcToken}&srcDecimals=${getRateData?.srcDecimals || 18}&destToken=${getRateData.destToken
+        }&destDecimals=${getRateData?.destDecimals || 18}&amount=${amount}&side=${getRateData.side}&excludeDirectContractMethods=${getRateData.excludeDirectContractMethods || false
         }&otherExchangePrices=${getRateData.otherExchangePrices || true}&partner=${getRateData.partner}&network=${this.configs.chainId
         }&userAddress=${address}`,
         {
@@ -716,6 +729,7 @@ export class Swapper {
   }
   async multiSwap({
     steps,
+    tokenDecimals,
     gasLimit,
     gasPrice,
     fetcherData,
@@ -765,6 +779,8 @@ export class Swapper {
   }
   swap = async ({
     tokenIn,
+    srcDecimals,
+    destDecimals,
     amount,
     tokenOut,
     deps,
@@ -772,7 +788,9 @@ export class Swapper {
     callStatic,
   }: {
     tokenIn: string
+    srcDecimals?: number,
     tokenOut: string
+    destDecimals?: number,
     amount: string
     deps: {
       pools: SdkPools
@@ -794,6 +812,10 @@ export class Swapper {
     // // const currentBalanceOut = await tokenContract.balanceOf(address,packId(decodeErc1155Address(poolSwapAddress).id, decodeErc1155Address(poolSwapAddress).address).toString())
     // console.log(tokenIn , tokenOut)
     const tx: any = await this.multiSwap({
+      tokenDecimals: {
+        srcDecimals,
+        destDecimals,
+      },
       steps: [
         {
           tokenIn,
