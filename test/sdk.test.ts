@@ -10,7 +10,6 @@ import { VoidSigner } from 'ethers'
 import { formatPositionView } from '../src/sdk/utils/positions'
 
 const interceptor = new Interceptor()
-
 describe('Derion SDK', () => {
   beforeEach(() => {
     interceptor.setContext(expect.getState().currentTestName)
@@ -59,7 +58,7 @@ describe('Derion SDK', () => {
 
     console.log(...posViews.map(pv => formatPositionView(pv)))
   })
-  test('derion-sdk-swap', async () => {
+  test('derion-sdk-native-open', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
     const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
@@ -110,7 +109,7 @@ describe('Derion SDK', () => {
       console.log(error)
     }
   })
-  test('derion-sdk-agg', async () => {
+  test('derion-sdk-agg-open', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
     const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
