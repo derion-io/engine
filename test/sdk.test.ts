@@ -94,7 +94,7 @@ describe('Derion SDK', () => {
       console.log(poolAdrs)
 
       const stateLoader = sdk.getStateLoader(rpcUrl)
-      const pools = await stateLoader.loadPools(poolAdrs)
+      const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
       const account = sdk.createAccount(accountAddress)
       account.processLogs(txLogs)
       const swapper = sdk.createSwapper(rpcUrl)
@@ -103,18 +103,19 @@ describe('Derion SDK', () => {
         const swapResult = await swapper.simulate({
           tokenIn: NATIVE_ADDRESS,
           tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
-          amount: numberToWei(0.00001, 18),
+          amount: numberToWei(0.0001, 18),
           deps: {
             signer,
             pools
           }
         })
+        console.log(swapResult)
         expect(swapResult.length).toEqual(0)
       } catch (error) {
         console.log(error)
       }
     })
-    test('derion-sdk-swap-use-agg', async () => {
+    test('derion-sdk-agg', async () => {
       const chainId = 42161
       const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
       const poolsLoad = ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B', '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE']
@@ -149,7 +150,7 @@ describe('Derion SDK', () => {
       console.log(poolAdrs)
 
       const stateLoader = sdk.getStateLoader(rpcUrl)
-      const pools = await stateLoader.loadPools(poolAdrs)
+      const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
       const account = sdk.createAccount(accountAddress)
       account.processLogs(txLogs)
       const swapper = sdk.createSwapper(rpcUrl)
@@ -158,7 +159,7 @@ describe('Derion SDK', () => {
         const swapResult = await swapper.simulate({
           tokenIn: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC
           tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
-          amount: '100',
+          amount: "100000",
           deps: {
             signer,
             pools
