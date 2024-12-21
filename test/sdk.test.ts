@@ -6,7 +6,7 @@ import { hexZeroPad } from 'ethers/lib/utils'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { NATIVE_ADDRESS, POOL_IDS } from '../src/utils/constant'
 import { numberToWei } from '../src/utils/helper'
-import { VoidSigner } from 'ethers'
+import { BigNumber, VoidSigner } from 'ethers'
 import { formatPositionView } from '../src/sdk/utils/positions'
 
 const interceptor = new Interceptor()
@@ -72,6 +72,7 @@ describe('Derion SDK', () => {
       apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
     }
     )
+    // 53501226
     const signer = new VoidSigner(accountAddress, new JsonRpcProvider(rpcUrl));
 
     const accTopic = hexZeroPad(accountAddress, 32)
@@ -103,6 +104,7 @@ describe('Derion SDK', () => {
           pools
         }
       })
+      console.log((swapResult.amountOuts as BigNumber).toString())
       expect(Number(swapResult.amountOuts)).toBeGreaterThan(0)
       expect(Number(swapResult.gasLeft)).toBeGreaterThan(0)
     } catch (error) {
@@ -143,7 +145,7 @@ describe('Derion SDK', () => {
     const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
     const account = sdk.createAccount(accountAddress)
     account.processLogs(txLogs)
-    console.log(pools)
+    // console.log(pools)
     const swapper = sdk.createSwapper(rpcUrl)
     // console.log(account.positions, pools)
     try {
@@ -151,6 +153,60 @@ describe('Derion SDK', () => {
         tokenIn: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC
         tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
         amount: "100000",
+        deps: {
+          signer,
+          pools
+        }
+      })
+      console.log((swapResult.amountOuts as BigNumber).toString())
+
+      expect(Number(swapResult.amountOuts)).toBeGreaterThan(0)
+      expect(Number(swapResult.gasLeft)).toBeGreaterThan(0)
+    } catch (error) {
+      console.log(error)
+    }
+  })
+  test('derion-sdk-close', async () => {
+    const chainId = 42161
+    const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
+    const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
+    const scanApi = process.env['SCAN_API_' + chainId] ?? throwError()
+    const sdk = new DerionSDK({ chainId })
+    await sdk.init()
+
+    const provider = new AssistedJsonRpcProvider(
+      new JsonRpcProvider(rpcUrl), {
+      url: scanApi,
+      apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
+    }
+    )
+    const signer = new VoidSigner(accountAddress, new JsonRpcProvider(rpcUrl));
+
+    const accTopic = hexZeroPad(accountAddress, 32)
+    const logs = await provider.getLogs({
+      fromBlock: 0,
+      toBlock: Number.MAX_SAFE_INTEGER,
+      topics: [
+        [],
+        [null, accTopic],
+        [null, null, accTopic],
+        [null, null, null, accTopic],
+      ],
+    })
+    const txLogs = Object.values(groupBy(logs, 'transactionHash'))
+    const poolAdrs = sdk.extractLogs(txLogs)
+
+    const stateLoader = sdk.getStateLoader(rpcUrl)
+    const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
+    const account = sdk.createAccount(accountAddress)
+    account.processLogs(txLogs)
+    console.log(account.positions)
+    const swapper = sdk.createSwapper(rpcUrl)
+    try {
+      const swapResult = await swapper.simulate({
+        tokenIn: NATIVE_ADDRESS,
+        tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
+        amount: numberToWei(0.0001, 18),
         deps: {
           signer,
           pools
