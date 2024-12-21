@@ -20,11 +20,11 @@ export type rateDataAggregatorType = {
   userAddress: string
   ignoreChecks: boolean
   srcToken: string
-    srcDecimals?: number
+  srcDecimals?: number
   srcAmount?: string
   destAmount?: string
   destToken: string
-    destDecimals?: number
+  destDecimals?: number
   partner: string
   side: string
   excludeDirectContractMethods?: boolean
@@ -52,17 +52,12 @@ export type MultiSwapParameterType = {
   steps: Array<SwapStepType>
   gasLimit?: BigNumber
   gasPrice?: BigNumber
-  fetcherData?: any
   onSubmitted?: (pendingTx: PendingSwapTransactionType) => void
-  submitFetcherV2?: boolean
   callStatic?: boolean
-  tokenDecimals?: {
-    srcDecimals?: number
-    destDecimals?: number
-  }
   deps: {
     signer: Signer
     pools: SdkPools
+    decimals?: { [token: string]: number }
   }
 }
 
@@ -78,13 +73,12 @@ export type SwapCallDataParameterType = {
   poolOut: string
   idIn: BigNumber
   idOut: BigNumber
-  tokenDecimals?: {
-    srcDecimals?: number
-    destDecimals?: number
-  },
   deps: {
     signer: Signer
     pools: SdkPools
+    decimals?: {
+      [token: string]: number
+    }
   }
 }
 export type SwapCallDataInputType = {
@@ -278,8 +272,7 @@ export class Swapper {
     poolOut,
     idIn,
     idOut,
-    tokenDecimals,
-    deps: { signer, pools },
+    deps: { signer, pools, decimals },
   }: SwapCallDataParameterType): Promise<SwapCallDataReturnType> {
     try {
       const needAggregator = isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R
@@ -323,8 +316,8 @@ export class Swapper {
           userAddress: this.helperContract.address,
           ignoreChecks: true,
           srcToken: step.tokenIn,
-          srcDecimals: tokenDecimals?.srcDecimals ||  18,
-          desDecimals: tokenDecimals?.destDecimals || 18,
+          srcDecimals: decimals?.[step.tokenIn] || 18,
+          desDecimals: decimals?.[step.tokenOut] || 18,
           srcAmount: amountIn.toString(),
           destToken: poolGroup.TOKEN_R,
           partner: 'derion.io',
@@ -431,23 +424,13 @@ export class Swapper {
   }
   async convertStepToActions({
     steps,
-    submitFetcherV2,
-    isCalculate = false,
-    fetcherData,
-    tokenDecimals,
-    deps: { signer, pools },
+    deps: { signer, pools, decimals },
   }: {
     steps: Array<SwapStepType>
-    submitFetcherV2: boolean
-    isCalculate?: boolean
-    fetcherData?: any
-    tokenDecimals?: {
-      srcDecimals?: number
-      destDecimals?: number
-    }
     deps: {
       signer: Signer
       pools: SdkPools
+      decimals?: { [token: string]: number }
     }
   }): Promise<{
     params: any
@@ -531,25 +514,17 @@ export class Swapper {
         const { inputs, populateTxData } = await this.getSwapCallData({
           step,
           poolGroup,
-          tokenDecimals,
           poolIn,
           poolOut,
           idIn,
           idOut,
-          deps: { signer, pools },
+          deps: { signer, pools, decimals },
         })
         metaDatas.push({
           code: this.helperContract.address,
           inputs,
         })
         promises.push(...populateTxData)
-      }
-
-      if (submitFetcherV2 && !fetcherData) {
-        const pool = isErc1155Address(step.tokenIn) ? pools[poolIn] : pools[poolOut]
-        if ((pool as any)?.window) {
-          promises.push(isCalculate ? this.fetchPriceMockTx({ pool, signer }) : this.fetchPriceTx({ pool, signer }))
-        }
       }
     })
     await Promise.all(fetchStepPromise)
@@ -559,14 +534,6 @@ export class Swapper {
     metaDatas.forEach((metaData: any, key: any) => {
       actions.push({ ...metaData, data: datas[key]?.data })
     })
-
-    if (submitFetcherV2 && !fetcherData) {
-      for (let i = metaDatas.length; i < datas.length; i++) {
-        actions.unshift(datas[datas.length - 1])
-      }
-    } else if (submitFetcherV2 && fetcherData) {
-      actions.unshift(fetcherData)
-    }
 
     return { params: [outputs, actions], value: nativeAmountToWrap }
   }
@@ -729,58 +696,44 @@ export class Swapper {
   }
   async multiSwap({
     steps,
-    tokenDecimals,
     gasLimit,
     gasPrice,
-    fetcherData,
     onSubmitted,
-    submitFetcherV2 = false,
     callStatic = false,
     deps,
   }: MultiSwapParameterType): Promise<TransactionReceipt> {
-    try {
-      const { params, value } = await this.convertStepToActions({
-        steps: [...steps],
-        submitFetcherV2,
-        fetcherData,
-        deps,
-      })
+    const { params, value } = await this.convertStepToActions({
+      steps,
+      deps,
+    })
 
-      // console.log(params, value)
-      // await this.callStaticMultiSwap({
-      //   params,
-      //   value,
-      //   gasLimit,
-      //   gasPrice: gasPrice || undefined
-      // })
+    if (callStatic) {
       const address = await deps.signer.getAddress()
-      const overrideUTRSigner = new VoidSigner(address, this.overrideProvider);
-      const utr = callStatic ? new Contract(this.profile.configs.helperContract.utr as string, this.profile.getAbi('UTROverride').abi, overrideUTRSigner)
-                  : new Contract(this.profile.configs.helperContract.utr as string, this.profile.getAbi('UTR').abi, deps.signer)
-      params.push({
-        value,
-        gasLimit: gasLimit || undefined,
-        gasPrice: gasPrice || undefined,
-      })
-      if (callStatic) {
-        const res = await utr.callStatic.exec(...params)
-        return res
-      }
-      const res = await utr.exec(...params)
-      if (onSubmitted) {
-        onSubmitted({ hash: res.hash, steps })
-      }
-      const tx = await res.wait(1)
-      console.log('tx', tx)
-      return tx
-    } catch (e) {
-      throw e
+      deps.signer = new VoidSigner(address, this.overrideProvider);
     }
+    const utr = new Contract(
+      this.profile.configs.helperContract.utr,
+      this.profile.getAbi('UTROverride').abi,
+      deps.signer,
+    )
+    params.push({
+      value,
+      gasLimit,
+      gasPrice,
+    })
+    if (callStatic) {
+      return await utr.callStatic.exec(...params)
+    }
+    const res = await utr.exec(...params)
+    if (onSubmitted) {
+      onSubmitted({ hash: res.hash, steps })
+    }
+    const tx = await res.wait(1)
+    console.log('tx', tx)
+    return tx
   }
   swap = async ({
     tokenIn,
-    srcDecimals,
-    destDecimals,
     amount,
     tokenOut,
     deps,
@@ -788,13 +741,12 @@ export class Swapper {
     callStatic,
   }: {
     tokenIn: string
-    srcDecimals?: number,
     tokenOut: string
-    destDecimals?: number,
     amount: string
     deps: {
       pools: SdkPools
       signer: Signer
+      decimals?: { [token: string]: number }
     }
     callStatic?: boolean
     gasLimit?: BigNumber
@@ -804,18 +756,7 @@ export class Swapper {
     const poolSwapAddress = isOpenPos ? tokenOut : tokenIn
     const poolSwap = pools[decodeErc1155Address(poolSwapAddress).address]
     if (!poolSwap) throw 'invalid pool'
-    const fetcherV2 = await this.needToSubmitFetcher(poolSwap, deps.signer)
-    const fetcherData = await this.fetchPriceTx({ pool: poolSwap, signer: deps.signer })
-
-    // const tokenContract = new Contract(this.profile.configs.derivable.token, TokenAbi, this.provider)
-    // const address = deps.signer.getAddress()
-    // // const currentBalanceOut = await tokenContract.balanceOf(address,packId(decodeErc1155Address(poolSwapAddress).id, decodeErc1155Address(poolSwapAddress).address).toString())
-    // console.log(tokenIn , tokenOut)
     const tx: any = await this.multiSwap({
-      tokenDecimals: {
-        srcDecimals,
-        destDecimals,
-      },
       steps: [
         {
           tokenIn,
@@ -823,19 +764,11 @@ export class Swapper {
           amountIn: bn(amount),
           amountOutMin: 0,
           useSweep: false
-          // useSweep: !!(
-          // (isErc1155Address(tokenOut) && (pools?.[decodeErc1155Address(tokenOut)?.address]?.config?.MATURITY || 0) > 0)
-          // && tokenOutMaturity?.gt(0)
-          // && balances[tokenOut]?.gt(0)
-          // ),
-          //   currentBalanceOut: balances[tokenOut]
         },
       ],
       gasLimit: gasLimit ?? bn(1000000),
       callStatic,
       deps,
-      fetcherData: fetcherData,
-      submitFetcherV2: fetcherV2,
     })
     return tx
   }
@@ -846,6 +779,7 @@ export class Swapper {
     deps: {
       pools: SdkPools
       signer: Signer
+      decimals?: { [token: string]: number }
     }
     gasLimit?: BigNumber
   }): Promise<any> => {

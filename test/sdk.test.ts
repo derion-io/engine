@@ -209,7 +209,7 @@ describe('Derion SDK', () => {
         amount: numberToWei(0.0001, 18),
         deps: {
           signer,
-          pools
+          pools,
         }
       })
       expect(Number(swapResult.amountOuts)).toBeGreaterThan(0)
