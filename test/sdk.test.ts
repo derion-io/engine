@@ -75,7 +75,7 @@ describe('Derion SDK', () => {
           apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
         }
       )
-      const signer = new Wallet(privateKey, provider);
+      const signer = new Wallet(privateKey, new JsonRpcProvider(rpcUrl));
 
       const accTopic = hexZeroPad(accountAddress, 32)
       const logs = await provider.getLogs({
@@ -88,10 +88,8 @@ describe('Derion SDK', () => {
           [null, null, null, accTopic],
         ],
       })
-      console.log(logs.length)
       const txLogs = Object.values(groupBy(logs, 'transactionHash'))
       const poolAdrs = sdk.extractLogs(txLogs)
-      console.log(poolAdrs)
 
       const stateLoader = sdk.getStateLoader(rpcUrl)
       const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
@@ -131,7 +129,7 @@ describe('Derion SDK', () => {
           apiKeys: process.env['SCAN_API_KEY_' + chainId]?.split(',') ?? throwError(),
         }
       )
-      const signer = new Wallet(privateKey, provider);
+      const signer = new Wallet(privateKey, new JsonRpcProvider(rpcUrl));
 
       const accTopic = hexZeroPad(accountAddress, 32)
       const logs = await provider.getLogs({
@@ -144,10 +142,8 @@ describe('Derion SDK', () => {
           [null, null, null, accTopic],
         ],
       })
-      console.log(logs.length)
       const txLogs = Object.values(groupBy(logs, 'transactionHash'))
       const poolAdrs = sdk.extractLogs(txLogs)
-      console.log(poolAdrs)
 
       const stateLoader = sdk.getStateLoader(rpcUrl)
       const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
@@ -157,7 +153,7 @@ describe('Derion SDK', () => {
       // console.log(account.positions, pools)
       try {
         const swapResult = await swapper.simulate({
-          tokenIn: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC
+          tokenIn: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', // USDC
           tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
           amount: "100000",
           deps: {
