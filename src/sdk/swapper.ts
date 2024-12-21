@@ -7,6 +7,8 @@ import { PendingSwapTransactionType, SdkPool, SdkPools } from '../types'
 import { ProfileConfigs } from '../utils/configs'
 import { NATIVE_ADDRESS, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
 import { bn, packId } from '../utils/helper'
+import TokenAbi from '../../src/abi/Token.json'
+
 import * as OracleSdk from '../utils/OracleSdk'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
 import { decodeErc1155Address, getAddressByErc1155Address, getIdByAddress, isErc1155Address } from './utils'
@@ -477,7 +479,7 @@ export class Swapper {
     const promises: any = []
     const fetchStepPromise = steps.map(async (step) => {
       const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut, pools)
-
+      console.log(poolGroup)
       // if (
       //   (step.tokenIn === NATIVE_ADDRESS || step.tokenOut === NATIVE_ADDRESS) &&
       //   poolGroup.TOKEN_R !== this.profile.configs.wrappedTokenAddress
@@ -518,6 +520,7 @@ export class Swapper {
 
         promises.push(...populateTxData)
       } else {
+        console.log('SwapCall')
         const { inputs, populateTxData } = await this.getSwapCallData({
           step,
           poolGroup,
@@ -543,11 +546,10 @@ export class Swapper {
     })
     await Promise.all(fetchStepPromise)
     const datas: Array<any> = await Promise.all(promises)
-
     const actions: Array<any> = []
 
     metaDatas.forEach((metaData: any, key: any) => {
-      actions.push({ ...metaData, data: datas[key].data })
+      actions.push({ ...metaData, data: datas[key]?.data })
     })
 
     if (submitFetcherV2 && !fetcherData) {
@@ -610,7 +612,7 @@ export class Swapper {
     const amount = getRateData?.srcAmount || getRateData.destAmount
     const rateData = await (
       await fetch(
-        `${this.paraDataBaseURL}/?version=${this.paraDataBaseVersion}&srcToken=${getRateData.srcToken}&srcDecimals=${18}&destToken=${
+        `${this.paraDataBaseURL}/?version=${this.paraDataBaseVersion}&srcToken=${getRateData.srcToken}&srcDecimals=${6}&destToken=${
           getRateData.destToken
         }&destDecimals=${18}&amount=${amount}&side=${getRateData.side}&excludeDirectContractMethods=${
           getRateData.excludeDirectContractMethods || false
@@ -739,6 +741,7 @@ export class Swapper {
         deps,
       })
 
+      // console.log(params, value)
       // await this.callStaticMultiSwap({
       //   params,
       //   value,
@@ -752,6 +755,7 @@ export class Swapper {
         gasPrice: gasPrice || undefined,
       })
       if (callStatic) {
+        console.log(callStatic)
         return await utr.callStatic.exec(...params)
       }
       const res = await utr.exec(...params)
@@ -792,7 +796,9 @@ export class Swapper {
     const fetcherData = await this.fetchPriceTx({ pool: poolSwap, signer: deps.signer })
 
     // const tokenContract = new Contract(this.profile.configs.derivable.token, TokenAbi, this.provider)
-    // const currentBalanceOut = await tokenContract.balanceOf(deps.signer, packId(poolSide.toString(), poolOut))
+    // const address = deps.signer.getAddress()
+    // // const currentBalanceOut = await tokenContract.balanceOf(address,packId(decodeErc1155Address(poolSwapAddress).id, decodeErc1155Address(poolSwapAddress).address).toString())
+    // console.log(tokenIn , tokenOut)
     const tx: any = await this.multiSwap({
       steps: [
         {
@@ -800,15 +806,15 @@ export class Swapper {
           tokenOut,
           amountIn: bn(amount),
           amountOutMin: 0,
-          useSweep: !!(
-            (isErc1155Address(tokenOut) && (pools?.[decodeErc1155Address(tokenOut)?.address]?.config?.MATURITY || 0) > 0)
+          useSweep: false
+          // useSweep: !!(
+            // (isErc1155Address(tokenOut) && (pools?.[decodeErc1155Address(tokenOut)?.address]?.config?.MATURITY || 0) > 0)
             // && tokenOutMaturity?.gt(0)
             // && balances[tokenOut]?.gt(0)
-          ),
+          // ),
           //   currentBalanceOut: balances[tokenOut]
         },
       ],
-      onSubmitted: (pendingTx: PendingSwapTransactionType) => {},
       gasLimit: gasLimit ?? bn(1000000),
       callStatic,
       deps,
