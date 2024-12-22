@@ -3,7 +3,7 @@ import { BigNumber, Contract, Signer, utils, VoidSigner } from 'ethers'
 import { ConnectionInfo, isAddress } from 'ethers/lib/utils'
 import { Profile } from '../profile'
 import { Q128 } from '../services/resource'
-import { PendingSwapTransactionType, SdkPool, SdkPools } from '../types'
+import { PendingSwapTransactionType, SdkPools } from '../types'
 import { ProfileConfigs } from '../utils/configs'
 import { NATIVE_ADDRESS, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
 import { bn, packId } from '../utils/helper'
@@ -487,9 +487,8 @@ export class Swapper {
     if (swapData.error) {
       throw new Error(swapData.error)
     }
-    let openTx = null
-    // if (helperOverride) {
-    openTx = await this.helperContract.populateTransaction.aggregateAndOpen({
+    const helper = helperOverride ?? this.helperContract
+    const openTx = await helper.populateTransaction.aggregateAndOpen({
       token: getRateData.srcToken,
       tokenOperator: rateData.priceRoute.tokenTransferProxy,
       aggregator: swapData.to,
@@ -499,7 +498,6 @@ export class Swapper {
       payer: address, // for event Swap.payer
       recipient: address,
       INDEX_R: this.getIndexR(getRateData.destToken), // TOKEN_R
-      // })
     })
     return {
       rateData,
