@@ -1,5 +1,4 @@
 import { BigNumber } from "ethers"
-import { bn } from "../../utils/helper"
 import { NATIVE_ADDRESS, POOL_IDS } from "../../utils/constant"
 import { getAddress, hexDataSlice, hexlify, hexZeroPad } from "ethers/lib/utils"
 
@@ -16,10 +15,6 @@ export const unpackPosId = (address: string): [string, number] => {
 
 export const packPosId = (address: string, side: number): string => {
   return hexZeroPad(hexlify(side) + address.substring(2).toLowerCase(), 32)
-}
-
-export const isErc1155Address = (address: string) => {
-  return /^0x[0-9,a-f,A-Z]{40}-[0-9]{1,}$/g.test(address)
 }
 
 export const groupBy = (xs: any[], key: string | number): any[][] => {
