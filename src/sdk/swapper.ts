@@ -1,12 +1,13 @@
 import { JsonRpcProvider, Networkish, TransactionReceipt } from '@ethersproject/providers'
-import { BigNumber, Contract, Signer, utils, VoidSigner } from 'ethers'
+import { BigNumber, Contract, ethers, Signer, utils, VoidSigner } from 'ethers'
 import { ConnectionInfo, isAddress } from 'ethers/lib/utils'
 import { Profile } from '../profile'
 import { Q128 } from '../services/resource'
 import { PendingSwapTransactionType, SdkPools } from '../types'
 import { ProfileConfigs } from '../utils/configs'
-import { NATIVE_ADDRESS, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
-import { bn, packId } from '../utils/helper'
+import { NATIVE_ADDRESS, POOL_IDS } from '../utils/constant'
+import { bn } from '../utils/helper'
+const { AddressZero } = ethers.constants
 
 import { addressFromToken, sideFromToken, isPosId, packPosId, throwError, unpackPosId } from './utils'
 const PAYMENT = 0
@@ -221,11 +222,11 @@ export class Swapper {
           ? [
             {
               mode: CALL_VALUE,
-              token: ZERO_ADDRESS,
+              token: AddressZero,
               eip: 0,
               id: 0,
               amountIn: step.amountIn,
-              recipient: ZERO_ADDRESS,
+              recipient: AddressZero,
             },
           ]
           : [
@@ -328,17 +329,17 @@ export class Swapper {
     TOKEN_R,
     poolIn,
     poolOut,
-    sideIn: idIn,
-    sideOut: idOut,
+    sideIn,
+    sideOut,
     deps: { signer, pools },
   }: SwapCallDataParameterType): Promise<SwapCallDataReturnType> {
-    const swapCallData = await this.getSwapCallData({ step, TOKEN_R, poolIn, poolOut, sideIn: idIn, sideOut: idOut, deps: { signer, pools } })
+    const swapCallData = await this.getSwapCallData({ step, TOKEN_R, poolIn, poolOut, sideIn, sideOut, deps: { signer, pools } })
     const inputs = [
       {
         mode: TRANSFER,
         eip: 1155,
         token: this.profile.configs.derivable.token,
-        id: packId(idOut + '', poolOut),
+        id: bn(packPosId(poolOut, sideOut)),
         amountIn: step.currentBalanceOut,
         recipient: this.helperContract.address,
       },
@@ -347,7 +348,7 @@ export class Swapper {
 
     const populateTxData = [
       ...swapCallData.populateTxData,
-      this.helperContract.populateTransaction.sweep(packId(idOut + '', poolOut), signer),
+      this.helperContract.populateTransaction.sweep(packPosId(poolOut, sideOut), signer),
     ]
 
     return {
@@ -390,9 +391,9 @@ export class Swapper {
         eip: isPosId(step.tokenOut) ? 1155 : step.tokenOut === NATIVE_ADDRESS ? 0 : 20,
         token: isPosId(step.tokenOut) ? this.profile.configs.derivable.token : step.tokenOut,
         id: isPosId(step.tokenOut)
-          ? packId(
-            sideFromToken(step.tokenOut, TOKEN_R, this.profile.configs.wrappedTokenAddress).toString(),
+          ? packPosId(
             addressFromToken(step.tokenOut, TOKEN_R, this.profile.configs.wrappedTokenAddress),
+            sideFromToken(step.tokenOut, TOKEN_R, this.profile.configs.wrappedTokenAddress),
           )
           : bn(0),
         amountOutMin: step.amountOutMin,
