@@ -608,11 +608,11 @@ export class Swapper {
     callStatic?: boolean
     gasLimit?: BigNumber
   }): Promise<any> => {
-    const pools = deps.pools
-    const isOpenPos = isPosId(tokenOut) ? tokenOut : tokenIn
-    const poolSwapAddress = isOpenPos ? tokenOut : tokenIn
-    const poolSwap = pools[unpackPosId(poolSwapAddress)[0]]
-    if (!poolSwap) throw 'invalid pool'
+    // const pools = deps.pools
+    // const isOpenPos = isPosId(tokenOut) ? tokenOut : tokenIn
+    // const poolSwapAddress = isOpenPos ? tokenOut : tokenIn
+    // const poolSwap = pools[unpackPosId(poolSwapAddress)[0]]
+    // if (!poolSwap) throw 'invalid pool'
     const tx: any = await this.multiSwap({
       steps: [
         {
