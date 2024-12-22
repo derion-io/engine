@@ -215,7 +215,6 @@ export class Swapper {
     sideOut,
     deps: { signer, pools, decimals },
   }: SwapCallDataParameterType): Promise<SwapCallDataReturnType> {
-    try {
       const needAggregator = isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== TOKEN_R
       const inputs =
         step.tokenIn === NATIVE_ADDRESS
@@ -323,9 +322,6 @@ export class Swapper {
         inputs,
         populateTxData,
       }
-    } catch (error) {
-      throw error
-    }
   }
   async getSweepCallData({
     step,
@@ -608,11 +604,6 @@ export class Swapper {
     callStatic?: boolean
     gasLimit?: BigNumber
   }): Promise<any> => {
-    // const pools = deps.pools
-    // const isOpenPos = isPosId(tokenOut) ? tokenOut : tokenIn
-    // const poolSwapAddress = isOpenPos ? tokenOut : tokenIn
-    // const poolSwap = pools[unpackPosId(poolSwapAddress)[0]]
-    // if (!poolSwap) throw 'invalid pool'
     const tx: any = await this.multiSwap({
       steps: [
         {
