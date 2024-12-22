@@ -94,7 +94,8 @@ describe('Derion SDK', () => {
     const account = sdk.createAccount(accountAddress)
     account.processLogs(txLogs)
     const swapper = sdk.createSwapper(rpcUrl)
-    const { amountOuts } = await swapper.simulate({
+    // NATIVE - A
+    const { amountOuts: amountOutsA, gasUsed: gasUsedA  } = await swapper.simulate({
       tokenIn: NATIVE_ADDRESS,
       tokenOut: packPosId(`0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd`, POOL_IDS.A),
       amount: numberToWei(0.0001, 18),
@@ -103,9 +104,30 @@ describe('Derion SDK', () => {
         pools
       }
     })
-
-    const amountOut = amountOuts[amountOuts.length-1]
-    console.log(thousandsInt(amountOut.toString(), 6))
+    expect(Number(amountOutsA)).toBeGreaterThan(0)
+    expect(Number(gasUsedA)).toBeGreaterThan(0)
+    const { amountOuts: amountOutsB, gasUsed: gasUsedB} = await swapper.simulate({
+      tokenIn: NATIVE_ADDRESS,
+      tokenOut: packPosId(`0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd`, POOL_IDS.B),
+      amount: numberToWei(0.0001, 18),
+      deps: {
+        signer,
+        pools
+      }
+    })
+    expect(Number(amountOutsB)).toBeGreaterThan(0)
+    expect(Number(gasUsedB)).toBeGreaterThan(0)
+    const { amountOuts: amountOutsC, gasUsed: gasUsedC} = await swapper.simulate({
+      tokenIn: NATIVE_ADDRESS,
+      tokenOut: packPosId(`0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd`, POOL_IDS.C),
+      amount: numberToWei(0.0001, 18),
+      deps: {
+        signer,
+        pools
+      }
+    })
+    expect(Number(amountOutsC)).toBeGreaterThan(0)
+    expect(Number(gasUsedC)).toBeGreaterThan(0)
   })
   test('derion-sdk-agg-open', async () => {
     const chainId = 42161
