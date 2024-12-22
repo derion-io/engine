@@ -1,12 +1,12 @@
 import { DerionSDK } from '../src/sdk/sdk'
-import { groupBy, throwError } from '../src/sdk/utils'
+import { groupBy, packPosId, throwError } from '../src/sdk/utils'
 import { Interceptor } from './shared/libs/interceptor'
 import { AssistedJsonRpcProvider } from 'assisted-json-rpc-provider'
 import { hexZeroPad } from 'ethers/lib/utils'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { NATIVE_ADDRESS, POOL_IDS } from '../src/utils/constant'
-import { numberToWei } from '../src/utils/helper'
-import { BigNumber, VoidSigner } from 'ethers'
+import { numberToWei, thousandsInt } from '../src/utils/helper'
+import { VoidSigner } from 'ethers'
 import { formatPositionView } from '../src/sdk/utils/positions'
 
 const interceptor = new Interceptor()
@@ -94,22 +94,18 @@ describe('Derion SDK', () => {
     const account = sdk.createAccount(accountAddress)
     account.processLogs(txLogs)
     const swapper = sdk.createSwapper(rpcUrl)
-    try {
-      const swapResult = await swapper.simulate({
-        tokenIn: NATIVE_ADDRESS,
-        tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
-        amount: numberToWei(0.0001, 18),
-        deps: {
-          signer,
-          pools
-        }
-      })
-      console.log((swapResult.amountOuts as BigNumber).toString())
-      expect(Number(swapResult.amountOuts)).toBeGreaterThan(0)
-      expect(Number(swapResult.gasLeft)).toBeGreaterThan(0)
-    } catch (error) {
-      console.log(error)
-    }
+    const { amountOuts } = await swapper.simulate({
+      tokenIn: NATIVE_ADDRESS,
+      tokenOut: packPosId(`0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd`, POOL_IDS.A),
+      amount: numberToWei(0.0001, 18),
+      deps: {
+        signer,
+        pools
+      }
+    })
+
+    const amountOut = amountOuts[amountOuts.length-1]
+    console.log(thousandsInt(amountOut.toString(), 6))
   })
   test('derion-sdk-agg-open', async () => {
     const chainId = 42161
@@ -148,23 +144,17 @@ describe('Derion SDK', () => {
     // console.log(pools)
     const swapper = sdk.createSwapper(rpcUrl)
     // console.log(account.positions, pools)
-    try {
-      const swapResult = await swapper.simulate({
-        tokenIn: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC
-        tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
-        amount: "100000",
-        deps: {
-          signer,
-          pools
-        }
-      })
-      console.log((swapResult.amountOuts as BigNumber).toString())
-
-      expect(Number(swapResult.amountOuts)).toBeGreaterThan(0)
-      expect(Number(swapResult.gasLeft)).toBeGreaterThan(0)
-    } catch (error) {
-      console.log(error)
-    }
+    const { amountOuts } = await swapper.simulate({
+      tokenIn: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC
+      tokenOut: packPosId(`0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd`, POOL_IDS.A),
+      amount: "100000",
+      deps: {
+        signer,
+        pools
+      }
+    })
+    const amountOut = amountOuts[amountOuts.length-1]
+    console.log(thousandsInt(amountOut.toString(), 6))
   })
   test('derion-sdk-close', async () => {
     const chainId = 42161
@@ -200,22 +190,17 @@ describe('Derion SDK', () => {
     const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
     const account = sdk.createAccount(accountAddress)
     account.processLogs(txLogs)
-    console.log(account.positions)
     const swapper = sdk.createSwapper(rpcUrl)
-    try {
-      const swapResult = await swapper.simulate({
-        tokenIn: NATIVE_ADDRESS,
-        tokenOut: `0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd-${POOL_IDS.A}`,
-        amount: numberToWei(0.0001, 18),
-        deps: {
-          signer,
-          pools,
-        }
-      })
-      expect(Number(swapResult.amountOuts)).toBeGreaterThan(0)
-      expect(Number(swapResult.gasLeft)).toBeGreaterThan(0)
-    } catch (error) {
-      console.log(error)
-    }
+    const { amountOuts } = await swapper.simulate({
+      tokenIn: NATIVE_ADDRESS,
+      tokenOut: packPosId(`0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd`, POOL_IDS.A),
+      amount: numberToWei(0.0001, 18),
+      deps: {
+        signer,
+        pools,
+      }
+    })
+    const amountOut = amountOuts[amountOuts.length-1]
+    console.log(thousandsInt(amountOut.toString(), 6))
   })
 })
