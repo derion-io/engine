@@ -1,5 +1,5 @@
 import { BigNumber } from "ethers"
-import { NATIVE_ADDRESS, POOL_IDS } from "./constant"
+import { NATIVE_ADDRESS, POOL_IDS, Q128 } from "./constant"
 import { getAddress, hexDataSlice, hexlify, hexZeroPad } from "ethers/lib/utils"
 
 export const bn = BigNumber.from
@@ -58,4 +58,48 @@ export const addressFromToken = (address: string, TOKEN_R: string, wrappedTokenA
 
 export const errorEncode = (err: any): any => {
   return err?.response?.data || `${err?.code}: ${err?.reason || err?.msg || err?.message}`
+}
+
+export function formatQ128(n: BigNumber, PRECISION = 10000): number {
+  if (n.isNegative()) {
+    return -formatQ128(bn(0).sub(n))
+  }
+  return n.mul(PRECISION).shr(128).toNumber()/PRECISION
+}
+
+export function formatPercentage(n: number, precision = 2): string {
+  return (n * 100).toFixed(precision) + '%'
+}
+
+export const thousandsInt = (int: string, count = 3): string => {
+  const regExp = new RegExp(String.raw`(\d+)(\d{${count}})`)
+  while (regExp.test(int)) {
+    int = int.replace(regExp, '$1' + ',' + '$2')
+  }
+  return int
+}
+
+export function xr(k: number, r: BigNumber, v: BigNumber): number {
+  try {
+    const x = NUM(DIV(r, v))
+    return Math.pow(x, 1 / k)
+  } catch (err) {
+    console.warn(err)
+    return 0
+  }
+}
+
+export const powX128 = (x: BigNumber, k: number): BigNumber => {
+  let y = Q128
+  const neg = k < 0
+  if (neg) {
+    k = -k;
+  }
+  for (let i = 0; i < k; ++i) {
+    y = y.mul(x).shr(128)
+  }
+  if (neg) {
+    return Q256M.div(y)
+  }
+  return y
 }

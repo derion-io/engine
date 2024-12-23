@@ -1,22 +1,11 @@
-import { BigNumber, ethers } from 'ethers'
-import { LogType, PoolType, TokenType } from '../types'
-import EventsAbi from '../abi/Events.json'
-import { SECONDS_PER_DAY } from './constant'
+import { BigNumber } from 'ethers'
+import { bn } from '.'
+import { BIG_0, M256, Q128, SECONDS_PER_DAY } from './constant'
+import { LogType } from '../type'
 
 // TODO: Change name a some function
 // TODO: Convert require to import
 const mdp = require('move-decimal-point')
-
-// TODO: Move RPC Url to config or env
-export const provider = new ethers.providers.JsonRpcProvider('https://bsc-dataseed.binance.org/')
-
-export const bn = BigNumber.from
-
-export const BIG_Q128 = bn(1).shl(128)
-export const BIG_Q256M = bn(1).shl(256).sub(1)
-export const BIG_E18 = bn(10).pow(18)
-export const BIG_0 = bn(0)
-export const BIG_M1 = bn(-1)
 
 export const weiToNumber = (wei: any, decimals: number = 18, decimalToDisplay?: number): string => {
   if (!wei || !Number(wei)) return '0'
@@ -67,29 +56,6 @@ export const formatMultiCallBignumber = (data: any): Array<any> => {
     }
     return item
   })
-}
-
-export const getErc1155Token = (addresses: string[]): { [key: string]: BigNumber[] } => {
-  const erc1155Addresses = addresses.filter(isErc1155Address)
-  const result: { [key: string]: BigNumber[] } = {}
-  for (let i = 0; i < erc1155Addresses.length; i++) {
-    const address = erc1155Addresses[i].split('-')[0]
-    const id = erc1155Addresses[i].split('-')[1]
-    if (!result[address]) {
-      result[address] = [bn(id)]
-    } else {
-      result[address].push(bn(id))
-    }
-  }
-  return result
-}
-
-/**
- * format of erc1155 = 0xabc...abc-id
- * @param address
- */
-export const isErc1155Address = (address: string): boolean => {
-  return /^0x[0-9,a-f,A-Z]{40}-[0-9]{1,}$/g.test(address)
 }
 
 export const getNormalAddress = (addresses: string[]): Array<string> => {
@@ -154,40 +120,8 @@ export const detectDecimalFromPrice = (price: number | string): number => {
   }
 }
 
-export const packId = (kind: string | BigNumber, address: string): BigNumber => {
-  const k = bn(kind)
-  return k.shl(160).add(address)
-}
-
 export const parseUq128x128 = (value: BigNumber, unit = 1000): number => {
   return value.mul(unit).shr(112).toNumber() / unit
-}
-
-export const parsePriceX128 = (encodedPrice: BigNumber, pool?: PoolType): BigNumber => {
-  const exp = pool?.exp ?? 2
-  if (exp == 2) {
-    return encodedPrice.mul(encodedPrice).shr(128)
-  }
-  return encodedPrice
-}
-
-export const parsePrice = (value: BigNumber, baseToken?: TokenType, quoteToken?: TokenType, pool?: PoolType): string => {
-  const exp = pool?.exp ?? 2
-  if (exp == 2) {
-    value = value.mul(value)
-  }
-  const price = weiToNumber(value.mul(numberToWei(1, baseToken?.decimals || 18)).shr(128 * exp), quoteToken?.decimals || 18)
-  return formatFloat(price, 18)
-}
-
-export const parseSqrtX96 = (price: BigNumber, baseToken: TokenType, quoteToken: TokenType): string => {
-  return weiToNumber(
-    price
-      .mul(price)
-      .mul(numberToWei(1, baseToken.decimals + 18))
-      .shr(192),
-    quoteToken.decimals + 18,
-  )
 }
 
 const isObject = (item: any): boolean => {
@@ -210,20 +144,6 @@ export const mergeDeep = (target: any, ...sources: any): any => {
   }
 
   return mergeDeep(target, ...sources)
-}
-
-export const getTopics = (): { [key: string]: string[] } => {
-  const eventInterface = new ethers.utils.Interface(EventsAbi)
-  const events = eventInterface.events
-  const topics: { [key: string]: string[] } = {}
-  for (const i in events) {
-    if (topics[events[i].name]) {
-      topics[events[i].name].push(ethers.utils.id(i))
-    } else {
-      topics[events[i].name] = [ethers.utils.id(i)]
-    }
-  }
-  return topics
 }
 
 export const rateToHL = (r: number, power: number, DURATION = SECONDS_PER_DAY): number => {
@@ -461,7 +381,7 @@ export function xr(k: number, r: BigNumber, v: BigNumber): number {
 }
 
 export const powX128 = (x: BigNumber, k: number): BigNumber => {
-  let y = BIG_Q128
+  let y = Q128
   const neg = k < 0
   if (neg) {
     k = -k;
@@ -470,7 +390,7 @@ export const powX128 = (x: BigNumber, k: number): BigNumber => {
     y = y.mul(x).shr(128)
   }
   if (neg) {
-    return BIG_Q256M.div(y)
+    return M256.div(y)
   }
   return y
 }
