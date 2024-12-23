@@ -11,6 +11,11 @@ import { LogType } from '../src/type'
 
 const interceptor = new Interceptor()
 
+const RPCs = {
+  137: 'https://polygon.llamarpc.com',
+  42161: 'https://arbitrum.llamarpc.com',
+}
+
 describe('SDK', () => {
   beforeEach(() => {
     interceptor.setContext(expect.getState().currentTestName)
@@ -20,7 +25,7 @@ describe('SDK', () => {
     const chainId = 137
     const accountAddress = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
 
-    const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
+    const rpcUrl = RPCs[chainId] ?? throwError()
 
     const sdk = new DerionSDK({ chainId })
     await sdk.init()
@@ -44,7 +49,7 @@ describe('SDK', () => {
   test('native-open', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
-    const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
+    const rpcUrl = RPCs[chainId] ?? throwError()
     const sdk = new DerionSDK({ chainId })
     await sdk.init()
 
@@ -99,7 +104,7 @@ describe('SDK', () => {
     const chainId = 42161
     const accountAddress = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
     const poolToSwap = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd'
-    const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
+    const rpcUrl = RPCs[chainId] ?? throwError()
     const sdk = new DerionSDK({ chainId })
     await sdk.init()
 
@@ -157,7 +162,7 @@ describe('SDK', () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
     const poolToSwap = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd'
-    const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
+    const rpcUrl = RPCs[chainId] ?? throwError()
     const sdk = new DerionSDK({ chainId })
     await sdk.init()
 
@@ -209,7 +214,7 @@ describe('SDK', () => {
   test('positions-swap', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
-    const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
+    const rpcUrl = RPCs[chainId] ?? throwError()
     const sdk = new DerionSDK({ chainId })
     await sdk.init()
     const signer = new VoidSigner(accountAddress, new JsonRpcProvider(rpcUrl));
@@ -262,7 +267,7 @@ describe('SDK', () => {
   test('positions-close', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
-    const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
+    const rpcUrl = RPCs[chainId] ?? throwError()
     const sdk = new DerionSDK({ chainId })
     await sdk.init()
     const signer = new VoidSigner(accountAddress, new JsonRpcProvider(rpcUrl));
