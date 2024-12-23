@@ -3,7 +3,7 @@ import { bn } from '../utils/helper'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { PoolConfig } from '../types'
 import { IDerivableContractAddress, IEngineConfig } from '../utils/configs'
-import { Profile } from '../profile'
+import { Profile } from '../sdk/profile'
 
 export type ConfigGenerateType = {
   utr: string

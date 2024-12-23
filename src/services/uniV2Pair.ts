@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
 import PairDetailAbi from '../abi/PairDetail.json'
 import { IEngineConfig } from '../utils/configs'
-import { Profile } from '../profile'
+import { Profile } from '../sdk/profile'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { GetPairInfoParameterType, GetPairsInfoParameterType } from './uniV3Pair'
 

@@ -1,4 +1,4 @@
-import { Profile } from './../profile'
+import { Profile } from '../sdk/profile'
 import { Contract, ethers } from 'ethers'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { IEngineConfig } from '../utils/configs'

@@ -8,7 +8,7 @@ import { IDerivableContractAddress, IEngineConfig } from '../utils/configs'
 import { CallReturnContext } from 'ethereum-multicall/dist/esm/models/call-return-context'
 import { ZERO_ADDRESS } from '../utils/constant'
 import { bn } from '../utils/helper'
-import { Profile } from '../profile'
+import { Profile } from '../sdk/profile'
 import { TokenType } from '../types'
 
 const POOL_FEES = [100, 300, 500]

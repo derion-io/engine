@@ -1,7 +1,5 @@
-import { LogType, SdkPools } from '../types'
-import { BigNumber, Signer } from 'ethers'
-import { ProfileConfigs } from '../utils/configs'
-import { Profile } from '../profile'
+import { Signer } from 'ethers'
+import { Profile } from './profile'
 import { Account } from './account'
 import { StateLoader } from './stateLoader'
 import { Networkish } from '@ethersproject/providers'
@@ -10,12 +8,10 @@ import { extractPoolAddresses } from './utils/logs'
 import {Swapper} from './swapper'
 import { FungiblePosition } from '../services/history'
 import { calcPositionState, PositionView } from './utils/positions'
+import { LogType, ProfileConfigs, SdkPools } from './type'
 
 export class DerionSDK {
-  configs: ProfileConfigs
-
   constructor(configs: ProfileConfigs) {
-    this.configs = configs
     this.profile = new Profile(configs)
   }
 
@@ -41,7 +37,7 @@ export class DerionSDK {
   }
 
   createSwapper = (url?: ConnectionInfo | string, network?: Networkish) => {
-    return new Swapper(this.configs, this.profile, url, network)
+    return new Swapper(this.profile.configs, this.profile, url, network)
   }
 
   calcPositionState = (

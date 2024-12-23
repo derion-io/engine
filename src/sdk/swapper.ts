@@ -1,15 +1,14 @@
 import { JsonRpcProvider, Networkish, TransactionReceipt } from '@ethersproject/providers'
 import { BigNumber, Contract, ethers, Signer, utils, VoidSigner } from 'ethers'
 import { ConnectionInfo, isAddress } from 'ethers/lib/utils'
-import { Profile } from '../profile'
+import { Profile, ProfileConfigs } from './profile'
 import { Q128 } from '../services/resource'
-import { PendingSwapTransactionType, SdkPools } from '../types'
-import { ProfileConfigs } from '../utils/configs'
 import { NATIVE_ADDRESS, POOL_IDS } from '../utils/constant'
 import { bn } from '../utils/helper'
 const { AddressZero } = ethers.constants
 
 import { addressFromToken, sideFromToken, isPosId, packPosId, throwError, unpackPosId } from './utils'
+import { SdkPools } from './type'
 const PAYMENT = 0
 const TRANSFER = 1
 const CALL_VALUE = 2
@@ -43,11 +42,6 @@ export type SwapStepType = {
   currentBalanceOut?: BigNumber
   uniPool?: string
 }
-export type PriceTxReturnType = {
-  inputs: Array<any>
-  code: string
-  data: string | undefined
-}
 
 export type MultiSwapParameterType = {
   steps: Array<SwapStepType>
@@ -60,11 +54,6 @@ export type MultiSwapParameterType = {
     pools: SdkPools
     decimals?: { [token: string]: number }
   }
-}
-
-export type PoolGroupReturnType = {
-  pools: SdkPools
-  TOKEN_R: string
 }
 
 export type SwapCallDataParameterType = {
@@ -99,6 +88,12 @@ export type SwapAndOpenAggregatorType = {
   pool: string
   side: number
 }
+
+export type PendingSwapTransactionType = {
+  hash: string
+  steps: SwapStepType[]
+}
+
 export class Swapper {
   configs: ProfileConfigs
   profile: Profile

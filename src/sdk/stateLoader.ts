@@ -1,9 +1,9 @@
 import { JsonRpcProvider, Networkish } from '@ethersproject/providers'
 import { CallReturnContext, ContractCallContext, Multicall } from 'ethereum-multicall';
 import { ConnectionInfo } from 'ethers/lib/utils';
-import { Profile } from '../profile';
-import { SdkPools } from "../types"
+import { Profile } from './profile';
 import { BigNumber } from 'ethers';
+import { SdkPools } from './type';
 
 export class StateLoader {
   profile: Profile

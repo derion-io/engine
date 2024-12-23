@@ -10,7 +10,7 @@ import { CurrentPool } from './services/currentPool'
 import { CreatePool } from './services/createPool'
 import { UniV3Pair } from './services/uniV3Pair'
 import { IEngineConfig } from './utils/configs'
-import { Profile } from './profile'
+import { Profile } from './sdk/profile'
 import { Aggregator } from './services/aggregator'
 
 export class Engine {

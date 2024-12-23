@@ -1,13 +1,11 @@
-import { Storage } from '../types'
-import { ethers, Signer } from 'ethers'
+import { BigNumber } from "ethers"
 
-export interface IEngineConfig extends ProfileConfigs {
-  account?: string
-  signer?: ethers.providers.JsonRpcSigner
-  scanApiKey?: string
+export interface ProfileConfigs {
+  env?: 'development' | 'production'
+  chainId: number
 }
 
-export interface INetworkConfig {
+export interface DerionConfigs {
   chainId: number
   rpc: string
   rpcGetLog?: string
@@ -63,4 +61,52 @@ export interface IDerivableContractAddress {
   poolDeployer?: string
 }
 
-export const DEFAULT_CHAIN = 42161
+export type LogType = {
+  contractAddress: string
+  address: string
+  timeStamp: number
+  transactionHash: string
+  blockNumber: number
+  index: number
+  logIndex: number
+  name: string
+  topics: string[]
+  data: string
+  args: any
+}
+
+export type SdkPool = {
+  address: string
+  config?: {
+    FETCHER: string
+    ORACLE: string
+    TOKEN_R: string
+    K: number
+    MARK: BigNumber
+    INTEREST_HL: number
+    PREMIUM_HL: number
+    MATURITY: number
+    MATURITY_VEST: number
+    MATURITY_RATE: BigNumber
+    OPEN_RATE: BigNumber
+  }
+  state?: {
+    R: BigNumber
+    a: BigNumber
+    b: BigNumber
+  }
+  view?: {
+    sA: BigNumber
+    sB: BigNumber
+    sC: BigNumber
+    rA: BigNumber
+    rB: BigNumber
+    rC: BigNumber
+    twap: BigNumber
+    spot: BigNumber
+  }
+}
+
+export type SdkPools = {
+  [address: string]: SdkPool
+}

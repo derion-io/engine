@@ -1,5 +1,5 @@
 import { BigNumber, Signer } from 'ethers'
-import { Profile } from '../profile'
+import { Profile } from './profile'
 import { Transition, FungiblePosition } from '../services/history'
 import { LogType } from '../types'
 import { processLogs } from './utils/logs'
