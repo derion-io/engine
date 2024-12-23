@@ -1,27 +1,16 @@
 {
-  "name": "derivable-engine",
+  "name": "derion-sdk",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "example:getResource": "npx ts-node --files ./example/getResource.ts",
-    "example:getBnA": "npx ts-node --files ./example/getBalanceAndAllowance.ts",
-    "example:getPairDetail": "npx ts-node --files ./example/getPairDetail.ts",
-    "example:getPairDetailV3": "npx ts-node --files ./example/getPairDetailV3.ts",
-    "example:price": "npx ts-node --files ./example/getTokenPrice.ts",
-    "example:swap": "npx ts-node --files ./example/swap.ts",
-    "example:createPool": "npx ts-node --files ./example/createPool.ts",
-    "example:calcAmountOuts": "npx ts-node --files ./example/calculateAmountOuts.ts",
-    "example:history": "npx ts-node --files ./example/history.ts",
-    "example:power": "npx ts-node --files ./example/power.ts",
-    "example:getPairAddress": "npx ts-node --files ./example/getPairAddress.ts",
     "pretty": "prettier --write \"./src/**/*.ts\"",
     "record": "RECORD=1 jest",
     "trace": "TRACE=1 RECORD=1 jest",
-    "test": "jest"
+    "test": "RECORD=1 jest"
   },
-  "author": "Derivable Labs",
+  "author": "Derion Labs",
   "license": "MIT",
   "dependencies": {
     "@ethersproject/providers": "https://gitpkg.now.sh/derion-io/ethers.js/packages/providers?v5.3.5.0",
