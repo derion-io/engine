@@ -6,7 +6,7 @@ import { NATIVE_ADDRESS, POOL_IDS, Q128 } from './utils/constant'
 const { AddressZero } = ethers.constants
 
 import { addressFromToken, sideFromToken, isPosId, packPosId, throwError, unpackPosId, bn } from './utils'
-import { ProfileConfigs, SdkPools } from './type'
+import { DerionConfigs, ProfileConfigs, SdkPools } from './type'
 const PAYMENT = 0
 const TRANSFER = 1
 const CALL_VALUE = 2
@@ -93,7 +93,7 @@ export type PendingSwapTransactionType = {
 }
 
 export class Swapper {
-  configs: ProfileConfigs
+  configs: DerionConfigs
   profile: Profile
   provider: JsonRpcProvider
   overrideProvider: JsonRpcProvider
@@ -101,7 +101,7 @@ export class Swapper {
   paraDataBaseURL: string
   paraBuildTxBaseURL: string
   paraDataBaseVersion: string
-  constructor(configs: ProfileConfigs, profile: Profile, url?: ConnectionInfo | string, network?: Networkish) {
+  constructor(configs: DerionConfigs, profile: Profile, url?: ConnectionInfo | string, network?: Networkish) {
     this.profile = profile
     this.configs = configs
     this.provider = new JsonRpcProvider(url, network)
@@ -474,7 +474,7 @@ export class Swapper {
   }> {
     const address = await signer.getAddress()
     const rateData = await this.getAggRate(getRateData, signer)
-    if (rateData.error) {
+    if (!rateData.priceRoute) {
       throw new Error(rateData.error)
     }
     const swapData = await this.buildAggTx(getRateData, rateData, slippage)
@@ -507,7 +507,7 @@ export class Swapper {
       await fetch(
         `${this.paraDataBaseURL}/?version=${this.paraDataBaseVersion}&srcToken=${getRateData.srcToken}&srcDecimals=${getRateData?.srcDecimals || 18}&destToken=${getRateData.destToken
         }&destDecimals=${getRateData?.destDecimals || 18}&amount=${amount}&side=${getRateData.side}&excludeDirectContractMethods=${getRateData.excludeDirectContractMethods || false
-        }&otherExchangePrices=${getRateData.otherExchangePrices || true}&partner=${getRateData.partner}&network=${this.configs.chainId
+        }&otherExchangePrices=${getRateData.otherExchangePrices || true}&partner=${getRateData.partner}&network=${this.profile.chainId
         }&userAddress=${address}`,
         {
           method: 'GET',
@@ -522,7 +522,7 @@ export class Swapper {
     myHeaders.append('Content-Type', 'application/json')
     const swapData = await (
       await fetch(
-        `${this.paraBuildTxBaseURL}/${this.configs.chainId}?ignoreGasEstimate=${getRateData.ignoreGasEstimate || true}&ignoreAllowance=${getRateData.ignoreAllowance || true
+        `${this.paraBuildTxBaseURL}/${this.profile.chainId}?ignoreGasEstimate=${getRateData.ignoreGasEstimate || true}&ignoreAllowance=${getRateData.ignoreAllowance || true
         }&gasPrice=${rateData.priceRoute.gasCost}`,
         {
           method: 'POST',
