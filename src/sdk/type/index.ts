@@ -110,3 +110,23 @@ export type SdkPool = {
 export type SdkPools = {
   [address: string]: SdkPool
 }
+
+export type FungiblePosition = {
+  id: string,
+  balance: BigNumber,
+  priceR: BigNumber,
+  price: BigNumber,
+  rPerBalance: BigNumber,
+  maturity: number,
+}
+
+export type Transition = {
+  txHash: string,
+  blockNumber: number,
+  timestamp?: number,
+  netTransfers: { [token: string]: BigNumber }
+  price?: BigNumber,
+  priceR?: BigNumber,
+  rPerAmount?: BigNumber,
+  maturity?: number,
+}

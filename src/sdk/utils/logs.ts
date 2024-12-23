@@ -1,8 +1,7 @@
 import { BigNumber } from 'ethers'
-import { LogType } from '../../types'
-import { BIG_0, bn } from '../../utils/helper'
 import { defaultAbiCoder, getAddress, hexDataSlice } from 'ethers/lib/utils'
-import { Transition, FungiblePosition } from '../../services/history'
+import { FungiblePosition, LogType, Transition } from '../type'
+import { BIG_0 } from './constant'
 
 export const TOPICS: { [topic0: string]: string } = {
   ['0xba5c330f8eb505cee9b4eb08fecf34234a327cfb6f9e480f9d3b4dfae5b23e4d']: 'Position',       // Derion Pool

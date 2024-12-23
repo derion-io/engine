@@ -6,9 +6,8 @@ import { Networkish } from '@ethersproject/providers'
 import { ConnectionInfo } from 'ethers/lib/utils'
 import { extractPoolAddresses } from './utils/logs'
 import {Swapper} from './swapper'
-import { FungiblePosition } from '../services/history'
 import { calcPositionState, PositionView } from './utils/positions'
-import { LogType, ProfileConfigs, SdkPools } from './type'
+import { FungiblePosition, LogType, ProfileConfigs, SdkPools } from './type'
 
 export class DerionSDK {
   constructor(configs: ProfileConfigs) {

@@ -1,6 +1,8 @@
 import { BigNumber } from "ethers"
-import { NATIVE_ADDRESS, POOL_IDS } from "../../utils/constant"
+import { NATIVE_ADDRESS, POOL_IDS } from "./constant"
 import { getAddress, hexDataSlice, hexlify, hexZeroPad } from "ethers/lib/utils"
+
+export const bn = BigNumber.from
 
 export const isPosId = (address: string): boolean => {
   return address.length == 66

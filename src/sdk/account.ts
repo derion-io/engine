@@ -1,8 +1,7 @@
 import { BigNumber, Signer } from 'ethers'
 import { Profile } from './profile'
-import { Transition, FungiblePosition } from '../services/history'
-import { LogType } from '../types'
 import { processLogs } from './utils/logs'
+import { FungiblePosition, LogType, Transition } from './type'
 
 export class Account {
   profile: Profile
@@ -42,6 +41,4 @@ export class Account {
     this.blockNumber = lastLog.blockNumber
     this.logIndex = lastLog.logIndex
   }
-
-  // importPositions = async (ids: string[]) => {}
 }

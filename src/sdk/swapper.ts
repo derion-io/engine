@@ -1,14 +1,12 @@
 import { JsonRpcProvider, Networkish, TransactionReceipt } from '@ethersproject/providers'
 import { BigNumber, Contract, ethers, Signer, utils, VoidSigner } from 'ethers'
 import { ConnectionInfo, isAddress } from 'ethers/lib/utils'
-import { Profile, ProfileConfigs } from './profile'
-import { Q128 } from '../services/resource'
-import { NATIVE_ADDRESS, POOL_IDS } from '../utils/constant'
-import { bn } from '../utils/helper'
+import { Profile } from './profile'
+import { NATIVE_ADDRESS, POOL_IDS, Q128 } from './utils/constant'
 const { AddressZero } = ethers.constants
 
-import { addressFromToken, sideFromToken, isPosId, packPosId, throwError, unpackPosId } from './utils'
-import { SdkPools } from './type'
+import { addressFromToken, sideFromToken, isPosId, packPosId, throwError, unpackPosId, bn } from './utils'
+import { ProfileConfigs, SdkPools } from './type'
 const PAYMENT = 0
 const TRANSFER = 1
 const CALL_VALUE = 2
