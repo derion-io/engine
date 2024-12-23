@@ -309,14 +309,13 @@ describe('Derion SDK', () => {
     const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
     const account = sdk.createAccount(accountAddress)
     account.processLogs(txLogs)
-    const positionPoolFrom = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd' // Derion pool ARB/ETH
-    const positionPoolTo = '0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B' // Derion pool WBTC/USDC
+    const positionPoolARB = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd' // Derion pool ARB/ETH
+    const positionPoolWBTC = '0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B' // Derion pool WBTC/USDC
     const swapper = sdk.createSwapper(rpcUrl)
-    console.log(account.positions[packPosId(positionPoolFrom, POOL_IDS.A)], account.positions[packPosId(positionPoolFrom, POOL_IDS.B)])
     const {amountOuts:amountOutsAC, gasUsed: gasUsedAC} = await swapper.simulate({
-      tokenIn: packPosId(positionPoolFrom, POOL_IDS.A),
-      tokenOut: packPosId(positionPoolTo, POOL_IDS.C),
-      amount: '1000',
+      tokenIn: packPosId(positionPoolARB, POOL_IDS.A),
+      tokenOut: packPosId(positionPoolWBTC, POOL_IDS.C),
+      amount: account.positions[packPosId(positionPoolARB, POOL_IDS.A)].balance.toString(),
       deps: {
         signer,
         pools
@@ -325,9 +324,9 @@ describe('Derion SDK', () => {
     expect(Number(amountOutsAC)).toBeGreaterThan(0)
     expect(Number(gasUsedAC)).toBeGreaterThan(0)
     const {amountOuts:amountOutsAB, gasUsed: gasUsedAB} = await swapper.simulate({
-      tokenIn: packPosId(positionPoolFrom, POOL_IDS.A),
-      tokenOut: packPosId(positionPoolTo, POOL_IDS.B),
-      amount: '1000',
+      tokenIn: packPosId(positionPoolARB, POOL_IDS.A),
+      tokenOut: packPosId(positionPoolARB, POOL_IDS.B),
+      amount: account.positions[packPosId(positionPoolARB, POOL_IDS.A)].balance.toString(),
       deps: {
         signer,
         pools
@@ -335,11 +334,10 @@ describe('Derion SDK', () => {
     })
     expect(Number(amountOutsAB)).toBeGreaterThan(0)
     expect(Number(gasUsedAB)).toBeGreaterThan(0)
-
     const {amountOuts:amountOutsBC, gasUsed: gasUsedBC} = await swapper.simulate({
-      tokenIn: packPosId(positionPoolFrom, POOL_IDS.B),
-      tokenOut: packPosId(positionPoolTo, POOL_IDS.C),
-      amount: '1000',
+      tokenIn: packPosId(positionPoolARB, POOL_IDS.B),
+      tokenOut: packPosId(positionPoolWBTC, POOL_IDS.C),
+      amount: account.positions[packPosId(positionPoolARB, POOL_IDS.B)].balance.toString(),
       deps: {
         signer,
         pools
@@ -347,7 +345,6 @@ describe('Derion SDK', () => {
     })
     expect(Number(amountOutsBC)).toBeGreaterThan(0)
     expect(Number(gasUsedBC)).toBeGreaterThan(0)
-  
   })
   test('derion-sdk-close', async () => {
     const chainId = 42161
