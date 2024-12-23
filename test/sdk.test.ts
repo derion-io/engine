@@ -1,20 +1,20 @@
 import { DerionSDK } from '../src/sdk/sdk'
-import { groupBy, packPosId, throwError, unpackPosId } from '../src/sdk/utils'
+import { groupBy, packPosId, throwError } from '../src/sdk/utils'
 import { Interceptor } from './shared/libs/interceptor'
 import { AssistedJsonRpcProvider } from 'assisted-json-rpc-provider'
 import { hexZeroPad } from 'ethers/lib/utils'
 import { JsonRpcProvider } from '@ethersproject/providers'
-import { NATIVE_ADDRESS, POOL_IDS } from '../src/utils/constant'
-import { numberToWei, packId, thousandsInt } from '../src/utils/helper'
+import { NATIVE_ADDRESS, POOL_IDS } from '../src/sdk/utils/constant'
+import { numberToWei } from '../src/sdk/utils/helper'
 import { VoidSigner } from 'ethers'
 import { formatPositionView } from '../src/sdk/utils/positions'
 const interceptor = new Interceptor()
-describe('Derion SDK', () => {
+describe('SDK', () => {
   beforeEach(() => {
     interceptor.setContext(expect.getState().currentTestName)
   })
 
-  test('sdk-flow', async () => {
+  test('postions', async () => {
     const chainId = 137
     const accountAddress = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
 
@@ -57,7 +57,7 @@ describe('Derion SDK', () => {
 
     console.log(...posViews.map(pv => formatPositionView(pv)))
   })
-  test('derion-sdk-native-open', async () => {
+  test('native-open', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
     const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
@@ -129,7 +129,7 @@ describe('Derion SDK', () => {
     expect(Number(amountOutsC)).toBeGreaterThan(0)
     expect(Number(gasUsedC)).toBeGreaterThan(0)
   })
-  test('derion-sdk-R-open', async () => {
+  test('R-open', async () => {
     const chainId = 42161
     const accountAddress = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
     const poolToSwap = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd'
@@ -205,7 +205,7 @@ describe('Derion SDK', () => {
     expect(Number(amountROutsC)).toBeGreaterThan(0)
     expect(Number(gasUsedRC)).toBeGreaterThan(0)
   })
-  test('derion-sdk-any-open', async () => {
+  test('any-open', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
     const poolToSwap = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd'
@@ -275,7 +275,7 @@ describe('Derion SDK', () => {
     expect(Number(amountOutsUSDCC)).toBeGreaterThan(0)
     expect(Number(gasUsedUSDCC)).toBeGreaterThan(0)
   })
-  test('derion-sdk-positions-swap', async () => {
+  test('positions-swap', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
     const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
@@ -345,7 +345,7 @@ describe('Derion SDK', () => {
     expect(Number(amountOutsBC)).toBeGreaterThan(0)
     expect(Number(gasUsedBC)).toBeGreaterThan(0)
   })
-  test('derion-sdk-positions-close', async () => {
+  test('positions-close', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
     const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
