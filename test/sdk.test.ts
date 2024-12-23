@@ -133,6 +133,7 @@ describe('Derion SDK', () => {
   test('derion-sdk-R-open', async () => {
     const chainId = 42161
     const accountAddress = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
+    const poolToSwap = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd'
     const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
     const scanApi = process.env['SCAN_API_' + chainId] ?? throwError()
     const sdk = new DerionSDK({ chainId })
@@ -164,7 +165,6 @@ describe('Derion SDK', () => {
     const stateLoader = sdk.getStateLoader(rpcUrl)
     const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
     const account = sdk.createAccount(accountAddress)
-    const poolToSwap = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd'
     account.processLogs(txLogs)
     const swapper = sdk.createSwapper(rpcUrl)
     // Token R -> A
@@ -209,6 +209,7 @@ describe('Derion SDK', () => {
   test('derion-sdk-any-open', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
+    const poolToSwap = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd'
     const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
     const scanApi = process.env['SCAN_API_' + chainId] ?? throwError()
     const sdk = new DerionSDK({ chainId })
@@ -243,7 +244,7 @@ describe('Derion SDK', () => {
     const swapper = sdk.createSwapper(rpcUrl)
     const { amountOuts:amountOutsUSDCA, gasUsed: gasUsedUSDCA  } = await swapper.simulate({
       tokenIn: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC
-      tokenOut: packPosId(`0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd`, POOL_IDS.A),
+      tokenOut: packPosId(poolToSwap, POOL_IDS.A),
       amount: "100000",
       deps: {
         signer,
@@ -254,7 +255,7 @@ describe('Derion SDK', () => {
     expect(Number(gasUsedUSDCA)).toBeGreaterThan(0)
     const { amountOuts:amountOutsUSDCB, gasUsed: gasUsedUSDCB  } = await swapper.simulate({
       tokenIn: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC
-      tokenOut: packPosId(`0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd`, POOL_IDS.B),
+      tokenOut: packPosId(poolToSwap, POOL_IDS.B),
       amount: "100000",
       deps: {
         signer,
@@ -265,7 +266,7 @@ describe('Derion SDK', () => {
     expect(Number(gasUsedUSDCB)).toBeGreaterThan(0)
     const { amountOuts:amountOutsUSDCC, gasUsed:gasUsedUSDCC  } = await swapper.simulate({
       tokenIn: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC
-      tokenOut: packPosId(`0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd`, POOL_IDS.C),
+      tokenOut: packPosId(poolToSwap, POOL_IDS.C),
       amount: "100000",
       deps: {
         signer,
