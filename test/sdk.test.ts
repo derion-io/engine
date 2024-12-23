@@ -8,7 +8,6 @@ import { NATIVE_ADDRESS, POOL_IDS } from '../src/utils/constant'
 import { numberToWei, packId, thousandsInt } from '../src/utils/helper'
 import { VoidSigner } from 'ethers'
 import { formatPositionView } from '../src/sdk/utils/positions'
-
 const interceptor = new Interceptor()
 describe('Derion SDK', () => {
   beforeEach(() => {
@@ -346,7 +345,7 @@ describe('Derion SDK', () => {
     expect(Number(amountOutsBC)).toBeGreaterThan(0)
     expect(Number(gasUsedBC)).toBeGreaterThan(0)
   })
-  test('derion-sdk-close', async () => {
+  test('derion-sdk-positions-close', async () => {
     const chainId = 42161
     const accountAddress = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
     const rpcUrl = process.env['RPC_' + chainId] ?? throwError()
@@ -379,23 +378,133 @@ describe('Derion SDK', () => {
     const pools = await stateLoader.loadPools(poolAdrs.poolAddresses)
     const account = sdk.createAccount(accountAddress)
     account.processLogs(txLogs)
-    const posKey = Object.keys(account.positions).filter(pos => {
-      return account.positions[pos].balance.gt(0)
-    })
-    const positionPoolAddress = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd'
-    const positionSide = POOL_IDS.A
-    const position = account.positions[Object.keys(account.positions).filter(key => key.includes(positionPoolAddress.toLowerCase().slice(2, 100)))[0]]
+    const positionPoolARB = '0xf3cE4cbfF83AE70e9F76b22cd9b683F167d396dd' // Derion pool ARB/ETH
+    const positionPoolWBTC = '0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B' // Derion pool WBTC/USDC
+    const positionPoolWETH = '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE' // Derion pool WBTC/USDC
+
     const swapper = sdk.createSwapper(rpcUrl)
-    const { amountOuts } = await swapper.simulate({
-      tokenIn: packPosId(positionPoolAddress, positionSide),
-      tokenOut: NATIVE_ADDRESS,
-      amount: position.balance.toString(),
+    console.log('A -> NATIVE')
+    const {amountOuts:amountOutsANative, gasUsed: gasUsedANative} = await swapper.simulate({
+      tokenIn: packPosId(positionPoolARB, POOL_IDS.A),
+      tokenOut: pools[positionPoolARB].config?.TOKEN_R || "",
+      amount: account.positions[packPosId(positionPoolARB, POOL_IDS.A)].balance.toString(),
       deps: {
         signer,
         pools
       }
     })
-    const amountOut = amountOuts[amountOuts.length-1]
-    console.log(thousandsInt(amountOut.toString(), 6))
+    expect(Number(amountOutsANative)).toBeGreaterThan(0)
+    expect(Number(gasUsedANative)).toBeGreaterThan(0)
+    console.log('B -> NATIVE')
+
+    const {amountOuts:amountOutsBNative, gasUsed: gasUsedBNative} = await swapper.simulate({
+      tokenIn: packPosId(positionPoolARB, POOL_IDS.B),
+      tokenOut: NATIVE_ADDRESS,
+      amount: account.positions[packPosId(positionPoolARB, POOL_IDS.B)].balance.toString(),
+      deps: {
+        signer,
+        pools
+      }
+    })
+
+    expect(Number(amountOutsBNative)).toBeGreaterThan(0)
+    expect(Number(gasUsedBNative)).toBeGreaterThan(0)
+    console.log('C -> NATIVE')
+
+    const {amountOuts:amountOutsCNative, gasUsed: gasUsedCNative} = await swapper.simulate({
+      tokenIn: packPosId(positionPoolWETH, POOL_IDS.C),
+      tokenOut: NATIVE_ADDRESS,
+      amount: account.positions[packPosId(positionPoolWETH, POOL_IDS.C)].balance.toString(),
+      deps: {
+        signer,
+        pools
+      }
+    })
+    expect(Number(amountOutsCNative)).toBeGreaterThan(0)
+    expect(Number(gasUsedCNative)).toBeGreaterThan(0)
+
+
+    console.log('A -> R')
+    const {amountOuts:amountOutsAR, gasUsed: gasUsedAR} = await swapper.simulate({
+      tokenIn: packPosId(positionPoolARB, POOL_IDS.A),
+      tokenOut: pools[positionPoolARB].config?.TOKEN_R || "",
+      amount: account.positions[packPosId(positionPoolARB, POOL_IDS.A)].balance.toString(),
+      deps: {
+        signer,
+        pools
+      }
+    })
+    expect(Number(amountOutsAR)).toBeGreaterThan(0)
+    expect(Number(gasUsedAR)).toBeGreaterThan(0)
+    console.log('B -> R')
+
+    const {amountOuts:amountOutsBR, gasUsed: gasUsedBR} = await swapper.simulate({
+      tokenIn: packPosId(positionPoolARB, POOL_IDS.B),
+      tokenOut:  pools[positionPoolARB].config?.TOKEN_R || "",
+      amount: account.positions[packPosId(positionPoolARB, POOL_IDS.B)].balance.toString(),
+      deps: {
+        signer,
+        pools
+      }
+    })
+
+    expect(Number(amountOutsBR)).toBeGreaterThan(0)
+    expect(Number(gasUsedBR)).toBeGreaterThan(0)
+    console.log('C -> R')
+
+    const {amountOuts:amountOutsCR, gasUsed: gasUsedCR} = await swapper.simulate({
+      tokenIn: packPosId(positionPoolWETH, POOL_IDS.C),
+      tokenOut:  pools[positionPoolWETH].config?.TOKEN_R || "",
+      amount: account.positions[packPosId(positionPoolWETH, POOL_IDS.C)].balance.toString(),
+      deps: {
+        signer,
+        pools
+      }
+    })
+    expect(Number(amountOutsCR)).toBeGreaterThan(0)
+    expect(Number(gasUsedCR)).toBeGreaterThan(0)
+
+
+    console.log('A -> USDC')
+    const USDC = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831'
+    const {amountOuts:amountOutsAUSDC, gasUsed: gasUsedAUSDC} = await swapper.simulate({
+      tokenIn: packPosId(positionPoolARB, POOL_IDS.A),
+      tokenOut: USDC,
+      amount: account.positions[packPosId(positionPoolARB, POOL_IDS.A)].balance.toString(),
+      deps: {
+        signer,
+        pools
+      }
+    })
+    expect(Number(amountOutsAUSDC)).toBeGreaterThan(0)
+    expect(Number(gasUsedAUSDC)).toBeGreaterThan(0)
+    console.log('B -> USDC')
+
+    const {amountOuts:amountOutsBUSDC, gasUsed: gasUsedBUSDC} = await swapper.simulate({
+      tokenIn: packPosId(positionPoolARB, POOL_IDS.B),
+      tokenOut: USDC,
+      amount: account.positions[packPosId(positionPoolARB, POOL_IDS.B)].balance.toString(),
+      deps: {
+        signer,
+        pools
+      }
+    })
+
+    expect(Number(amountOutsBUSDC)).toBeGreaterThan(0)
+    expect(Number(gasUsedBUSDC)).toBeGreaterThan(0)
+    console.log('C -> USDC')
+
+    const {amountOuts:amountOutsCUSDC, gasUsed: gasUsedCUSDC} = await swapper.simulate({
+      tokenIn: packPosId(positionPoolWETH, POOL_IDS.C),
+      tokenOut: USDC,
+      amount: account.positions[packPosId(positionPoolWETH, POOL_IDS.C)].balance.toString(),
+      deps: {
+        signer,
+        pools
+      }
+    })
+    expect(Number(amountOutsCUSDC)).toBeGreaterThan(0)
+    expect(Number(gasUsedCUSDC)).toBeGreaterThan(0)
+
   })
 })
