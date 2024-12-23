@@ -1,13 +1,13 @@
-import { DerionSDK } from '../src/sdk/sdk'
-import { groupBy, packPosId, throwError } from '../src/sdk/utils'
+import { DerionSDK } from '../src/sdk'
+import { groupBy, packPosId, throwError } from '../src/utils'
 import { Interceptor } from './shared/libs/interceptor'
 import { AssistedJsonRpcProvider } from 'assisted-json-rpc-provider'
 import { hexZeroPad } from 'ethers/lib/utils'
 import { JsonRpcProvider } from '@ethersproject/providers'
-import { NATIVE_ADDRESS, POOL_IDS } from '../src/sdk/utils/constant'
-import { numberToWei } from '../src/sdk/utils/helper'
+import { NATIVE_ADDRESS, POOL_IDS } from '../src/utils/constant'
+import { numberToWei } from '../src/utils/helper'
 import { VoidSigner } from 'ethers'
-import { formatPositionView } from '../src/sdk/utils/positions'
+import { formatPositionView } from '../src/utils/positions'
 const interceptor = new Interceptor()
 describe('SDK', () => {
   beforeEach(() => {

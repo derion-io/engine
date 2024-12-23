@@ -1,6 +1,6 @@
-import Helper from '../abi/Helper.json'
-import View from '../abi/View.json'
-import UTROverride from '../abi/UTROverride.json'
+import Helper from './abi/Helper.json'
+import View from './abi/View.json'
+import UTROverride from './abi/UTROverride.json'
 import fetch from 'node-fetch'
 import { DerionConfigs, ProfileConfigs } from './type'
 
