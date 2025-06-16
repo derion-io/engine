@@ -765,7 +765,7 @@ describe('Derivable Tools', () => {
     const cacheLogs = await engine.RESOURCE.getCachedLogs(account)
     const assets = engine.RESOURCE.updateAssets({logs: allLogs, account})
     console.log(tokens)
-    console.log(await engine.BNA.loadUniswapV3Position({tokensOverride: tokens}))
+    console.log(await engine.BNA.loadUniswapV3Position({}))
   })
 
 })

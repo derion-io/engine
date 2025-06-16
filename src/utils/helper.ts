@@ -409,11 +409,11 @@ export function mergeTwoUniqSortedLogs(a: LogType[], b: LogType[]): LogType[] {
   return r;
 }
 
-export function sortsBefore(tokenA: TokenType, tokenB: TokenType): boolean {
-  if (tokenA.address === tokenB.address) {
+export function sortsBefore(tokenA: string, tokenB: string): boolean {
+  if (tokenA === tokenB) {
     throw new Error("The tokens have the same address.");
   }
-  return tokenA.address.toLowerCase() < tokenB.address.toLowerCase();
+  return tokenA.toLowerCase() < tokenB.toLowerCase();
 }
 
 export function computePoolAddress({
@@ -429,7 +429,7 @@ export function computePoolAddress({
   fee: FeeAmount
   initCodeHashManualOverride?: string
 }): string {
-  const [token0, token1] = sortsBefore(tokenA, tokenB) ? [tokenA, tokenB] : [tokenB, tokenA] // does safety checks
+  const [token0, token1] = sortsBefore(tokenA.address, tokenB.address) ? [tokenA, tokenB] : [tokenB, tokenA] // does safety checks
   return getCreate2Address(
     factoryAddress,
     keccak256(

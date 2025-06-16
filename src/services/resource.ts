@@ -222,7 +222,7 @@ export class Resource {
       const assets: Assets = updateAssets || {
         20: { balance: {}, allowance: {} },
         721: { balance: {}, allowanceALl: {}, allowance: {} },
-        1155: { balance: {}, allowance: {} }
+        1155: { balance: {}, allowance: {} },
       };
   
       const eventInterface = new ethers.utils.Interface(this.profile.getAbi('Events'));

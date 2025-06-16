@@ -1,17 +1,20 @@
-import { bn, computePoolAddress, getTopics, isErc1155Address } from '../utils/helper'
+import { bn, computePoolAddress, getTopics, isErc1155Address, sortsBefore } from '../utils/helper'
 import { BigNumber } from 'ethers'
 import { LARGE_VALUE, NATIVE_ADDRESS } from '../utils/constant'
 import BnAAbi from '../abi/BnA.json'
-import { AllowancesType, BalancesType, MaturitiesType, TokenType } from '../types'
+import { AllowancesType, BalancesType, LogType, MaturitiesType, TokenType } from '../types'
 import { IEngineConfig } from '../utils/configs'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { Profile } from '../profile'
 import { Assets, Resource } from './resource'
 import _ from 'lodash'
-import { getAddress } from 'ethers/lib/utils'
+import { getAddress, Interface } from 'ethers/lib/utils'
 import {multicall} from '../utils/multicall'
 import {CallReturnContext} from 'ethereum-multicall'
 import INONFUNGIBLE_POSITION_MANAGER from '../abi/NonfungiblePositionManager.json'
+import Events721Abi from '../abi/Events721.json'
+import IUniswapV3PoolABI from '../abi/IUniswapV3PoolABI.json'
+
 const TOPICS = getTopics()
 
 export function keyFromTokenId(id: BigNumber): string {
@@ -43,6 +46,19 @@ export interface IUniPosV3 {
   token0Data:TokenType,
   token1Data: TokenType,
   poolAddress: string,
+  poolState?: IUniPoolV3
+}
+export interface IUniPoolV3 {
+  poolLiquidity?: BigNumber,
+  slot0?: {
+    sqrtPriceX96: BigNumber;
+    tick: number;
+    observationIndex: number;
+    observationCardinality: number;
+    observationCardinalityNext: number;
+    feeProtocol: number;
+    unlocked: boolean;
+  }
 }
 export class BnA {
   provider: JsonRpcProvider
@@ -171,19 +187,57 @@ export class BnA {
       throw error
     }
   }
-  async loadUniswapV3Position({assetsOverride, tokensOverride, uniswapV3FactoryOverride}: {assetsOverride?: Assets, tokensOverride?: TokenType[], uniswapV3FactoryOverride?: string}) {
+  async loadUniswapV3Position({assetsOverride, tokensOverride, uniswapV3FactoryOverride, allLogsOverride}: {assetsOverride?: Assets, tokensOverride?: TokenType[], uniswapV3FactoryOverride?: string, allLogsOverride?: LogType[]}) {
     const assets = assetsOverride || this.RESOURCE.assets
     const tokens = tokensOverride || this.RESOURCE.tokens
+    const allLogs = allLogsOverride || this.RESOURCE.allLogs
+
     const factoryAddress = uniswapV3FactoryOverride || Object.keys(this.profile.configs.factory).filter(
       (facAddress) => this.profile.configs.factory[facAddress].type === 'uniswap3'
     )?.[0]
-    const uniPosV3 = Object.keys(assets[721].balance).map(key721 => key721.split('-')).filter(keyWithId => keyWithId[0] === this.profile.configs.uniswap.v3Pos)
+    // const uniPosV3 = Object.keys(assets[721].balance).map(key721 => key721.split('-')).filter(keyWithId => keyWithId[0] === this.profile.configs.uniswap.v3Pos)
     const uniPosV3Data: {[posKey: string]: IUniPosV3} = {}
+    const uniPoolV3Data: {[poolAddress: string]: IUniPoolV3} = {}
+
+    const event721Interface = new Interface(this.profile.getAbi('Events721'));
+
+    const uni3PosFromLogs = allLogs.map(log => {
+      try {
+        const parsedLog =  { ...log, ...event721Interface.parseLog(log) };
+        if(!parsedLog.args || !parsedLog.args?.tokenId || !log.address || log.address?.toLowerCase() !== this.profile.configs.uniswap.v3Pos.toLowerCase()) return;
+        let tokenA = ''
+        let tokenB = ''
+        let poolAddress = ''
+        const transferTokenUniPosLogs = this.RESOURCE.bnaLogs.filter(log => log.transactionHash === parsedLog.transactionHash)
+        if(transferTokenUniPosLogs.length === 1) { // WETH vs Token A
+          tokenA = this.profile.configs.wrappedTokenAddress
+          tokenB = transferTokenUniPosLogs[0].address
+          poolAddress = transferTokenUniPosLogs[0].args.to
+        } else {
+          const sameReceiveUniPosLogs = transferTokenUniPosLogs.filter(l => l.args.to === transferTokenUniPosLogs[0].args.to)
+          if(sameReceiveUniPosLogs?.length === 0) return;
+          tokenA = sameReceiveUniPosLogs[1].address
+          tokenB = sameReceiveUniPosLogs[0].address
+          poolAddress = sameReceiveUniPosLogs[0].args.to
+        }
+        const [token0, token1] = sortsBefore(tokenA, tokenB) ? [tokenA, tokenB] : [tokenB, tokenA] // does safety checks
+        return {
+          token0,
+          token1,
+          uni3PosAddress: String(parsedLog.address),
+          uni3PosId: String(parsedLog.args?.tokenId),
+          poolAddress
+        }
+      } catch (error) {
+        return;
+      }
+    }).filter(l => l?.uni3PosAddress && l?.uni3PosId)
+    // console.log(uni3PosFromLogs)
 
     await multicall(
       this.RESOURCE.provider,
       [
-        ...uniPosV3.map(([uni3PosAddress, uni3PosId]) => ({
+        ...uni3PosFromLogs.map(({uni3PosId, uni3PosAddress, token0, token1, poolAddress}:any) => ({
           reference: `position-${uni3PosId}`,
           contractAddress: uni3PosAddress,
           abi: INONFUNGIBLE_POSITION_MANAGER.abi,
@@ -210,14 +264,66 @@ export class BnA {
                 tokensOwed1: BigNumber.from(values[11].hex).toString(),
                 token0: values[2],
                 token1: values[3],
+                // slot0: '',
+                // tick: '',
                 token0Data,
                 token1Data,
                 poolAddress,
               };
             }
           },
-    }))])
+        })),
+        ..._.uniqBy(uni3PosFromLogs, 'poolAddress').map(({uni3PosId, uni3PosAddress, token0, token1, poolAddress}:any) => ({
+          reference: `pool-${poolAddress}`,
+          contractAddress: poolAddress,
+          abi: IUniswapV3PoolABI.abi,
+          calls: [
+            {
+              reference: 'slot0',
+              methodName: 'slot0',
+              methodParameters: [],
+            },
+            {
+              reference: 'liquidity',
+              methodName: 'liquidity',
+              methodParameters: [],
+            },
+          ], context: (callsReturnContext: CallReturnContext[]) => {
+            for (const ret of callsReturnContext) {
+              // uniPosV3Data[[uni3PosAddress, uni3PosId].join('-')][ret.reference] = ret.returnValues
+              if (ret.reference === 'slot0') {
+                const [
+                  sqrtPriceX96,
+                  tick,
+                  observationIndex,
+                  observationCardinality,
+                  observationCardinalityNext,
+                  feeProtocol,
+                  unlocked,
+                ] = ret.returnValues as [BigNumber, number, number, number, number, number, boolean];
     
+                console.log(sqrtPriceX96)
+                if(!uniPoolV3Data[poolAddress]) uniPoolV3Data[poolAddress] = {}
+                uniPoolV3Data[poolAddress][ret.reference] = {
+                  sqrtPriceX96,
+                  tick,
+                  observationIndex,
+                  observationCardinality,
+                  observationCardinalityNext,
+                  feeProtocol,
+                  unlocked,
+                };
+              } else if (ret.reference === 'liquidity') {
+                const liquidity = ret.returnValues[0] as BigNumber;
+                uniPoolV3Data[poolAddress].poolLiquidity = liquidity ;
+              }
+            }
+          },
+        })),
+      ])
+      Object.keys(uniPosV3Data).map(posKey => {
+        uniPosV3Data[posKey].poolState = uniPoolV3Data[uniPosV3Data[posKey].poolAddress]
+      })
     return uniPosV3Data
   }
 }
