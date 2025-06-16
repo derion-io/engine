@@ -293,11 +293,14 @@ export class Resource {
             }
           }
   
-          if (TOPICS.TransferBatch.includes(log.topics[0])) {
+          if (TOPICS.TransferBatch.includes(log.topics[0]) && log.args?.values?.length) {
             const { from, to, ids, values } = log.args;
             for (let i = 0; i < ids.length; ++i) {
-              const id = ids[i].toString();
               const value = values[i];
+              if (!value) {
+                continue; // Skip if value is not defined
+              }
+              const id = ids[i].toString();
               const balanceKey = `${token}-${id}`;
   
               if (!assets[1155].balance[balanceKey]) {
