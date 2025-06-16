@@ -41,8 +41,8 @@ const abis = {
 }
 
 const DDL_CONFIGS_URL = {
-  development: `https://raw.githubusercontent.com/derion-io/configs/dev/`,
-  production: `https://raw.githubusercontent.com/derion-io/configs/main/`,
+  development: `https://raw.githubusercontent.com/derion-io/configs/v2-dev/`,
+  production: `https://raw.githubusercontent.com/derion-io/configs/v2/`,
 }
 
 // TODO: Change name from profile to ...
