@@ -218,7 +218,7 @@ export class Resource {
     }
   
     try {
-      const assets: Assets = {
+      const assets: Assets = updateAssets || {
         20: { balance: {}, allowance: {} },
         721: { balance: {}, allowanceALl: {}, allowance: {} },
         1155: { balance: {}, allowance: {} }
