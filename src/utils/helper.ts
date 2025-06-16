@@ -216,12 +216,18 @@ export const getTopics = (overrideEventsAbi?: any): { [key: string]: string[] } 
   return topics
 }
 
-export const rateToHL = (r: number, k: number, DURATION = SECONDS_PER_DAY): number => {
-  return Math.ceil((DURATION * Math.LN2) / r / k / k)
+export const rateToHL = (r: number, DURATION = SECONDS_PER_DAY): number => {
+  if (r == 0) {
+    return 0;
+  }
+  return Math.ceil((DURATION * Math.LN2) / r)
 }
 
-export const rateFromHL = (HL: number, k: number, DURATION = SECONDS_PER_DAY): number => {
-  return (DURATION * Math.LN2) / HL / k / k
+export const rateFromHL = (HL: number, DURATION = SECONDS_PER_DAY): number => {
+  if (HL == 0) {
+    return 0;
+  }
+  return (DURATION * Math.LN2) / HL
 }
 
 export const kx = (k: number, R: BigNumber, v: BigNumber, spot: BigNumber, MARK: BigNumber): number => {
