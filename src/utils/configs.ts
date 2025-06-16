@@ -47,6 +47,7 @@ export interface IHelperContract {
 
 export interface IUniswapContractAddress {
   v3Factory: string
+  v3Pos: string
 }
 
 export interface IDerivableContractAddress {

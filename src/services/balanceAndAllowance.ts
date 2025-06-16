@@ -6,9 +6,12 @@ import { AllowancesType, BalancesType, MaturitiesType } from '../types'
 import { IEngineConfig } from '../utils/configs'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { Profile } from '../profile'
-import { Resource } from './resource'
+import { Assets, Resource } from './resource'
 import _ from 'lodash'
 import { getAddress } from 'ethers/lib/utils'
+import {multicall} from '../utils/multicall'
+import {CallReturnContext} from 'ethereum-multicall'
+import INONFUNGIBLE_POSITION_MANAGER from '../abi/NonfungiblePositionManager.json'
 
 const TOPICS = getTopics()
 
@@ -27,13 +30,24 @@ export type BnAReturnType = {
   maturities: MaturitiesType
 }
 
+export interface IUniPosV3 {
+  tickLower: number,
+  tickUpper: number,
+  liquidity: string,
+  feeGrowthInside0LastX128: string,
+  feeGrowthInside1LastX128: string,
+  fee: string,
+  tokensOwed0: string,
+  tokensOwed1: string,
+  token0: string,
+  token1: string
+}
 export class BnA {
   provider: JsonRpcProvider
   rpcUrl: string
   bnAAddress: string
   profile: Profile
   RESOURCE: Resource
-
   constructor(config: IEngineConfig  & { RESOURCE: Resource }, profile: Profile) {
     this.provider = new JsonRpcProvider(profile.configs.rpc)
     this.bnAAddress = `0x${BnAAbi.deployedBytecode.slice(-40)}`
@@ -154,5 +168,42 @@ export class BnA {
     } catch (error) {
       throw error
     }
+  }
+  async loadUniswapV3Position(assetsOverride?: Assets) {
+    const assets = assetsOverride || this.RESOURCE.assets
+    const uniPosV3 = Object.keys(assets[721].balance).map(key721 => key721.split('-')).filter(keyWithId => keyWithId[0] === this.profile.configs.uniswap.v3Pos)
+    const uniPosV3Data: {[posKey: string]: IUniPosV3} = {}
+    const res = await multicall(
+      this.RESOURCE.provider,
+      [
+        ...uniPosV3.map(([uni3PosAddress, uni3PosId]) => ({
+          reference: `position-${uni3PosId}`,
+          contractAddress: uni3PosAddress,
+          abi: INONFUNGIBLE_POSITION_MANAGER.abi,
+          calls: [
+            {
+              reference: uni3PosId,
+              methodName: 'positions',
+              methodParameters: [uni3PosId],
+            },
+          ], context: (callsReturnContext: CallReturnContext[]) => {
+            for (const ret of callsReturnContext) {
+              const values = ret.returnValues;
+              uniPosV3Data[[uni3PosAddress, uni3PosId].join('-')] = {
+                tickLower: parseInt(values[5].toString(), 10),
+                tickUpper: parseInt(values[6].toString(), 10),
+                liquidity: BigNumber.from(values[7].hex).toString(),
+                feeGrowthInside0LastX128: BigNumber.from(values[8].hex).toString(),
+                feeGrowthInside1LastX128: BigNumber.from(values[9].hex).toString(),
+                fee: values[4].toString(),
+                tokensOwed0: BigNumber.from(values[10].hex).toString(),
+                tokensOwed1: BigNumber.from(values[11].hex).toString(),
+                token0: values[2],
+                token1: values[3],
+              };
+            }
+          },
+        }))])
+    return uniPosV3Data
   }
 }

@@ -754,6 +754,15 @@ describe('Derivable Tools', () => {
     console.log(bigNumberToString(assets));
     const {balances} = await engine.BNA.getBalanceAndAllowance(account)
   })
-
+  test('univ3-position-arb', async () => {
+    const account = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10';
+    const configs = genConfig(42161, account)
+    const engine = new Engine(configs)
+    await engine.initServices()
+    const {allLogs}= await engine.RESOURCE.getNewResource(account)
+    const cacheLogs = await engine.RESOURCE.getCachedLogs(account)
+    const assets = engine.RESOURCE.updateAssets({logs: [...cacheLogs,...allLogs], account})
+    console.log(await engine.BNA.loadUniswapV3Position())
+  })
 
 })
