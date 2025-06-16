@@ -499,7 +499,7 @@ export class Resource {
         results.poolGroups = poolGroups
       }
 
-      this.allLogs = mergeTwoUniqSortedLogs(this.allLogs, results.allLogs)
+      this.allLogs = results.allLogs
       this.swapLogs = mergeTwoUniqSortedLogs(this.swapLogs, results.swapLogs)
       this.transferLogs = mergeTwoUniqSortedLogs(this.transferLogs, results.transferLogs)
       this.bnaLogs = mergeTwoUniqSortedLogs(this.bnaLogs, results.bnaLogs)
@@ -631,7 +631,7 @@ export class Resource {
           // this.poolGroups = {...this.poolGroups, ...result.poolGroups}
           // this.pools = {...this.pools, ...result.pools}
           // this.tokens = [...this.tokens, ...result.tokens]
-          this.allLogs = mergeTwoUniqSortedLogs(this.allLogs, result.allLogs)
+          this.allLogs = result.allLogs
           this.swapLogs = mergeTwoUniqSortedLogs(this.swapLogs, result.swapLogs)
           this.transferLogs = mergeTwoUniqSortedLogs(this.transferLogs, result.transferLogs)
           this.bnaLogs = mergeTwoUniqSortedLogs(this.bnaLogs, result.bnaLogs)

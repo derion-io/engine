@@ -736,7 +736,7 @@ describe('Derivable Tools', () => {
 
     const {allLogs}= await engine.RESOURCE.getNewResource(account)
     const cacheLogs = await engine.RESOURCE.getCachedLogs(account)
-    const assets = engine.RESOURCE.updateAssets({logs: [...cacheLogs,...allLogs], account})
+    const assets = engine.RESOURCE.updateAssets({logs: [...allLogs], account})
     function bigNumberToString(obj: any): any {
       if (BigNumber.isBigNumber(obj)) {
         return obj.toString();
