@@ -440,7 +440,7 @@ export class Resource {
       results.transferLogs = accountLogs.filter((log: any) => {
         return log.address && TOPICS.Transfer.includes(log.topics[0])
       })
-
+      results.allLogs = logs
       results.bnaLogs = this.parseDdlLogs(
         logs.filter((log: LogType) => {
           const eventSig = log.topics[0]
