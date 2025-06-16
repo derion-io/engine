@@ -732,11 +732,13 @@ describe('Derivable Tools', () => {
     const account = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df';
     const configs = genConfig(42161, account)
     const engine = new Engine(configs)
-    await engine.initServices()
+    console.log('start')
 
+    await engine.initServices()
+    console.log(engine)
     const {allLogs}= await engine.RESOURCE.getNewResource(account)
     const cacheLogs = await engine.RESOURCE.getCachedLogs(account)
-    const assets = engine.RESOURCE.updateAssets({logs: [...allLogs], account})
+    const assets = engine.RESOURCE.updateAssets({logs: cacheLogs, account})
     function bigNumberToString(obj: any): any {
       if (BigNumber.isBigNumber(obj)) {
         return obj.toString();
@@ -759,10 +761,11 @@ describe('Derivable Tools', () => {
     const configs = genConfig(42161, account)
     const engine = new Engine(configs)
     await engine.initServices()
-    const {allLogs}= await engine.RESOURCE.getNewResource(account)
+    const {allLogs, tokens}= await engine.RESOURCE.getNewResource(account)
     const cacheLogs = await engine.RESOURCE.getCachedLogs(account)
-    const assets = engine.RESOURCE.updateAssets({logs: [...cacheLogs,...allLogs], account})
-    console.log(await engine.BNA.loadUniswapV3Position())
+    const assets = engine.RESOURCE.updateAssets({logs: allLogs, account})
+    console.log(tokens)
+    console.log(await engine.BNA.loadUniswapV3Position({tokensOverride: tokens}))
   })
 
 })

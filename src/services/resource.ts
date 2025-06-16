@@ -362,7 +362,8 @@ export class Resource {
           }
         }
       }
-  
+      this.assets = assets
+
       return assets;
     } catch (error) {
       throw error;

@@ -1,7 +1,11 @@
 import { BigNumber, ethers } from 'ethers'
 import { LogType, PoolType, TokenType } from '../types'
 import EventsAbi from '../abi/Events.json'
-import { SECONDS_PER_DAY } from './constant'
+import { FeeAmount, POOL_INIT_CODE_HASH, SECONDS_PER_DAY } from './constant'
+
+import { defaultAbiCoder } from '@ethersproject/abi'
+import { getCreate2Address } from '@ethersproject/address'
+import { keccak256 } from '@ethersproject/solidity'
 
 // TODO: Change name a some function
 // TODO: Convert require to import
@@ -403,4 +407,35 @@ export function mergeTwoUniqSortedLogs(a: LogType[], b: LogType[]): LogType[] {
     r.push(b[j++])
   }
   return r;
+}
+
+export function sortsBefore(tokenA: TokenType, tokenB: TokenType): boolean {
+  if (tokenA.address === tokenB.address) {
+    throw new Error("The tokens have the same address.");
+  }
+  return tokenA.address.toLowerCase() < tokenB.address.toLowerCase();
+}
+
+export function computePoolAddress({
+  factoryAddress,
+  tokenA,
+  tokenB,
+  fee,
+  initCodeHashManualOverride
+}: {
+  factoryAddress: string
+  tokenA: TokenType
+  tokenB: TokenType
+  fee: FeeAmount
+  initCodeHashManualOverride?: string
+}): string {
+  const [token0, token1] = sortsBefore(tokenA, tokenB) ? [tokenA, tokenB] : [tokenB, tokenA] // does safety checks
+  return getCreate2Address(
+    factoryAddress,
+    keccak256(
+      ['bytes'],
+      [defaultAbiCoder.encode(['address', 'address', 'uint24'], [token0.address, token1.address, fee])]
+    ),
+    initCodeHashManualOverride ?? POOL_INIT_CODE_HASH
+  )
 }

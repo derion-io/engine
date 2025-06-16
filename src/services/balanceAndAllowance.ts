@@ -1,8 +1,8 @@
-import { bn, getTopics, isErc1155Address } from '../utils/helper'
+import { bn, computePoolAddress, getTopics, isErc1155Address } from '../utils/helper'
 import { BigNumber } from 'ethers'
 import { LARGE_VALUE, NATIVE_ADDRESS } from '../utils/constant'
 import BnAAbi from '../abi/BnA.json'
-import { AllowancesType, BalancesType, MaturitiesType } from '../types'
+import { AllowancesType, BalancesType, MaturitiesType, TokenType } from '../types'
 import { IEngineConfig } from '../utils/configs'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { Profile } from '../profile'
@@ -12,7 +12,6 @@ import { getAddress } from 'ethers/lib/utils'
 import {multicall} from '../utils/multicall'
 import {CallReturnContext} from 'ethereum-multicall'
 import INONFUNGIBLE_POSITION_MANAGER from '../abi/NonfungiblePositionManager.json'
-
 const TOPICS = getTopics()
 
 export function keyFromTokenId(id: BigNumber): string {
@@ -40,7 +39,10 @@ export interface IUniPosV3 {
   tokensOwed0: string,
   tokensOwed1: string,
   token0: string,
-  token1: string
+  token1: string,
+  token0Data:TokenType,
+  token1Data: TokenType,
+  poolAddress: string,
 }
 export class BnA {
   provider: JsonRpcProvider
@@ -169,11 +171,16 @@ export class BnA {
       throw error
     }
   }
-  async loadUniswapV3Position(assetsOverride?: Assets) {
+  async loadUniswapV3Position({assetsOverride, tokensOverride, uniswapV3FactoryOverride}: {assetsOverride?: Assets, tokensOverride?: TokenType[], uniswapV3FactoryOverride?: string}) {
     const assets = assetsOverride || this.RESOURCE.assets
+    const tokens = tokensOverride || this.RESOURCE.tokens
+    const factoryAddress = uniswapV3FactoryOverride || Object.keys(this.profile.configs.factory).filter(
+      (facAddress) => this.profile.configs.factory[facAddress].type === 'uniswap3'
+    )?.[0]
     const uniPosV3 = Object.keys(assets[721].balance).map(key721 => key721.split('-')).filter(keyWithId => keyWithId[0] === this.profile.configs.uniswap.v3Pos)
     const uniPosV3Data: {[posKey: string]: IUniPosV3} = {}
-    const res = await multicall(
+
+    await multicall(
       this.RESOURCE.provider,
       [
         ...uniPosV3.map(([uni3PosAddress, uni3PosId]) => ({
@@ -189,6 +196,9 @@ export class BnA {
           ], context: (callsReturnContext: CallReturnContext[]) => {
             for (const ret of callsReturnContext) {
               const values = ret.returnValues;
+              const token0Data = tokens.filter(t => t.address.toLowerCase() === values[2]?.toLowerCase())[0]
+              const token1Data = tokens.filter(t => t.address.toLowerCase() === values[3]?.toLowerCase())[0]
+              const poolAddress = computePoolAddress({factoryAddress, tokenA: token0Data, tokenB: token1Data, fee: Number(values[4])})
               uniPosV3Data[[uni3PosAddress, uni3PosId].join('-')] = {
                 tickLower: parseInt(values[5].toString(), 10),
                 tickUpper: parseInt(values[6].toString(), 10),
@@ -200,10 +210,14 @@ export class BnA {
                 tokensOwed1: BigNumber.from(values[11].hex).toString(),
                 token0: values[2],
                 token1: values[3],
+                token0Data,
+                token1Data,
+                poolAddress,
               };
             }
           },
-        }))])
+    }))])
+    
     return uniPosV3Data
   }
 }

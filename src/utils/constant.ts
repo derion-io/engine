@@ -1,5 +1,5 @@
 export const SECONDS_PER_DAY = 86400
-
+export const POOL_INIT_CODE_HASH = '0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54'
 export const LARGE_VALUE = '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 export const NATIVE_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
@@ -17,6 +17,13 @@ export const LOCALSTORAGE_KEY = {
 export const PARA_DATA_BASE_URL = 'https://api.paraswap.io/prices'
 export const PARA_VERSION = "5"
 export const PARA_BUILD_TX_BASE_URL = 'https://api.paraswap.io/transactions'
+
+export enum FeeAmount {
+  LOWEST = 100,
+  LOW = 500,
+  MEDIUM = 3000,
+  HIGH = 10000
+}
 
 export const POOL_IDS = {
   cToken: 0x20000,
