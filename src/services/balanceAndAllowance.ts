@@ -324,6 +324,9 @@ export class BnA {
       ])
       Object.keys(uniPosV3Data).map(posKey => {
         uniPosV3Data[posKey].poolState = uniPoolV3Data[uniPosV3Data[posKey].poolAddress]
+        if(Number(uniPosV3Data[posKey].liquidity) === 0) {
+          delete uniPosV3Data[posKey]
+        }
       })
     return uniPosV3Data
   }
