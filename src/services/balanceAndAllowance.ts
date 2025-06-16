@@ -204,7 +204,7 @@ export class BnA {
     const uni3PosFromLogs = allLogs.map(log => {
       try {
         const parsedLog =  { ...log, ...tryParseLog(log, [event721Interface]) };
-        if(!parsedLog.args || !parsedLog.args?.tokenId || !log?.address || log?.address?.toLowerCase?.() !== this.profile.configs.uniswap.v3Pos.toLowerCase()) return;
+        if(!parsedLog.args || !parsedLog.args?.tokenId || !log?.address || log?.address?.toLowerCase() !== this.profile.configs.uniswap.v3Pos?.toLowerCase()) return;
         let tokenA = ''
         let tokenB = ''
         let poolAddress = ''
