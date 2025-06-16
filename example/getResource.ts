@@ -19,8 +19,9 @@ const testLocal = async () => {
   // console.log(cachedResource.swapLogs)
 
   // await engine.RESOURCE.fetchResourceData(
-  //   '0x0dbca96184eed4c6a1291403c93311ebe6646785',
-  // )]
+  //   ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B'],
+  //   wallet,
+  // )
   console.log(
     await engine?.HISTORY.formatSwapHistory({
       tokens: Object.values(newResource.tokens),
