@@ -95,7 +95,7 @@ export class BnA {
           console.error('Unparsed log', log)
           continue
         }
-        const token = log.address
+        const token = log?.address
         if (TOPICS.Transfer.includes(log.topics[0])) {
           const { from, to, value } = log.args
           if (to == account) {
@@ -204,35 +204,37 @@ export class BnA {
     const uni3PosFromLogs = allLogs.map(log => {
       try {
         const parsedLog =  { ...log, ...event721Interface.parseLog(log) };
-        if(!parsedLog.args || !parsedLog.args?.tokenId || !log.address || log.address?.toLowerCase() !== this.profile.configs.uniswap.v3Pos.toLowerCase()) return;
+        if(!parsedLog.args || !parsedLog.args?.tokenId || !log?.address || log?.address?.toLowerCase?.() !== this.profile.configs.uniswap.v3Pos.toLowerCase()) return;
         let tokenA = ''
         let tokenB = ''
         let poolAddress = ''
-        const transferTokenUniPosLogs = this.RESOURCE.bnaLogs.filter(log => log.transactionHash === parsedLog.transactionHash)
+        const transferTokenUniPosLogs = this.RESOURCE.bnaLogs.filter(log => log.transactionHash === parsedLog.transactionHash && log.name === 'Transfer' )
         if(transferTokenUniPosLogs.length === 1) { // WETH vs Token A
           tokenA = this.profile.configs.wrappedTokenAddress
-          tokenB = transferTokenUniPosLogs[0].address
+          tokenB = transferTokenUniPosLogs[0]?.address
           poolAddress = transferTokenUniPosLogs[0].args.to
         } else {
           const sameReceiveUniPosLogs = transferTokenUniPosLogs.filter(l => l.args.to === transferTokenUniPosLogs[0].args.to)
           if(sameReceiveUniPosLogs?.length === 0) return;
-          tokenA = sameReceiveUniPosLogs[1].address
-          tokenB = sameReceiveUniPosLogs[0].address
+          tokenA = sameReceiveUniPosLogs[1]?.address
+          tokenB = sameReceiveUniPosLogs[0]?.address
           poolAddress = sameReceiveUniPosLogs[0].args.to
         }
+        console.log(tokenA, tokenB)
         const [token0, token1] = sortsBefore(tokenA, tokenB) ? [tokenA, tokenB] : [tokenB, tokenA] // does safety checks
         return {
           token0,
           token1,
-          uni3PosAddress: String(parsedLog.address),
+          uni3PosAddress: String(parsedLog?.address),
           uni3PosId: String(parsedLog.args?.tokenId),
           poolAddress
         }
       } catch (error) {
+        console.log(error)
         return;
       }
     }).filter(l => l?.uni3PosAddress && l?.uni3PosId)
-    // console.log(uni3PosFromLogs)
+    console.log(uni3PosFromLogs)
 
     await multicall(
       this.RESOURCE.provider,
@@ -250,8 +252,8 @@ export class BnA {
           ], context: (callsReturnContext: CallReturnContext[]) => {
             for (const ret of callsReturnContext) {
               const values = ret.returnValues;
-              const token0Data = tokens.filter(t => t.address.toLowerCase() === values[2]?.toLowerCase())[0]
-              const token1Data = tokens.filter(t => t.address.toLowerCase() === values[3]?.toLowerCase())[0]
+              const token0Data = tokens.filter(t => t?.address?.toLowerCase() === values[2]?.toLowerCase())[0]
+              const token1Data = tokens.filter(t => t?.address?.toLowerCase() === values[3]?.toLowerCase())[0]
               const poolAddress = computePoolAddress({factoryAddress, tokenA: token0Data, tokenB: token1Data, fee: Number(values[4])})
               uniPosV3Data[[uni3PosAddress, uni3PosId].join('-')] = {
                 tickLower: parseInt(values[5].toString(), 10),
