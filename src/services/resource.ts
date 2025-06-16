@@ -176,14 +176,10 @@ export class Resource {
     // this.transferLogs = [...resultCached.transferLogs, ...newResource.transferLogs]
   }
 
-  getLastBlockCached(account?: string): number | string {
-    try {
-      if (!this.storage || !this.storage.getItem || !account) return 0
-      const lastBlockCached = this.storage.getItem(`${this.chainId}-${LOCALSTORAGE_KEY.ACCOUNT_BLOCK_LOGS}-${account}`)
-      return lastBlockCached ?? 0
-    } catch (error) {
-      throw error
-    }
+  getLastBlockCached(account?: string): number {
+    if (!this.storage || !this.storage.getItem || !account) return 0
+    const lastBlockCached = this.storage.getItem(`${this.chainId}-${LOCALSTORAGE_KEY.ACCOUNT_BLOCK_LOGS}-${account}`)
+    return Number(lastBlockCached) ?? 0
   }
 
   cacheDdlLog({ logs, headBlock, account }: CacheDDLogParameterType) {
@@ -333,7 +329,7 @@ export class Resource {
           : this.scanApi
 
       const provider = new AssistedJsonRpcProvider(this.providerToGetLog, etherscanConfig)
-      const lastHeadBlockCached = this.getLastBlockCached(account)
+      const lastHeadBlockCached = this.getLastBlockCached(account) + 1
       const accTopic = account ? hexZeroPad(account, 32) : null
 
       const filterTopics = [
