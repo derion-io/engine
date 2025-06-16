@@ -103,20 +103,10 @@ export class History {
           }
           posIn.amountR = posIn.amountR.sub(amountR)
           if (priceR?.gt(0) || pool.TOKEN_R == playToken) {
-            if (posIn.balanceForPriceR.lt(amountIn)) {
-              console.warn(`missing value of balanceForPriceR: ${posIn.balanceForPriceR.toString()} < ${amountIn.toString()}`)
-              posIn.balanceForPriceR = bn(0)
-            } else {
-              posIn.balanceForPriceR = posIn.balanceForPriceR.sub(amountIn)
-            }
+            posIn.balanceForPriceR = posIn.balanceForPriceR.sub(amountIn)
           }
           if (price) {
-            if (posIn.balanceForPrice.lt(amountIn)) {
-              console.warn(`missing value of balanceForPrice: ${posIn.balanceForPrice.toString()} < ${amountIn.toString()}`)
-              posIn.balanceForPrice = bn(0)
-            } else {
-              posIn.balanceForPrice = posIn.balanceForPrice.sub(amountIn)
-            }
+            posIn.balanceForPrice = posIn.balanceForPrice.sub(amountIn)
           }
         } else {
           console.warn(`missing input position: ${poolIn}-${sideIn.toNumber()}`)
