@@ -19,7 +19,7 @@ const testLocal = async () => {
   // console.log(cachedResource.swapLogs)
 
   // await engine.RESOURCE.fetchResourceData(
-  //   ['0x3ed9997b3039b4A000f1BAfF3F6104FB05F4e53B'],
+  //   ['0xb62d467F2A6b620026C6AF1180a3F8327F22C07e'],
   //   wallet,
   // )
   console.log(
