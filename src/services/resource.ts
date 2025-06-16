@@ -499,6 +499,7 @@ export class Resource {
         results.poolGroups = poolGroups
       }
 
+      this.allLogs = mergeTwoUniqSortedLogs(this.allLogs, results.allLogs)
       this.swapLogs = mergeTwoUniqSortedLogs(this.swapLogs, results.swapLogs)
       this.transferLogs = mergeTwoUniqSortedLogs(this.transferLogs, results.transferLogs)
       this.bnaLogs = mergeTwoUniqSortedLogs(this.bnaLogs, results.bnaLogs)
