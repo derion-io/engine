@@ -208,6 +208,7 @@ export class BnA {
         let tokenA = ''
         let tokenB = ''
         let poolAddress = ''
+
         const transferTokenUniPosLogs = this.RESOURCE.bnaLogs.filter(log => log.transactionHash === parsedLog.transactionHash && log.name === 'Transfer' )
         if(transferTokenUniPosLogs.length === 1) { // WETH vs Token A
           tokenA = this.profile.configs.wrappedTokenAddress
@@ -220,7 +221,6 @@ export class BnA {
           tokenB = sameReceiveUniPosLogs[0]?.address
           poolAddress = sameReceiveUniPosLogs[0].args.to
         }
-        console.log(tokenA, tokenB)
         const [token0, token1] = sortsBefore(tokenA, tokenB) ? [tokenA, tokenB] : [tokenB, tokenA] // does safety checks
         return {
           token0,
@@ -234,7 +234,7 @@ export class BnA {
         return;
       }
     }).filter(l => l?.uni3PosAddress && l?.uni3PosId)
-    console.log(uni3PosFromLogs)
+    // console.log(uni3PosFromLogs, assets)
 
     await multicall(
       this.RESOURCE.provider,
@@ -304,7 +304,6 @@ export class BnA {
                   unlocked,
                 ] = ret.returnValues as [BigNumber, number, number, number, number, number, boolean];
     
-                console.log(sqrtPriceX96)
                 if(!uniPoolV3Data[poolAddress]) uniPoolV3Data[poolAddress] = {}
                 uniPoolV3Data[poolAddress][ret.reference] = {
                   sqrtPriceX96,
