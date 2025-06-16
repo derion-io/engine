@@ -237,7 +237,7 @@ export class BnA {
     await multicall(
       this.RESOURCE.provider,
       [
-        ...uni3PosFromLogs.map(({uni3PosId, uni3PosAddress, token0, token1, poolAddress}:any) => ({
+        ...uni3PosFromLogs.map(({uni3PosId, uni3PosAddress}:any) => ({
           reference: `position-${uni3PosId}`,
           contractAddress: uni3PosAddress,
           abi: INONFUNGIBLE_POSITION_MANAGER.abi,
@@ -273,7 +273,7 @@ export class BnA {
             }
           },
         })),
-        ..._.uniqBy(uni3PosFromLogs, 'poolAddress').map(({uni3PosId, uni3PosAddress, token0, token1, poolAddress}:any) => ({
+        ..._.uniqBy(uni3PosFromLogs, 'poolAddress').map(({poolAddress}:any) => ({
           reference: `pool-${poolAddress}`,
           contractAddress: poolAddress,
           abi: IUniswapV3PoolABI.abi,
