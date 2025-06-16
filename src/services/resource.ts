@@ -2,7 +2,7 @@ import { BigNumber, Contract, ethers } from 'ethers'
 import { LOCALSTORAGE_KEY, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
 import { ContractCallContext, Multicall } from 'ethereum-multicall'
 import { LogType, PoolGroupsType, PoolsType, PoolType, Storage, TokenType } from '../types'
-import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, kx, rateFromHL, parsePrice, mergeTwoUniqSortedLogs } from '../utils/helper'
+import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, kx, rateFromHL, parsePrice, mergeTwoUniqSortedLogs, tryParseLog } from '../utils/helper'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import _, { concat, uniqBy } from 'lodash'
 import { IPairInfo, IPairsInfo, UniV3Pair } from './uniV3Pair'
@@ -231,20 +231,11 @@ export class Resource {
       const parsedLogs = logs.map((log: any) => {
         if (log.address.toLowerCase() === '0xc36442b4a4522e871399cd717abdd847ab11fe88')
           console.log(log.address);
-        try {
-          const parsedLog = eventInterface.parseLog(log);
-          return {
-            ...log,
-            ...parsedLog,
-          };
-        } catch (err) {
-          try {
-            const parsedLog = event721Interface.parseLog(log);
-            return { ...log, ...parsedLog };
-          } catch {
-            return null;
-          }
+        const parsedLog = tryParseLog(log, [eventInterface, event721Interface])
+        if (!parsedLog) {
+          return null
         }
+        return { ...log, ...parsedLog }
       }).filter((log: any) => log != null);
   
       console.log(parsedLogs.length);
@@ -1242,16 +1233,14 @@ export class Resource {
   parseDdlLogs(ddlLogs: any): Array<LogType> {
     const eventInterface = new ethers.utils.Interface(this.profile.getAbi('Events'))
     return ddlLogs.map((log: any) => {
-      try {
-        const parsedLog = eventInterface.parseLog(log)
-        return {
-          ...log,
-          ...parsedLog,
-        }
-      } catch (err) {
-        console.warn('Failed to parse log', err, log)
+      const parsedLog = tryParseLog(log, [eventInterface])
+      if (!parsedLog) {
+        return undefined
       }
-      return undefined
+      return {
+        ...log,
+        ...parsedLog,
+      }
     }).filter((log: any) => log != null)
   }
 

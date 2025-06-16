@@ -3,7 +3,7 @@ import { LogType, PoolType, TokenType } from '../types'
 import EventsAbi from '../abi/Events.json'
 import { FeeAmount, POOL_INIT_CODE_HASH, SECONDS_PER_DAY } from './constant'
 
-import { defaultAbiCoder } from '@ethersproject/abi'
+import { defaultAbiCoder, Interface, LogDescription } from '@ethersproject/abi'
 import { getCreate2Address } from '@ethersproject/address'
 import { keccak256 } from '@ethersproject/solidity'
 
@@ -438,4 +438,23 @@ export function computePoolAddress({
     ),
     initCodeHashManualOverride ?? POOL_INIT_CODE_HASH
   )
+}
+
+export function tryParseLog(log: LogType, ifaces: Interface[]): LogDescription | undefined {
+  for (let i = 0; i < ifaces.length; ++i) {
+    const iface = ifaces[i]
+    try {
+      return iface.parseLog(log)
+    } catch (err) {
+      if (i < ifaces.length - 1) {
+        continue
+      }
+      console.warn(
+        err.message ?? err.code ?? err.reason ?? '!parseLog',
+        log.transactionHash,
+        log.logIndex)
+      return undefined
+    }
+  }
+  return undefined
 }

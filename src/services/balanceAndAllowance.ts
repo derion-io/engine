@@ -1,4 +1,4 @@
-import { bn, computePoolAddress, getTopics, isErc1155Address, sortsBefore } from '../utils/helper'
+import { bn, computePoolAddress, getTopics, isErc1155Address, sortsBefore, tryParseLog } from '../utils/helper'
 import { BigNumber } from 'ethers'
 import { LARGE_VALUE, NATIVE_ADDRESS } from '../utils/constant'
 import BnAAbi from '../abi/BnA.json'
@@ -203,7 +203,7 @@ export class BnA {
 
     const uni3PosFromLogs = allLogs.map(log => {
       try {
-        const parsedLog =  { ...log, ...event721Interface.parseLog(log) };
+        const parsedLog =  { ...log, ...tryParseLog(log, [event721Interface]) };
         if(!parsedLog.args || !parsedLog.args?.tokenId || !log?.address || log?.address?.toLowerCase?.() !== this.profile.configs.uniswap.v3Pos.toLowerCase()) return;
         let tokenA = ''
         let tokenB = ''
