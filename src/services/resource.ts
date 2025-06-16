@@ -1088,6 +1088,14 @@ export class Resource {
         try {
           const abiInterface = new ethers.utils.Interface(poolOverrideAbi)
           const poolStateData = multiCallData['pools-' + poolAddress].callsReturnContext
+          if (!poolStateData[0].success) {
+            console.error(`Failed to loadConfig:`, poolAddress)
+            return
+          }
+          if (!poolStateData[1].success) {
+            console.error(`Failed to compute:`, poolAddress)
+            return
+          }
           const configEncodeData = abiInterface.encodeFunctionResult('loadConfig', [
             formatMultiCallBignumber(poolStateData[0].returnValues),
           ])
@@ -1110,7 +1118,7 @@ export class Resource {
             },
           }
         } catch (e) {
-          console.error('Cannot get states of: ', poolAddress)
+          console.error('Cannot get states of:', poolAddress)
           console.error(e)
         }
       })
