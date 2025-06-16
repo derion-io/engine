@@ -100,15 +100,10 @@ class Resource {
         // this.transferLogs = [...resultCached.transferLogs, ...newResource.transferLogs]
     }
     getLastBlockCached(account) {
-        try {
-            if (!this.storage || !this.storage.getItem || !account)
-                return 0;
-            const lastBlockCached = this.storage.getItem(`${this.chainId}-${constant_1.LOCALSTORAGE_KEY.ACCOUNT_BLOCK_LOGS}-${account}`);
-            return lastBlockCached ?? 0;
-        }
-        catch (error) {
-            throw error;
-        }
+        if (!this.storage || !this.storage.getItem || !account)
+            return 0;
+        const lastBlockCached = this.storage.getItem(`${this.chainId}-${constant_1.LOCALSTORAGE_KEY.ACCOUNT_BLOCK_LOGS}-${account}`);
+        return Number(lastBlockCached) ?? 0;
     }
     cacheDdlLog({ logs, headBlock, account }) {
         if (!this.storage || !this.storage.getItem || !this.storage.setItem || !account)
@@ -235,7 +230,7 @@ class Resource {
                 }
                 : this.scanApi;
             const provider = new AssistedJsonRpcProvider(this.providerToGetLog, etherscanConfig);
-            const lastHeadBlockCached = this.getLastBlockCached(account);
+            const lastHeadBlockCached = this.getLastBlockCached(account) + 1;
             const accTopic = account ? (0, utils_1.hexZeroPad)(account, 32) : null;
             const filterTopics = [
                 [null, null, null, null],

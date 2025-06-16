@@ -96,7 +96,7 @@ export declare class Resource {
     stableCoins: Array<string>;
     constructor(engineConfigs: IEngineConfig, profile: Profile);
     fetchResourceData(poolAddresses: Array<string>, account: string, playMode?: boolean): Promise<any>;
-    getLastBlockCached(account?: string): number | string;
+    getLastBlockCached(account?: string): number;
     cacheDdlLog({ logs, headBlock, account }: CacheDDLogParameterType): void;
     getCachedLogs(account: string): Array<LogType>;
     getWhiteListResource(poolAddresses: Array<string>, playMode?: boolean): Promise<LoadInitPoolDataReturnType>;
