@@ -168,6 +168,7 @@ export class Resource {
   swapLogs: Array<LogType> = []
   transferLogs: Array<LogType> = []
   bnaLogs: Array<LogType> = []
+  allLogs: Array<LogType> = []
   unit: number = 1000000
   chainId: number
   scanApi?: any
@@ -629,6 +630,7 @@ export class Resource {
           // this.poolGroups = {...this.poolGroups, ...result.poolGroups}
           // this.pools = {...this.pools, ...result.pools}
           // this.tokens = [...this.tokens, ...result.tokens]
+          this.allLogs = mergeTwoUniqSortedLogs(this.allLogs, result.allLogs)
           this.swapLogs = mergeTwoUniqSortedLogs(this.swapLogs, result.swapLogs)
           this.transferLogs = mergeTwoUniqSortedLogs(this.transferLogs, result.transferLogs)
           this.bnaLogs = mergeTwoUniqSortedLogs(this.bnaLogs, result.bnaLogs)
