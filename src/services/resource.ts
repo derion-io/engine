@@ -249,7 +249,7 @@ export class Resource {
   
         // ERC-20
         if (TOPICS_20.includes(log.topics[0])) {
-          if (TOPICS.Transfer.includes(log.topics[0])) {
+          if (TOPICS.Transfer.includes(log.topics[0]) && log.args?.value) {
             const { from, to, value } = log.args;
             if (value) {
               if (!assets[20].balance[token]) {
