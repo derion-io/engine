@@ -198,8 +198,8 @@ export const mergeDeep = (target: any, ...sources: any): any => {
   return mergeDeep(target, ...sources)
 }
 
-export const getTopics = (): { [key: string]: string[] } => {
-  const eventInterface = new ethers.utils.Interface(EventsAbi)
+export const getTopics = (overrideEventsAbi?: any): { [key: string]: string[] } => {
+  const eventInterface = new ethers.utils.Interface(overrideEventsAbi || EventsAbi)
   const events = eventInterface.events
   const topics: { [key: string]: string[] } = {}
   for (const i in events) {

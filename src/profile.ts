@@ -4,6 +4,7 @@ import BnA from './abi/BnA.json'
 import ERC20 from './abi/ERC20.json'
 import TokensInfo from './abi/TokensInfo.json'
 import Events from './abi/Events.json'
+import Events721 from './abi/Events721.json'
 import PairDetail from './abi/PairDetail.json'
 import PairV3Detail from './abi/PairV3Detail.json'
 import FetcherV2Mock from './abi/FetcherV2Mock.json'
@@ -24,6 +25,7 @@ const abis = {
   FetcherV2,
   ERC20,
   Events,
+  Events721,
   PairDetail,
   PairV3Detail,
   Pool,

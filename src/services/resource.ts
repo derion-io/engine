@@ -12,9 +12,10 @@ import { Profile } from '../profile'
 import * as OracleSdk from '../utils/OracleSdk'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
 import { unpackId } from '../utils/number'
+import Events721Abi from '../abi/Events721.json'
 
 const TOPICS = getTopics()
-
+const TOPICS721 = getTopics(Events721Abi)
 const TOPICS_20 = [
   ...TOPICS.Transfer,
   ...TOPICS.Approval,
@@ -24,6 +25,12 @@ const TOPICS_1155 = [
   ...TOPICS.TransferSingle,
   ...TOPICS.TransferBatch,
   ...TOPICS.ApprovalForAll,
+]
+
+const TOPICS_721 = [
+  ...TOPICS721.Transfer,
+  ...TOPICS721.Approval,
+  ...TOPICS721.ApprovalForAll
 ]
 
 export type GetPoolGroupIdParameterType = {
@@ -115,6 +122,7 @@ type ResourceData = {
   transferLogs: Array<LogType>
   bnaLogs: Array<LogType>
   poolGroups: any
+  allLogs: Array<LogType>
 }
 
 type IPriceInfo = {
@@ -123,6 +131,35 @@ type IPriceInfo = {
     spot: BigNumber
   }
 }
+export type Assets = {
+  20: {
+    balance: {
+      [token: string]: BigNumber
+    }
+    allowance: {
+      [tokenSpender: string]: BigNumber // key: token-spender
+    }
+  };
+  721: {
+    balance: {
+      [tokenId: string]: BigNumber // key: token - id
+    }
+    allowanceALl: {
+      [tokenSpender: string]: BigNumber, // key: token - spender
+    },
+    allowance: {
+      [tokenSpenderId : string]: BigNumber  // key: token-spender-id
+    }
+  };
+  1155: {
+    balance: {
+      [tokenId: string]: BigNumber // key: token-id
+    }
+    allowance: {
+      [tokenSpender:string]: BigNumber // key: token - spender
+    }
+  };
+};
 
 export class Resource {
   poolGroups: PoolGroupsType = {}
@@ -144,7 +181,7 @@ export class Resource {
   derivableAddress: IDerivableContractAddress
   profile: Profile
   stableCoins: Array<string>
-
+  assets: Assets
   constructor(engineConfigs: IEngineConfig, profile: Profile) {
     this.chainId = engineConfigs.chainId
     this.scanApi = profile.configs.scanApi
@@ -169,12 +206,169 @@ export class Resource {
       this.getNewResource(account, playMode),
       this.getWhiteListResource(poolAddresses, playMode),
     ])
-    // this.poolGroups = {...resultCached.poolGroups, ...newResource.poolGroups}
+    // this.poolGroups = {...resultCached.poolGroups, ...newResource.poolGroups}b.v
     // this.pools = {...resultCached.pools, ...newResource.pools}
     // this.tokens = [...resultCached.tokens, ...newResource.tokens]
     // this.swapLogs = [...resultCached.swapLogs, ...newResource.swapLogs]
     // this.transferLogs = [...resultCached.transferLogs, ...newResource.transferLogs]
   }
+  updateAssets({ updateAssets, account, logs }: { updateAssets?: Assets, account: string, logs: LogType[] }): Assets {
+    if (!account) {
+      throw new Error("missing account");
+    }
+  
+    try {
+      const assets: Assets = {
+        20: { balance: {}, allowance: {} },
+        721: { balance: {}, allowanceALl: {}, allowance: {} },
+        1155: { balance: {}, allowance: {} }
+      };
+  
+      const eventInterface = new ethers.utils.Interface(this.profile.getAbi('Events'));
+      const event721Interface = new ethers.utils.Interface(this.profile.getAbi('Events721'));
+  
+      const parsedLogs = logs.map((log: any) => {
+        if (log.address.toLowerCase() === '0xc36442b4a4522e871399cd717abdd847ab11fe88')
+          console.log(log.address);
+        try {
+          const parsedLog = eventInterface.parseLog(log);
+          return {
+            ...log,
+            ...parsedLog,
+          };
+        } catch (err) {
+          try {
+            const parsedLog = event721Interface.parseLog(log);
+            return { ...log, ...parsedLog };
+          } catch {
+            return null;
+          }
+        }
+      }).filter((log: any) => log != null);
+  
+      console.log(parsedLogs.length);
+      for (const log of parsedLogs) {
+        if (!log.args) {
+          console.error("Unparsed log", log);
+          continue;
+        }
+  
+        const token = log.address;
+  
+        // ERC-20
+        if (TOPICS_20.includes(log.topics[0])) {
+          if (TOPICS.Transfer.includes(log.topics[0])) {
+            const { from, to, value } = log.args;
+            if (value) {
+              if (!assets[20].balance[token]) {
+                assets[20].balance[token] = BigNumber.from(0);
+              }
+  
+              if (to === account) {
+                assets[20].balance[token] = assets[20].balance[token].add(value);
+              }
+              if (from === account) {
+                assets[20].balance[token] = assets[20].balance[token].sub(value);
+              }
+            }
+          }
+  
+          if (TOPICS.Approval.includes(log.topics[0])) {
+            const { owner, spender, value } = log.args;
+            if (owner === account) {
+              const allowanceKey = `${token}-${spender}`;
+              assets[20].allowance[allowanceKey] = value;
+            }
+          }
+        }
+  
+        // ERC-1155
+        if (TOPICS_1155.includes(log.topics[0])) {
+          if (TOPICS.TransferSingle.includes(log.topics[0])) {
+            const { from, to, id: _id, value } = log.args;
+            const id = _id.toString();
+            const balanceKey = `${token}-${id}`;
+  
+            if (!assets[1155].balance[balanceKey]) {
+              assets[1155].balance[balanceKey] = BigNumber.from(0);
+            }
+  
+            if (to === account) {
+              assets[1155].balance[balanceKey] = assets[1155].balance[balanceKey].add(value);
+            }
+            if (from === account) {
+              assets[1155].balance[balanceKey] = assets[1155].balance[balanceKey].sub(value);
+            }
+          }
+  
+          if (TOPICS.TransferBatch.includes(log.topics[0])) {
+            const { from, to, ids, values } = log.args;
+            for (let i = 0; i < ids.length; ++i) {
+              const id = ids[i].toString();
+              const value = values[i];
+              const balanceKey = `${token}-${id}`;
+  
+              if (!assets[1155].balance[balanceKey]) {
+                assets[1155].balance[balanceKey] = BigNumber.from(0);
+              }
+  
+              if (to === account) {
+                assets[1155].balance[balanceKey] = assets[1155].balance[balanceKey].add(value);
+              }
+              if (from === account) {
+                assets[1155].balance[balanceKey] = assets[1155].balance[balanceKey].sub(value);
+              }
+            }
+          }
+  
+          if (TOPICS.ApprovalForAll.includes(log.topics[0])) {
+            const { owner, operator, approved } = log.args;
+            if (owner === account) {
+              const allowanceKey = `${token}-${operator}`;
+              assets[1155].allowance[allowanceKey] = approved ? BigNumber.from(ethers.constants.MaxInt256) : BigNumber.from(0);
+            }
+          }
+        }
+  
+        // ERC-721
+        if (TOPICS_721.includes(log.topics[0])) {
+          if (TOPICS.Transfer.includes(log.topics[0]) && log.args?.tokenId) {
+            const { from, to, tokenId } = log.args;
+            const balanceKey = `${token}-${tokenId}`;
+  
+            if (to === account) {
+              assets[721].balance[balanceKey] = BigNumber.from(1);
+            }
+            if (from === account) {
+              delete assets[721].balance[balanceKey];
+            }
+          }
+  
+          if (TOPICS.Approval.includes(log.topics[0]) && log.args?.tokenId) {
+            const { owner, spender, tokenId } = log.args;
+            if (owner === account) {
+              const allowanceKey = `${token}-${spender}-${tokenId}`;
+              assets[721].allowance[allowanceKey] = BigNumber.from(1);
+            }
+          }
+  
+          if (TOPICS.ApprovalForAll.includes(log.topics[0])) {
+            const { owner, operator, approved } = log.args;
+            if (owner === account) {
+              const allowanceAllKey = `${token}-${operator}`;
+              assets[721].allowanceALl[allowanceAllKey] = approved ? BigNumber.from(ethers.constants.MaxInt256) : BigNumber.from(0);
+            }
+          }
+        }
+      }
+  
+      return assets;
+    } catch (error) {
+      throw error;
+    }
+  }
+  
+
 
   getLastBlockCached(account?: string): number {
     if (!this.storage || !this.storage.getItem || !account) return 0
@@ -228,6 +422,7 @@ export class Resource {
         transferLogs: [],
         bnaLogs: [],
         poolGroups: {},
+        allLogs: [],
       }
 
       if (!this.storage || !this.storage.getItem) return results
@@ -391,9 +586,10 @@ export class Resource {
             this.parseDdlLogs(ddlTokenTransferLogs),
             this.parseDdlLogs(transferLogs),
             this.parseDdlLogs(bnaLogs),
+            logs,
           ]
         })
-        .then(async ([swapLogs, ddlTokenTransferLogs, transferLogs, bnaLogs]: Array<Array<LogType>>) => {
+        .then(async ([swapLogs, ddlTokenTransferLogs, transferLogs, bnaLogs, allLogs]: Array<Array<LogType>>) => {
           const result: ResourceData = {
             pools: {},
             tokens: [],
@@ -401,6 +597,7 @@ export class Resource {
             transferLogs: [],
             bnaLogs: [],
             poolGroups: {},
+            allLogs,
           }
 
           if (swapLogs && swapLogs.length > 0) {
@@ -411,6 +608,9 @@ export class Resource {
           }
           if (bnaLogs?.length) {
             result.bnaLogs = bnaLogs
+          }
+          if(allLogs?.length){
+            result.allLogs = allLogs
           }
           const poolAddresses = this.poolHasOpeningPosition(ddlTokenTransferLogs)
 
@@ -437,7 +637,7 @@ export class Resource {
         })
         .catch((e: any) => {
           console.error(e)
-          return { pools: {}, tokens: [], swapLogs: [], transferLogs: [] }
+          return { pools: {}, tokens: [], swapLogs: [], transferLogs: [], allLogs: [] }
         })
     } catch (error) {
       throw error

@@ -13,7 +13,7 @@ import { Interceptor } from './shared/libs/interceptor'
 import { Engine } from '../src/engine'
 import {POOL_IDS} from '../src/utils/constant'
 import { IEngineConfig } from '../src/utils/configs'
-import { ethers } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import { historyTransfer } from './logic/historyTransfer'
 
 // import jsonHelper from '../../derivable-core/artifacts/contracts/support/Helper.sol/Helper.json'
@@ -726,5 +726,34 @@ describe('Derivable Tools', () => {
       18
     )
   })
+
+
+  test('assets-arb', async () => {
+    const account = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df';
+    const configs = genConfig(42161, account)
+    const engine = new Engine(configs)
+    await engine.initServices()
+
+    const {allLogs}= await engine.RESOURCE.getNewResource(account)
+    const cacheLogs = await engine.RESOURCE.getCachedLogs(account)
+    const assets = engine.RESOURCE.updateAssets({logs: [...cacheLogs,...allLogs], account})
+    function bigNumberToString(obj: any): any {
+      if (BigNumber.isBigNumber(obj)) {
+        return obj.toString();
+      } else if (Array.isArray(obj)) {
+        return obj.map(bigNumberToString);
+      } else if (typeof obj === "object" && obj !== null) {
+        const result: any = {};
+        for (const key in obj) {
+          result[key] = bigNumberToString(obj[key]);
+        }
+        return result;
+      }
+      return obj;
+    }
+    console.log(bigNumberToString(assets));
+    const {balances} = await engine.BNA.getBalanceAndAllowance(account)
+  })
+
 
 })
