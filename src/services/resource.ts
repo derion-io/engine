@@ -369,7 +369,11 @@ export class Resource {
   getLastBlockCached(account?: string): number {
     if (!this.storage || !this.storage.getItem || !account) return 0
     const lastBlockCached = this.storage.getItem(`${this.chainId}-${LOCALSTORAGE_KEY.ACCOUNT_BLOCK_LOGS}-${account}`)
-    return Number(lastBlockCached) ?? 0
+    const block = Number(lastBlockCached)
+    if (isNaN(block)) {
+      return 0
+    }
+    return block
   }
 
   cacheDdlLog({ logs, headBlock, account }: CacheDDLogParameterType) {
