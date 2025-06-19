@@ -63,6 +63,7 @@ export interface IDerivableContractAddress {
   compositeFetcher: string
   multiCall: string
   uniswapV2Fetcher?: string
+  chainlinkFetcher?: string
   poolDeployer?: string
 }
 
