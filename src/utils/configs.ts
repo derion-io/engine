@@ -36,6 +36,7 @@ export interface INetworkConfig {
   factory: { [factory: string]: { type: 'uniswap2' | 'uniswap3' | 'pancake3'; topic0: string; fetcher?: string; } }
   fetchers: { [fetcher: string]: { type: 'uniswap2' | 'uniswap3' | 'pancake3'; factory: string[] } }
   chartReplacements?: { [origin: string]: string }
+  chainlinkFetcher?:string
   uniswap: IUniswapContractAddress
   derivable: IDerivableContractAddress
 }

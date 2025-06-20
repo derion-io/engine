@@ -2,7 +2,7 @@ import { BigNumber, Contract, ethers } from 'ethers'
 import { LOCALSTORAGE_KEY, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
 import { ContractCallContext, Multicall } from 'ethereum-multicall'
 import { LogType, PoolGroupsType, PoolsType, PoolType, Storage, TokenType } from '../types'
-import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, kx, rateFromHL, parsePrice, mergeTwoUniqSortedLogs, tryParseLog } from '../utils/helper'
+import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, kx, rateFromHL, parsePrice, mergeTwoUniqSortedLogs, tryParseLog, oracleWindow } from '../utils/helper'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import _, { concat, uniqBy } from 'lodash'
 import { IPairInfo, IPairsInfo, UniV3Pair } from './uniV3Pair'
@@ -742,7 +742,10 @@ export class Resource {
         }
       }
 
-      const uniPools = Object.values(pools).map((p: { pair: string }) => p.pair)
+      const uniPools = Object.values(pools)
+        .filter((p:any) => p.window.gt(0))
+        .map((p: any) => p.pair)
+
       const pairsInfo = await this.UNIV3PAIR.getPairsInfo({
         pairAddresses: _.uniq(uniPools),
       })
@@ -772,18 +775,22 @@ export class Resource {
           ...this.calcPoolInfo(pools[i]),
         }
 
-        const { MARK: _MARK, ORACLE, k: _k } = pools[i]
+        const { MARK: _MARK, ORACLE, k: _k, window } = pools[i]
 
         const quoteTokenIndex = bn(ORACLE.slice(0, 3)).gt(0) ? 1 : 0
         const pair = ethers.utils.getAddress(`0x${ORACLE.slice(-40)}`)
 
-        const baseToken = quoteTokenIndex === 0 ? pairsInfo[pair].token1 : pairsInfo[pair].token0
-        const quoteToken = quoteTokenIndex === 0 ? pairsInfo[pair].token0 : pairsInfo[pair].token1
+        let baseToken;
+        let quoteToken;
+        if (window.gt(0)){
+          baseToken= quoteTokenIndex === 0 ? pairsInfo[pair].token1 : pairsInfo[pair].token0
+          quoteToken= quoteTokenIndex === 0 ? pairsInfo[pair].token0 : pairsInfo[pair].token1
+          pools[i].baseToken = baseToken.address
+          pools[i].quoteToken = quoteToken.address
+        }
 
         const tokenR = tokens.find((t) => t.address === pools[i].TOKEN_R)
 
-        pools[i].baseToken = baseToken.address
-        pools[i].quoteToken = quoteToken.address
 
         const k = _k.toNumber()
         const id = this.getPoolGroupId({ pair, quoteTokenIndex, tokenR: pools[i].TOKEN_R })
@@ -841,7 +848,7 @@ export class Resource {
             `${pools[i].poolAddress}-${POOL_IDS.C}`,
           ]
         }
-
+        if(baseToken){
         tokens.push(
           {
             symbol: `${baseToken.symbol}^${1 + k / 2}`,
@@ -865,8 +872,11 @@ export class Resource {
             address: `${pools[i].poolAddress}-${POOL_IDS.C}`,
           },
           baseToken,
-          quoteToken,
         )
+        }
+        if(quoteToken){
+          tokens.push(quoteToken)
+        }
       }
 
       this.poolGroups = { ...this.poolGroups, ...poolGroups }
@@ -1113,7 +1123,7 @@ export class Resource {
             k: configData.config.K,
             powers: [configData.config.K.toNumber(), -configData.config.K.toNumber()],
             quoteTokenIndex: bn(configData.config.ORACLE.slice(0, 3)).gt(0) ? 1 : 0,
-            window: bn('0x' + configData.config.ORACLE.substring(2 + 8, 2 + 8 + 8)),
+            window: bn(oracleWindow(configData.config.ORACLE)),
             pair: ethers.utils.getAddress('0x' + configData.config.ORACLE.slice(-40)),
             exp: this.profile.getExp(configData.config.FETCHER),
             states: {

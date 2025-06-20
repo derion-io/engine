@@ -463,3 +463,12 @@ export function tryParseLog(log: LogType, ifaces: Interface[]): LogDescription |
   }
   return undefined
 }
+
+export function chainlinkDecimals(ORACLE: string): number {
+  return parseInt(ORACLE.substring(18, 26), 16)
+}
+
+export function oracleWindow(ORACLE: string): number {
+  return parseInt(ORACLE.substring(10, 18), 16)
+}
+
