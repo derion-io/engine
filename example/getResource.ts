@@ -4,11 +4,15 @@ import {LOCALSTORAGE_KEY} from "../src/utils/constant";
 
 const chainId = 42161
 const wallet = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
+const pool = '0x3119808c056f2d4bd430046690b03a5ecf46d5cf'
 
 const testLocal = async () => {
   const configs = getTestConfigs(chainId)
   const engine = new Engine(configs)
   await engine.initServices()
+
+  // await engine.RESOURCE.fetchResourceData([pool], wallet)
+  // console.log("pool", engine.RESOURCE.pools[pool])
 
   // const searchResult = await engine.RESOURCE.searchIndex('PENDLE')
   // console.log(searchResult)
@@ -18,10 +22,6 @@ const testLocal = async () => {
   // const cachedResource = await engine.RESOURCE.getResourceCached(wallet)
   // console.log(cachedResource.swapLogs)
 
-  // await engine.RESOURCE.fetchResourceData(
-  //   ['0xb62d467F2A6b620026C6AF1180a3F8327F22C07e'],
-  //   wallet,
-  // )
   console.log(
     await engine?.HISTORY.formatSwapHistory({
       tokens: Object.values(newResource.tokens),
