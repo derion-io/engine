@@ -1,7 +1,7 @@
 import { BigNumber, ethers } from 'ethers'
 import { LogType, PoolType, TokenType } from '../types'
 import EventsAbi from '../abi/Events.json'
-import { FeeAmount, POOL_INIT_CODE_HASH, SECONDS_PER_DAY } from './constant'
+import { FeeAmount, POOL_INIT_CODE_HASH, SECONDS_PER_DAY, ZERO_ADDRESS } from './constant'
 
 import { defaultAbiCoder, Interface, LogDescription } from '@ethersproject/abi'
 import { getCreate2Address } from '@ethersproject/address'
@@ -464,6 +464,18 @@ export function tryParseLog(log: LogType, ifaces: Interface[]): LogDescription |
   return undefined
 }
 
+export function isUniv3(pool: PoolType): boolean {
+  return pool?.FETCHER === ZERO_ADDRESS && !isChainlink(pool)
+}
+
+export function isUniv2(pool: PoolType): boolean {
+  return !isChainlink(pool) && pool?.FETCHER !== ZERO_ADDRESS
+}
+
+export function isChainlink(pool: PoolType): boolean {
+  return chainlinkDecimals(pool?.ORACLE) > 0
+}
+
 export function chainlinkDecimals(ORACLE: string): number {
   return parseInt(ORACLE.substring(18, 26), 16)
 }
@@ -471,4 +483,3 @@ export function chainlinkDecimals(ORACLE: string): number {
 export function oracleWindow(ORACLE: string): number {
   return parseInt(ORACLE.substring(10, 18), 16)
 }
-
