@@ -1,11 +1,11 @@
 import { BigNumber, Contract, ethers } from 'ethers'
 import { LOCALSTORAGE_KEY, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
-import { ContractCallContext, Multicall } from 'ethereum-multicall'
+import { CallReturnContext, ContractCallContext, Multicall } from 'ethereum-multicall'
 import { LogType, PoolGroupsType, PoolsType, PoolType, Storage, TokenType } from '../types'
-import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, kx, rateFromHL, parsePrice, mergeTwoUniqSortedLogs, tryParseLog, oracleWindow } from '../utils/helper'
+import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, kx, rateFromHL, parsePrice, mergeTwoUniqSortedLogs, tryParseLog, oracleWindow, isUniv3, isChainlink } from '../utils/helper'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import _, { concat, uniqBy } from 'lodash'
-import { IPairInfo, IPairsInfo, UniV3Pair } from './uniV3Pair'
+import { IChainLinkFeedsInfo, IPairInfo, IPairsInfo, UniV3Pair } from './uniV3Pair'
 import { IDerivableContractAddress, IEngineConfig } from '../utils/configs'
 import { defaultAbiCoder, hexZeroPad } from 'ethers/lib/utils'
 import { Profile } from '../profile'
@@ -13,6 +13,7 @@ import * as OracleSdk from '../utils/OracleSdk'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
 import { unpackId } from '../utils/number'
 import Events721Abi from '../abi/Events721.json'
+import { multicall } from '../utils/multicall'
 
 const TOPICS = getTopics()
 const TOPICS721 = getTopics(Events721Abi)
@@ -724,7 +725,7 @@ export class Resource {
     playMode?: boolean,
   ): Promise<LoadInitPoolDataReturnType> {
     try {
-      const multicall = new Multicall({
+      const mc = new Multicall({
         multicallCustomContractAddress: this.profile.configs.helperContract.multiCall,
         ethersProvider: this.getPoolOverridedProvider(),
         tryAggregate: true,
@@ -732,7 +733,7 @@ export class Resource {
       const normalTokens = _.uniq(getNormalAddress(listTokens))
 
       const context: Array<ContractCallContext> = this.getMultiCallRequest(normalTokens, poolAddresses || [])
-      const [{ results }] = await Promise.all([multicall.call(context)])
+      const [{ results }] = await Promise.all([mc.call(context)])
 
       const { tokens: tokensArr, pools } = this.parseMultiCallResponse(results, poolAddresses || [])
 
@@ -742,13 +743,47 @@ export class Resource {
         }
       }
 
-      const uniPools = Object.values(pools)
-        .filter((p:any) => p.window.gt(0))
+      const chainlinkPools = _.uniq(Object.values(pools)
+        .filter((p:any) => isChainlink(p))
+        .map((p: any) => p.pair))
+
+      const chainlinkFeedsData: IChainLinkFeedsInfo = {}
+
+      if (chainlinkPools.length) {
+        await multicall(
+          this.provider,
+          _.uniq(chainlinkPools).map(p => {
+            return {
+              reference: p,
+              contractAddress: p,
+              abi: this.profile.getAbi('Chainlink'),
+              calls: [{
+                reference: 'description',
+                methodName: 'description',
+                methodParameters: [],
+              }],
+              context: (callsReturnContext: CallReturnContext[]) => {
+                for (const ret of callsReturnContext) {
+                  chainlinkFeedsData[p] = { description: ret.returnValues[0] as string }
+                }
+              }
+            }
+          }),
+          true,
+        )
+      }
+
+      const uni3Pools = Object.values(pools)
+        .filter((p:any) => isUniv3(p))
         .map((p: any) => p.pair)
 
-      const pairsInfo = await this.UNIV3PAIR.getPairsInfo({
-        pairAddresses: _.uniq(uniPools),
-      })
+      let pairsInfo: IPairsInfo= {}
+      if (uni3Pools.length) {
+        pairsInfo = await this.UNIV3PAIR.getPairsInfo({
+          pairAddresses: _.uniq(uni3Pools),
+        })
+      }
+
       const tokens: Array<TokenType> = []
       for (let i = 0; i < tokensArr.length; i++) {
         // remove token has decimals = 0
@@ -782,6 +817,30 @@ export class Resource {
 
         let baseToken;
         let quoteToken;
+        if(isChainlink(pools[i]) && chainlinkFeedsData[pools[i].pair]){
+          const p1 = chainlinkFeedsData[pools[i].pair].description.split("/")[0].replace(" ","")
+          const p2 = chainlinkFeedsData[pools[i].pair].description.split("/")[1].replace(" ","")
+          baseToken = {
+            address: "",
+            symbol: p1,
+            name:p1,
+            decimals:0
+          }
+          quoteToken = {
+            address: "",
+            symbol: p2,
+            name:p2,
+            decimals:0
+          }
+          pools[i].baseToken = baseToken.address
+          pools[i].quoteToken = quoteToken.address
+          pools[i].pair = {
+            token0: baseToken,
+            token1:quoteToken
+          }
+
+        }
+        console.log(baseToken, quoteToken)
         if (window.gt(0)){
           baseToken= quoteTokenIndex === 0 ? pairsInfo[pair].token1 : pairsInfo[pair].token0
           quoteToken= quoteTokenIndex === 0 ? pairsInfo[pair].token0 : pairsInfo[pair].token1
@@ -799,7 +858,7 @@ export class Resource {
         } else {
           poolGroups[id] = { pools: { [i]: pools[i] } }
           // poolGroups[id].UTR = pools[i].UTR
-          poolGroups[id].pair = pairsInfo[pair]
+          poolGroups[id].pair = pairsInfo[pair] || pools[i].pair
           poolGroups[id].quoteTokenIndex = quoteTokenIndex
           poolGroups[id].baseToken = pools[i].baseToken
           poolGroups[id].quoteToken = pools[i].quoteToken

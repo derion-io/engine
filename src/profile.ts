@@ -17,6 +17,7 @@ import UTR from './abi/UTR.json'
 import FetcherV2 from './abi/FetcherV2.json'
 import UTROverride from './abi/UTROverride.json'
 import FetcherV2Override from './abi/FetcherV2Override.json'
+import Chainlink from "./abi/ChainLinkPriceFeed.json"
 import fetch from 'node-fetch'
 import { PoolType } from './types'
 
@@ -38,6 +39,7 @@ const abis = {
   UTROverride,
   FetcherV2Mock,
   FetcherV2Override,
+  Chainlink
 }
 
 const DDL_CONFIGS_URL = {

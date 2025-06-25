@@ -24,9 +24,14 @@ export type IPairInfo = {
   token0: TokenType & { reserve: BigNumber }
   token1: TokenType & { reserve: BigNumber }
 }
-
+export type IChainLinkFeedInfo = {
+  description:string
+}
 export type IPairsInfo = {
   [pair: string]: IPairInfo
+}
+export type IChainLinkFeedsInfo = {
+  [pair: string]: IChainLinkFeedInfo
 }
 
 export type GetPairInfoParameterType = {
