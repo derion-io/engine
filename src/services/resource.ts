@@ -1015,8 +1015,54 @@ export class Resource {
           })
           return _poolGroups
         })
-      const pairAddresses = Object.values(poolGroups).map((pg: { pairAddress: string }) => pg.pairAddress)
-      const pairsInfo = await this.UNIV3PAIR.getPairsInfo({ pairAddresses: pairAddresses })
+      const pairsInfo: IPairsInfo = {}
+      const chainlinkFeeds = Object.values(poolGroups).filter((p:any) => isChainlink(p.pools[0])).map((pg: { pairAddress: string }) => pg.pairAddress)
+      const promiseChainlink = !chainlinkFeeds.length ? null : multicall(
+        this.provider, chainlinkFeeds.map(feed=>
+        {
+          return {
+            reference: feed,
+            contractAddress: feed,
+            abi: this.profile.getAbi('Chainlink'),
+            calls: [{
+              reference: 'description',
+              methodName: 'description',
+              methodParameters: [],
+            }],
+            context: (callsReturnContext: CallReturnContext[]) => {
+              for (const ret of callsReturnContext) {
+                const [baseSymbol, quoteSymbol] = ret.returnValues[0].split(" / ")
+                const token0 = {
+                  address: "",
+                  symbol: baseSymbol,
+                  name: baseSymbol,
+                  decimals: 0,
+                  reserve: bn(0)
+                }
+                const token1 = {
+                  address: "",
+                  symbol: quoteSymbol,
+                  name: quoteSymbol,
+                  decimals: 0,
+                  reserve: bn(0)
+                }
+                pairsInfo[feed] = {
+                  token0,
+                  token1,
+                }
+              }
+            }
+          }
+        }
+        ),
+        true,
+      )
+      const uniPairs = Object.values(poolGroups).filter((p:any) => isUniv3(p)).map((pg: { pairAddress: string }) => pg.pairAddress)
+      if (!uniPairs.length) {
+        const uniPairsInfo = await this.UNIV3PAIR.getPairsInfo({ pairAddresses: uniPairs })
+        Object.assign(pairsInfo, uniPairsInfo)
+      }
+      await promiseChainlink
       for (const id in poolGroups) {
         poolGroups[id].pairInfo = pairsInfo[poolGroups[id].pairAddress]
       }
