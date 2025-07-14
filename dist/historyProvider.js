@@ -61,7 +61,7 @@ exports.default = {
                     // formatResult(weiToNumber(numberToWei(response.l[i]), decimals), barValueType),
                     open: candles[i][1],
                     // formatResult(weiToNumber(numberToWei(response.o[i]), decimals), barValueType),
-                    time: candles[i][1] * 1000,
+                    time: candles[i][0] * 1000,
                     volume: candles[i][5],
                     // formatResult(weiToNumber(response.v[i].split('.')[0], outputToken?.decimals), barValueType),
                     close: candles[i][4],
