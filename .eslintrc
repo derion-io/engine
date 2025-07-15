@@ -3,7 +3,7 @@
   "extends": [
     "standard",
     "standard-react",
-    //    "plugin:prettier/recommended",
+    "plugin:prettier/recommended",
     "prettier/standard",
     "prettier/react",
     "plugin:@typescript-eslint/eslint-recommended"
@@ -29,6 +29,14 @@
     "react/jsx-handler-names": 0,
     "react/jsx-fragments": 0,
     "react/no-unused-prop-types": 0,
-    "import/export": 0
+    "import/export": 0,
+    "eqeqeq": "warn",
+    "new-cap": "warn",
+    "prefer-const": "warn",
+    "camelcase": "warn",
+    "no-throw-literal": "warn",
+    "no-fallthrough": "warn",
+    "no-useless-catch": "off",
+    "no-unused-vars": "warn"
   }
 }

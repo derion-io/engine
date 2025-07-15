@@ -77,7 +77,7 @@ export class Swap {
   derivableAdr: IDerivableContractAddress
   pendingTxs: Array<PendingSwapTransactionType>
 
-  constructor(config: IEngineConfig & { RESOURCE: Resource, AGGREGATOR: Aggregator }, profile: Profile) {
+  constructor(config: IEngineConfig & { RESOURCE: Resource; AGGREGATOR: Aggregator }, profile: Profile) {
     this.RESOURCE = config.RESOURCE
     this.AGGREGATOR = config.AGGREGATOR
     this.config = config
@@ -192,7 +192,7 @@ export class Swap {
 
     const metaDatas: any = []
     const promises: any = []
-    const fetchStepPromise = steps.map(async(step) => {
+    const fetchStepPromise = steps.map(async (step) => {
       const poolGroup = this.getPoolPoolGroup(step.tokenIn, step.tokenOut)
       // if (
       //   (step.tokenIn === NATIVE_ADDRESS || step.tokenOut === NATIVE_ADDRESS) &&
@@ -318,21 +318,21 @@ export class Swap {
                 recipient:
                   isAddress(step.tokenIn) && this.wrapToken(step.tokenIn) !== poolGroup.TOKEN_R
                     ? this.getStateCalHelperContract().address
-                    // this.getUniPool(step.tokenIn, poolGroup.TOKEN_R)
-                    : isErc1155Address(step.tokenIn)
+                    : // this.getUniPool(step.tokenIn, poolGroup.TOKEN_R)
+                    isErc1155Address(step.tokenIn)
                     ? poolIn
                     : poolOut,
               },
             ]
 
       const populateTxData = []
-      
+
       let amountIn = step.payloadAmountIn ? step.payloadAmountIn : step.amountIn
 
       if (needAggregator) {
         // TODO: handle payloadAmountIn or inputTolerance for aggreateAndOpen
         const srcDecimals = this.RESOURCE.tokens.find((t) => t.address === step.tokenIn)?.decimals || 18
-        const destDecimals = this.RESOURCE.tokens.find((t) => t.address ===  poolGroup.TOKEN_R)?.decimals || 18
+        const destDecimals = this.RESOURCE.tokens.find((t) => t.address === poolGroup.TOKEN_R)?.decimals || 18
 
         const getRateData = {
           userAddress: this.getStateCalHelperContract().address,
@@ -348,12 +348,12 @@ export class Swap {
         // console.log(getRateData)
         const openData = {
           poolAddress: poolOut,
-          poolId: idOut.toNumber()
+          poolId: idOut.toNumber(),
         }
-        const {openTx} = await this.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, this.getStateCalHelperContract())
+        const { openTx } = await this.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, this.getStateCalHelperContract())
         // console.log(openTx)
         populateTxData.push(openTx)
-        
+
         // populateTxData.push(
         //   this.generateSwapParams('swapAndOpen', {
         //     side: idOut,

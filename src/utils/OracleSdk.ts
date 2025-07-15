@@ -67,8 +67,8 @@ export async function getPrice(
       throw new Error(`Exchange ${exchangeAddress} has not had its first accumulator update (or it is year 2106).`)
     if (bn(accumulator).eq(0))
       throw new Error(`Exchange ${exchangeAddress} has not had its first accumulator update (or it is 136 years since launch).`)
-    const numeratorReserve = 0 === quoteTokenIndex ? reserve0 : reserve1
-    const denominatorReserve = 0 === quoteTokenIndex ? reserve1 : reserve0
+    const numeratorReserve = quoteTokenIndex === 0 ? reserve0 : reserve1
+    const denominatorReserve = quoteTokenIndex === 0 ? reserve1 : reserve0
     const timeElapsedSinceLastAccumulatorUpdate = bn(timestamp).sub(blockTimestampLast)
     const priceNow = numeratorReserve.shl(112).div(denominatorReserve)
     return timeElapsedSinceLastAccumulatorUpdate.mul(priceNow).add(accumulator)

@@ -67,7 +67,7 @@ export const getStorageSlotsForBnA = async (
   const results: ContractCallResults = await multicall.call(contractCallContext)
 
   provider.setStateOverride(original)
-  let data = results.results[contractCallContext.reference].callsReturnContext
+  const data = results.results[contractCallContext.reference].callsReturnContext
 
   if (
     data[0].decoded == false ||
@@ -77,8 +77,8 @@ export const getStorageSlotsForBnA = async (
   )
     throw new Error(`unable to find the balance slot for the first ${slots} slots`)
 
-  let balance = bn(data[0].returnValues[0].hex).toNumber()
-  let allowance = bn(data[1].returnValues[0].hex).toNumber()
+  const balance = bn(data[0].returnValues[0].hex).toNumber()
+  const allowance = bn(data[1].returnValues[0].hex).toNumber()
 
   return {
     balance: {
@@ -99,8 +99,8 @@ export const overrideBnA = async (override: {
   allowances?: { [spender: string]: any }
   balance?: any
 }) => {
-  let state = {}
-  let result = await getStorageSlotsForBnA(override.provider, override.token, override.account)
+  const state = {}
+  const result = await getStorageSlotsForBnA(override.provider, override.token, override.account)
   let balance
 
   balance = ethers.BigNumber.from(override.balance.toString())
@@ -116,7 +116,7 @@ export const overrideBnA = async (override: {
       let allowance = override.allowances[spender]
       allowance = ethers.BigNumber.from(allowance.toString())
       allowance = ethers.utils.hexZeroPad(allowance.toHexString(), 32)
-      let slot = getAllowanceSlot(override.account, spender, result.allowance.index)
+      const slot = getAllowanceSlot(override.account, spender, result.allowance.index)
       // @ts-ignore
       state[slot] = allowance
     }

@@ -132,7 +132,7 @@ export type TokenType = {
   decimals: number
   name: string
   symbol: string
-  totalSupply?:any
+  totalSupply?: any
   icon?: string
 }
 
@@ -168,24 +168,24 @@ export type SwapStepType = {
 }
 
 export type rateDataAggregatorType = {
-   userAddress: string
-   ignoreChecks: boolean
-   srcToken: string
-   srcDecimals: number
-   srcAmount?: string,
-   destAmount?: string,
-   destToken: string,
-   destDecimals: number,
-   partner: string,
-   side: string,
-   excludeDirectContractMethods?:boolean,
-   otherExchangePrices?: boolean,
-   ignoreGasEstimate?: boolean
-   ignoreAllowance?: boolean 
+  userAddress: string
+  ignoreChecks: boolean
+  srcToken: string
+  srcDecimals: number
+  srcAmount?: string
+  destAmount?: string
+  destToken: string
+  destDecimals: number
+  partner: string
+  side: string
+  excludeDirectContractMethods?: boolean
+  otherExchangePrices?: boolean
+  ignoreGasEstimate?: boolean
+  ignoreAllowance?: boolean
 }
 
-export type SwapAndOpenAggregatorType = { 
-  poolAddress: string,
+export type SwapAndOpenAggregatorType = {
+  poolAddress: string
   poolId: number
 }
 

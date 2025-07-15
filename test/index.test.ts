@@ -6,12 +6,12 @@ import { getPairDetailV3 } from './logic/getPairDetailV3'
 import { getResource } from './logic/getResource'
 import { history } from './logic/history'
 import { swap } from './logic/swap'
-import _ from "lodash";
+import _ from 'lodash'
 import { TestConfiguration } from './shared/configurations/configurations'
 
 import { Interceptor } from './shared/libs/interceptor'
 import { Engine } from '../src/engine'
-import {POOL_IDS} from '../src/utils/constant'
+import { POOL_IDS } from '../src/utils/constant'
 import { IEngineConfig } from '../src/utils/configs'
 import { BigNumber, ethers } from 'ethers'
 import { historyTransfer } from './logic/historyTransfer'
@@ -35,23 +35,23 @@ describe('Derivable Tools', () => {
   })
 
   test('AmountOut-arb', async () => {
-    const [ res, gasUsed ] = await calcAmountOuts(
+    const [res, gasUsed] = await calcAmountOuts(
       genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
       ['0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96'],
       0.1,
     )
-    const amountOut = res[res.length-1].amountOut
+    const amountOut = res[res.length - 1].amountOut
     expect(gasUsed.toNumber()).toBeCloseTo(3900000, -7)
     expect(amountOut.toNumber()).toBeCloseTo(41750, -3)
   })
 
   test('AmountOut-bsc', async () => {
-    const [ res, gasUsed ] = await calcAmountOuts(
+    const [res, gasUsed] = await calcAmountOuts(
       genConfig(56, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
       ['0x2C3d0F3dcD28b5481a50E1DD0071378f92D56954'],
       0.1,
     )
-    const amountOut = res[res.length-1].amountOut
+    const amountOut = res[res.length - 1].amountOut
     expect(gasUsed.toNumber()).toEqual(298063)
     expect(amountOut.toNumber()).toEqual(99973)
   })
@@ -104,7 +104,8 @@ describe('Derivable Tools', () => {
     expect(NUM(amountOut)).toBeCloseTo(100870, -3)
   })
 
-  test('AmountOut-closingfee-opbnb', async () => { // 101456
+  test('AmountOut-closingfee-opbnb', async () => {
+    // 101456
     const [res, gasUsed] = await calcAmountOuts(
       genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
       ['0x63A6eA7677d45d0120ed8C72D55876069f295B95'],
@@ -116,7 +117,8 @@ describe('Derivable Tools', () => {
     expect(NUM(IEW(amountOut))).toBeCloseTo(3.33, 2)
   })
 
-  test('AmountOut-fee-opbnb', async () => { // 97999
+  test('AmountOut-fee-opbnb', async () => {
+    // 97999
     const [res, gasUsed] = await calcAmountOuts(
       genConfig(204, '0x0e2e52eFCF2207Bce876924810beb7f83CcA2D2F'),
       ['0x920A140a3F2c3aE7940A392b51815e273b115A53'],
@@ -133,7 +135,9 @@ describe('Derivable Tools', () => {
       [],
     )
     expect(balances['0x5f41DdC103d4Bf07aec45C3EEbEEf47520b98fD2']).toEqual(bn('0x010f0cccddeae95f0000'))
-    expect(allowances['0xF9afc64E5Dde15E941e2C01dd848b2EC67FD08b8-16']).toEqual(bn('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+    expect(allowances['0xF9afc64E5Dde15E941e2C01dd848b2EC67FD08b8-16']).toEqual(
+      bn('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'),
+    )
     expect(maturities['0x44C46037AD3621f95a488d898c1e9CFDa0F58e95-32']).toEqual(bn('0x6504358b'))
   })
 
@@ -153,7 +157,9 @@ describe('Derivable Tools', () => {
       [],
     )
     expect(balances['0x7df120445BfDd80A3c9fbFd3acC3b22123b58D1e']).toEqual(bn('0x08ffedfb595975900000'))
-    expect(allowances['0x867A3c9256911AEF110f4e626936Fa3BBc750cBE-48']).toEqual(bn('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+    expect(allowances['0x867A3c9256911AEF110f4e626936Fa3BBc750cBE-48']).toEqual(
+      bn('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'),
+    )
     expect(maturities['0x867A3c9256911AEF110f4e626936Fa3BBc750cBE-16']).toEqual(bn('0x658aa708'))
   })
 
@@ -175,32 +181,24 @@ describe('Derivable Tools', () => {
   // })
 
   test('PairDetailV3', async () => {
-    const { pairInfo } = await getPairDetailV3(
-      genConfig(42161, ''),
-      '0xC31E54c7a869B9FcBEcc14363CF510d1c41fa443'
-    )
+    const { pairInfo } = await getPairDetailV3(genConfig(42161, ''), '0xC31E54c7a869B9FcBEcc14363CF510d1c41fa443')
     expect(pairInfo.token0.name).toEqual('Wrapped Ether')
     expect(pairInfo.token1.name).toEqual('USD Coin (Arb1)')
   })
 
   test('Resource-arb', async () => {
     const poolAddress = '0x867A3c9256911AEF110f4e626936Fa3BBc750cBE'
-    const resource = await getResource(
-      genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
-      [poolAddress],
-    )
+    const resource = await getResource(genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'), [poolAddress])
 
-    const pool = resource.newResource.pools[poolAddress] ?? resource.whiteListResource.pools[poolAddress] ?? resource.cacheResource.pools[poolAddress]
+    const pool =
+      resource.newResource.pools[poolAddress] ?? resource.whiteListResource.pools[poolAddress] ?? resource.cacheResource.pools[poolAddress]
     expect(pool).toBeDefined()
     expect(pool?.riskFactor).toEqual('0.006344299538270911')
   })
 
   test('Resource-premium', async () => {
     const poolAddress = '0xAaf8FAC8F5709B0c954c9Af1d369A9b157e31FfE'
-    const resource = await getResource(
-      genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
-      [],
-    )
+    const resource = await getResource(genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'), [])
 
     const pool = resource.newResource.pools[poolAddress]
     expect(pool).toBeDefined()
@@ -211,24 +209,20 @@ describe('Derivable Tools', () => {
 
   test('Resource-bsc', async () => {
     const poolAddress = '0x2C3d0F3dcD28b5481a50E1DD0071378f92D56954'
-    const resource = await getResource(
-      genConfig(56, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
-      [poolAddress],
-    )
+    const resource = await getResource(genConfig(56, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'), [poolAddress])
 
-    const pool = resource.newResource.pools[poolAddress] ?? resource.whiteListResource.pools[poolAddress] ?? resource.cacheResource.pools[poolAddress]
+    const pool =
+      resource.newResource.pools[poolAddress] ?? resource.whiteListResource.pools[poolAddress] ?? resource.cacheResource.pools[poolAddress]
     expect(pool).toBeDefined()
     expect(pool?.riskFactor).toEqual('-0.005637139247406234')
   })
 
   test('Resource-opbnb', async () => {
     const poolAddress = '0x425a2D1Bb983614d0866410A5fB14ac9ddE7927e'
-    const resource = await getResource(
-      genConfig(204, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
-      [poolAddress],
-    )
+    const resource = await getResource(genConfig(204, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'), [poolAddress])
 
-    const pool = resource.newResource.pools[poolAddress] ?? resource.whiteListResource.pools[poolAddress] ?? resource.cacheResource.pools[poolAddress]
+    const pool =
+      resource.newResource.pools[poolAddress] ?? resource.whiteListResource.pools[poolAddress] ?? resource.cacheResource.pools[poolAddress]
     expect(pool).toBeDefined()
     expect(pool?.riskFactor).toEqual('14.238916024088980636')
   })
@@ -261,7 +255,7 @@ describe('Derivable Tools', () => {
     const { swapTxs, positions } = await history(
       genConfig(42161, '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'),
       [],
-      '0x9E37cb775a047Ae99FC5A24dDED834127c4180cD'
+      '0x9E37cb775a047Ae99FC5A24dDED834127c4180cD',
     )
     const keys = Object.keys(positions)
     expect(keys.length).toEqual(3)
@@ -274,7 +268,7 @@ describe('Derivable Tools', () => {
     const { swapTxs, positions } = await history(
       genConfig(56, '0x5555a222c465b1873421d844e5d89ed8eb3E5555'),
       [],
-      '0x1F3fdE32c8Cc19a0BE30a94EDeaD9cE34279b1FF'
+      '0x1F3fdE32c8Cc19a0BE30a94EDeaD9cE34279b1FF',
     )
     const keys = Object.keys(positions)
     expect(keys.length).toBeGreaterThanOrEqual(5)
@@ -289,9 +283,9 @@ describe('Derivable Tools', () => {
     const { positions, positionsTransfer } = await historyTransfer(
       genConfig(42161, '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'),
       [],
-      '0x9E37cb775a047Ae99FC5A24dDED834127c4180cD'
+      '0x9E37cb775a047Ae99FC5A24dDED834127c4180cD',
     )
-    Object.keys(positions).map(posKey => {
+    Object.keys(positions).map((posKey) => {
       const posSwap = positions[posKey]
       const posTransfer = positionsTransfer[posKey]
       expect(posSwap.balanceForPrice).toEqual(posTransfer.balance)
@@ -354,15 +348,15 @@ describe('Derivable Tools', () => {
     }
     const openData = {
       poolAddress,
-      poolId: POOL_IDS.A
+      poolId: POOL_IDS.A,
     }
-    const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
+    const { openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
 
     try {
       await utr.callStatic.exec(
         [],
         [
-          { 
+          {
             inputs: [
               {
                 mode: 1, // TRANSFER
@@ -371,13 +365,13 @@ describe('Derivable Tools', () => {
                 id: 0,
                 amountIn: BIG(amount).sub(1),
                 recipient: helper.address,
-              }
+              },
             ],
             code: helper.address,
             data: openTx.data,
-          }
+          },
         ],
-        { from: configs.account }
+        { from: configs.account },
       )
       expect(true).toBeFalsy()
     } catch (err) {
@@ -396,13 +390,13 @@ describe('Derivable Tools', () => {
               id: 0,
               amountIn: amount,
               recipient: helper.address,
-            }
+            },
           ],
           code: helper.address,
           data: openTx.data,
-        }
+        },
       ],
-      { from: configs.account }
+      { from: configs.account },
     )
     // console.log('tx', tx)
   })
@@ -441,15 +435,15 @@ describe('Derivable Tools', () => {
     }
     const openData = {
       poolAddress,
-      poolId: POOL_IDS.A
+      poolId: POOL_IDS.A,
     }
-    const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
+    const { openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
 
     try {
       await utr.callStatic.exec(
         [],
         [
-          { 
+          {
             inputs: [
               {
                 mode: 1, // TRANSFER
@@ -458,13 +452,13 @@ describe('Derivable Tools', () => {
                 id: 0,
                 amountIn: BIG(amount).sub(1),
                 recipient: helper.address,
-              }
+              },
             ],
             code: helper.address,
             data: openTx.data,
-          }
+          },
         ],
-        { from: configs.account }
+        { from: configs.account },
       )
       expect(true).toBeFalsy()
     } catch (err) {
@@ -483,13 +477,13 @@ describe('Derivable Tools', () => {
               id: 0,
               amountIn: amount,
               recipient: helper.address,
-            }
+            },
           ],
           code: helper.address,
           data: openTx.data,
-        }
+        },
       ],
-      { from: configs.account }
+      { from: configs.account },
     )
   })
   test('Aggregator-open-POL', async () => {
@@ -525,13 +519,13 @@ describe('Derivable Tools', () => {
       destToken,
       destDecimals,
       partner: 'derion.io',
-      side: "SELL",
+      side: 'SELL',
     }
     const openData = {
       poolAddress,
       poolId: POOL_IDS.B,
     }
-    const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
+    const { openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
 
     // const { rateData, swapData } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
     // console.log('aggregateAndOpen params: ', rateData, swapData)
@@ -563,15 +557,13 @@ describe('Derivable Tools', () => {
                 id: 0,
                 amountIn: BIG(amount).sub(1),
                 recipient: helper.address,
-              }
+              },
             ],
             code: helper.address,
             data: openTx.data,
-          }
+          },
         ],
-        { from: configs.account,
-          value: BIG(amount).sub(1)
-         }
+        { from: configs.account, value: BIG(amount).sub(1) },
       )
       expect(true).toBeFalsy()
     } catch (err) {
@@ -590,16 +582,13 @@ describe('Derivable Tools', () => {
               id: 0,
               amountIn: amount,
               recipient: helper.address,
-            }
+            },
           ],
           code: helper.address,
           data: openTx.data,
-        }
+        },
       ],
-      { from: configs.account,
-        value: amount
-
-      }
+      { from: configs.account, value: amount },
     )
     // console.log('tx', tx)
   })
@@ -636,13 +625,13 @@ describe('Derivable Tools', () => {
       destToken: WETH,
       destDecimals: 18,
       partner: 'derion.io',
-      side: "SELL",
+      side: 'SELL',
     }
     const openData = {
       poolAddress,
-      poolId: POOL_IDS.A
+      poolId: POOL_IDS.A,
     }
-    const {openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
+    const { openTx } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(getRateData, openData, helper)
 
     // const { rateData, swapData } = await engine.AGGREGATOR.getRateAndBuildTxSwapApi(configs, getRateData)
     // console.log('aggregateAndOpen params: ', rateData, swapData)
@@ -674,15 +663,13 @@ describe('Derivable Tools', () => {
                 id: 0,
                 amountIn: BIG(amount).sub(1),
                 recipient: helper.address,
-              }
+              },
             ],
             code: helper.address,
             data: openTx.data,
-          }
+          },
         ],
-        { from: configs.account,
-          value: BIG(amount).sub(1)
-         }
+        { from: configs.account, value: BIG(amount).sub(1) },
       )
       expect(true).toBeFalsy()
     } catch (err) {
@@ -701,16 +688,13 @@ describe('Derivable Tools', () => {
               id: 0,
               amountIn: amount,
               recipient: helper.address,
-            }
+            },
           ],
           code: helper.address,
           data: openTx.data,
-        }
+        },
       ],
-      { from: configs.account,
-        value: amount
-
-      }
+      { from: configs.account, value: amount },
     )
     // console.log('tx', tx)
   })
@@ -723,50 +707,48 @@ describe('Derivable Tools', () => {
       POOL_IDS.C,
       2000,
       '0x25d887ce7a35172c62febfd67a1856f20faebb00',
-      18
+      18,
     )
   })
 
-
   test('assets-arb', async () => {
-    const account = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df';
+    const account = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
     const configs = genConfig(42161, account)
     const engine = new Engine(configs)
     console.log('start')
 
     await engine.initServices()
     console.log(engine)
-    const {allLogs}= await engine.RESOURCE.getNewResource(account)
+    const { allLogs } = await engine.RESOURCE.getNewResource(account)
     const cacheLogs = await engine.RESOURCE.getCachedLogs(account)
-    const assets = engine.RESOURCE.updateAssets({logs: cacheLogs, account})
+    const assets = engine.RESOURCE.updateAssets({ logs: cacheLogs, account })
     function bigNumberToString(obj: any): any {
       if (BigNumber.isBigNumber(obj)) {
-        return obj.toString();
+        return obj.toString()
       } else if (Array.isArray(obj)) {
-        return obj.map(bigNumberToString);
-      } else if (typeof obj === "object" && obj !== null) {
-        const result: any = {};
+        return obj.map(bigNumberToString)
+      } else if (typeof obj === 'object' && obj !== null) {
+        const result: any = {}
         for (const key in obj) {
-          result[key] = bigNumberToString(obj[key]);
+          result[key] = bigNumberToString(obj[key])
         }
-        return result;
+        return result
       }
-      return obj;
+      return obj
     }
-    console.log(bigNumberToString(assets));
-    const {balances} = await engine.BNA.getBalanceAndAllowance(account)
+    console.log(bigNumberToString(assets))
+    const { balances } = await engine.BNA.getBalanceAndAllowance(account)
   })
   test('univ3-position-arb', async () => {
-    const account = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10';
+    const account = '0xD42d6d58F95A3DA9011EfEcA086200A64B266c10'
     const configs = genConfig(42161, account)
     const engine = new Engine(configs)
     await engine.initServices()
-    const {allLogs, tokens}= await engine.RESOURCE.getNewResource(account)
+    const { allLogs, tokens } = await engine.RESOURCE.getNewResource(account)
     const cacheLogs = await engine.RESOURCE.getCachedLogs(account)
-    const assets = engine.RESOURCE.updateAssets({logs: [...cacheLogs,...allLogs], account})
-    const uni3pos = await engine.BNA.loadUniswapV3Position({assetsOverride: assets})
+    const assets = engine.RESOURCE.updateAssets({ logs: [...cacheLogs, ...allLogs], account })
+    const uni3pos = await engine.BNA.loadUniswapV3Position({ assetsOverride: assets })
     console.log(assets)
     console.log(uni3pos)
   })
-
 })

@@ -1,14 +1,11 @@
-import {Engine} from '../src/engine'
-import {getTestConfigs} from './shared/testConfigs'
+import { Engine } from '../src/engine'
+import { getTestConfigs } from './shared/testConfigs'
 
 const test = async () => {
   const configs = getTestConfigs(8453)
   const engine = new Engine(configs)
   await engine.initServices()
-  await engine.RESOURCE.fetchResourceData(
-    ['0xE3C75f8963E4CA02ea9a281c32b41FdfC248e07f'],
-    '',
-  )
+  await engine.RESOURCE.fetchResourceData(['0xE3C75f8963E4CA02ea9a281c32b41FdfC248e07f'], '')
 
   const changedIn24h = await engine.PRICE.get24hChange({
     baseToken: {
@@ -25,14 +22,12 @@ const test = async () => {
     },
     cToken: '0xC31E54c7a869B9FcBEcc14363CF510d1c41fa443',
     currentPrice: '1900',
-    chainId: '42161'
+    chainId: '42161',
   })
 
   const prices = await engine.PRICE.getTokenPriceByRoutes()
 
-  const res = await engine.PRICE.getTokenPrices([
-    "0x4200000000000000000000000000000000000006",
-  ])
+  const res = await engine.PRICE.getTokenPrices(['0x4200000000000000000000000000000000000006'])
 
   console.log(res)
 }

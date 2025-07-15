@@ -15,14 +15,14 @@ export const LOCALSTORAGE_KEY = {
   ACCOUNT_BLOCK_LOGS: 'account-block-log-v1.2',
 }
 export const PARA_DATA_BASE_URL = 'https://api.paraswap.io/prices'
-export const PARA_VERSION = "5"
+export const PARA_VERSION = '5'
 export const PARA_BUILD_TX_BASE_URL = 'https://api.paraswap.io/transactions'
 
 export enum FeeAmount {
   LOWEST = 100,
   LOW = 500,
   MEDIUM = 3000,
-  HIGH = 10000
+  HIGH = 10000,
 }
 
 export const POOL_IDS = {

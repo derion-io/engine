@@ -25,7 +25,7 @@ export type IPairInfo = {
   token1: TokenType & { reserve: BigNumber }
 }
 export type IChainLinkFeedInfo = {
-  description:string
+  description: string
 }
 export type IPairsInfo = {
   [pair: string]: IPairInfo
@@ -140,7 +140,7 @@ export class UniV3Pair {
 
       const context: Array<ContractCallContext> = this._generatePoolAddressContext(baseToken, quoteTokens)
       const res = await multicall.call(context)
-      return this._parsePoolAddressReturnContext(res.results.poolAddresses['callsReturnContext'])
+      return this._parsePoolAddressReturnContext(res.results.poolAddresses.callsReturnContext)
     } catch (error) {
       throw error
     }

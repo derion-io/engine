@@ -33,10 +33,10 @@ export interface INetworkConfig {
   stablecoins: string[]
   tokens?: { [address: string]: { price?: number | string; symbol: string; name: string; decimals: number; logo: string } }
   helperContract: IHelperContract
-  factory: { [factory: string]: { type: 'uniswap2' | 'uniswap3' | 'pancake3'; topic0: string; fetcher?: string; } }
+  factory: { [factory: string]: { type: 'uniswap2' | 'uniswap3' | 'pancake3'; topic0: string; fetcher?: string } }
   fetchers: { [fetcher: string]: { type: 'uniswap2' | 'uniswap3' | 'pancake3'; factory: string[] } }
   chartReplacements?: { [origin: string]: string }
-  chainlinkFetcher?:string
+  chainlinkFetcher?: string
   uniswap: IUniswapContractAddress
   derivable: IDerivableContractAddress
 }

@@ -17,7 +17,7 @@ import UTR from './abi/UTR.json'
 import FetcherV2 from './abi/FetcherV2.json'
 import UTROverride from './abi/UTROverride.json'
 import FetcherV2Override from './abi/FetcherV2Override.json'
-import Chainlink from "./abi/ChainLinkPriceFeed.json"
+import Chainlink from './abi/ChainLinkPriceFeed.json'
 import fetch from 'node-fetch'
 import { PoolType } from './types'
 
@@ -39,7 +39,7 @@ const abis = {
   UTROverride,
   FetcherV2Mock,
   FetcherV2Override,
-  Chainlink
+  Chainlink,
 }
 
 const DDL_CONFIGS_URL = {
@@ -55,6 +55,7 @@ export class Profile {
   routes: {
     [key: string]: { type: string; address: string }[]
   }
+
   whitelistPools: string[]
 
   constructor(engineConfig: IEngineConfig) {
@@ -81,7 +82,7 @@ export class Profile {
   }
 
   getAbi(name: string) {
-    //@ts-ignore
+    // @ts-ignore
     return abis[name] ? abis[name] : abis[this.chainId][name] || []
   }
 

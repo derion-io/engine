@@ -161,7 +161,7 @@ export class BnA {
           // TODO: handle 1155 Approval events
         }
       }
-      // calculate the MATURITY assume that each 
+      // calculate the MATURITY assume that each
       for (const key of Object.keys(balances)) {
         if (!isErc1155Address(key)) {
           continue
@@ -303,7 +303,7 @@ export class BnA {
                   feeProtocol,
                   unlocked,
                 ] = ret.returnValues as [BigNumber, number, number, number, number, number, boolean];
-    
+
                 if(!uniPoolV3Data[poolAddress]) uniPoolV3Data[poolAddress] = {}
                 uniPoolV3Data[poolAddress][ret.reference] = {
                   sqrtPriceX96,

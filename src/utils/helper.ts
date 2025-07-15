@@ -218,14 +218,14 @@ export const getTopics = (overrideEventsAbi?: any): { [key: string]: string[] } 
 
 export const rateToHL = (r: number, DURATION = SECONDS_PER_DAY): number => {
   if (r == 0) {
-    return 0;
+    return 0
   }
   return Math.ceil((DURATION * Math.LN2) / r)
 }
 
 export const rateFromHL = (HL: number, DURATION = SECONDS_PER_DAY): number => {
   if (HL == 0) {
-    return 0;
+    return 0
   }
   return (DURATION * Math.LN2) / HL
 }
@@ -412,14 +412,14 @@ export function mergeTwoUniqSortedLogs(a: LogType[], b: LogType[]): LogType[] {
     }
     r.push(b[j++])
   }
-  return r;
+  return r
 }
 
 export function sortsBefore(tokenA: string, tokenB: string): boolean {
   if (tokenA === tokenB) {
-    throw new Error("The tokens have the same address.");
+    throw new Error('The tokens have the same address.')
   }
-  return tokenA.toLowerCase() < tokenB.toLowerCase();
+  return tokenA.toLowerCase() < tokenB.toLowerCase()
 }
 
 export function computePoolAddress({
@@ -427,7 +427,7 @@ export function computePoolAddress({
   tokenA,
   tokenB,
   fee,
-  initCodeHashManualOverride
+  initCodeHashManualOverride,
 }: {
   factoryAddress: string
   tokenA: TokenType
@@ -438,11 +438,8 @@ export function computePoolAddress({
   const [token0, token1] = sortsBefore(tokenA.address, tokenB.address) ? [tokenA, tokenB] : [tokenB, tokenA] // does safety checks
   return getCreate2Address(
     factoryAddress,
-    keccak256(
-      ['bytes'],
-      [defaultAbiCoder.encode(['address', 'address', 'uint24'], [token0.address, token1.address, fee])]
-    ),
-    initCodeHashManualOverride ?? POOL_INIT_CODE_HASH
+    keccak256(['bytes'], [defaultAbiCoder.encode(['address', 'address', 'uint24'], [token0.address, token1.address, fee])]),
+    initCodeHashManualOverride ?? POOL_INIT_CODE_HASH,
   )
 }
 

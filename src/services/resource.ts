@@ -2,7 +2,21 @@ import { BigNumber, Contract, ethers } from 'ethers'
 import { LOCALSTORAGE_KEY, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
 import { CallReturnContext, ContractCallContext, Multicall } from 'ethereum-multicall'
 import { LogType, PoolGroupsType, PoolsType, PoolType, Storage, TokenType } from '../types'
-import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, kx, rateFromHL, parsePrice, mergeTwoUniqSortedLogs, tryParseLog, oracleWindow, isUniv3, isChainlink } from '../utils/helper'
+import {
+  bn,
+  div,
+  formatMultiCallBignumber,
+  getNormalAddress,
+  getTopics,
+  kx,
+  rateFromHL,
+  parsePrice,
+  mergeTwoUniqSortedLogs,
+  tryParseLog,
+  oracleWindow,
+  isUniv3,
+  isChainlink,
+} from '../utils/helper'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import _, { concat, uniqBy } from 'lodash'
 import { IChainLinkFeedsInfo, IPairInfo, IPairsInfo, UniV3Pair } from './uniV3Pair'
@@ -17,22 +31,11 @@ import { multicall } from '../utils/multicall'
 
 const TOPICS = getTopics()
 const TOPICS721 = getTopics(Events721Abi)
-const TOPICS_20 = [
-  ...TOPICS.Transfer,
-  ...TOPICS.Approval,
-]
+const TOPICS_20 = [...TOPICS.Transfer, ...TOPICS.Approval]
 
-const TOPICS_1155 = [
-  ...TOPICS.TransferSingle,
-  ...TOPICS.TransferBatch,
-  ...TOPICS.ApprovalForAll,
-]
+const TOPICS_1155 = [...TOPICS.TransferSingle, ...TOPICS.TransferBatch, ...TOPICS.ApprovalForAll]
 
-const TOPICS_721 = [
-  ...TOPICS721.Transfer,
-  ...TOPICS721.Approval,
-  ...TOPICS721.ApprovalForAll
-]
+const TOPICS_721 = [...TOPICS721.Transfer, ...TOPICS721.Approval, ...TOPICS721.ApprovalForAll]
 
 export type GetPoolGroupIdParameterType = {
   pair: string
@@ -140,27 +143,27 @@ export type Assets = {
     allowance: {
       [tokenSpender: string]: BigNumber // key: token-spender
     }
-  };
+  }
   721: {
     balance: {
       [tokenId: string]: BigNumber // key: token - id
     }
     allowanceALl: {
-      [tokenSpender: string]: BigNumber, // key: token - spender
-    },
-    allowance: {
-      [tokenSpenderId : string]: BigNumber  // key: token-spender-id
+      [tokenSpender: string]: BigNumber // key: token - spender
     }
-  };
+    allowance: {
+      [tokenSpenderId: string]: BigNumber // key: token-spender-id
+    }
+  }
   1155: {
     balance: {
       [tokenId: string]: BigNumber // key: token-id
     }
     allowance: {
-      [tokenSpender:string]: BigNumber // key: token - spender
+      [tokenSpender: string]: BigNumber // key: token - spender
     }
-  };
-};
+  }
+}
 
 export class Resource {
   poolGroups: PoolGroupsType = {}
@@ -200,12 +203,12 @@ export class Resource {
     this.stableCoins = profile.configs.stablecoins
   }
 
-  async fetchResourceData(poolAddresses: Array<string>, account: string, playMode?: boolean) {
+  async fetchResourceData(poolAddresses: Array<string>, account?: string, playMode?: boolean) {
     const result: any = {}
     if (!this.chainId) return result
     await Promise.all([
-      this.getResourceCached(account, playMode),
-      this.getNewResource(account, playMode),
+      this.getResourceCached(account ?? '', playMode),
+      this.getNewResource(account ?? '', playMode),
       this.getWhiteListResource(poolAddresses, playMode),
     ])
     // this.poolGroups = {...resultCached.poolGroups, ...newResource.poolGroups}b.v
@@ -214,158 +217,158 @@ export class Resource {
     // this.swapLogs = [...resultCached.swapLogs, ...newResource.swapLogs]
     // this.transferLogs = [...resultCached.transferLogs, ...newResource.transferLogs]
   }
-  updateAssets({ updateAssets, account, logs }: { updateAssets?: Assets, account: string, logs: LogType[] }): Assets {
+
+  updateAssets({ updateAssets, account, logs }: { updateAssets?: Assets; account: string; logs: LogType[] }): Assets {
     if (!account) {
-      throw new Error("missing account");
+      throw new Error('missing account')
     }
-  
+
     try {
       const assets: Assets = updateAssets || {
         20: { balance: {}, allowance: {} },
         721: { balance: {}, allowanceALl: {}, allowance: {} },
         1155: { balance: {}, allowance: {} },
-      };
-  
-      const eventInterface = new ethers.utils.Interface(this.profile.getAbi('Events'));
-      const event721Interface = new ethers.utils.Interface(this.profile.getAbi('Events721'));
-  
-      const parsedLogs = logs.map((log: any) => {
-        if (log.address.toLowerCase() === '0xc36442b4a4522e871399cd717abdd847ab11fe88')
-          console.log(log.address);
-        const parsedLog = tryParseLog(log, [eventInterface, event721Interface])
-        if (!parsedLog) {
-          return null
-        }
-        return { ...log, ...parsedLog }
-      }).filter((log: any) => log != null);
-  
-      console.log(parsedLogs.length);
+      }
+
+      const eventInterface = new ethers.utils.Interface(this.profile.getAbi('Events'))
+      const event721Interface = new ethers.utils.Interface(this.profile.getAbi('Events721'))
+
+      const parsedLogs = logs
+        .map((log: any) => {
+          if (log.address.toLowerCase() === '0xc36442b4a4522e871399cd717abdd847ab11fe88') console.log(log.address)
+          const parsedLog = tryParseLog(log, [eventInterface, event721Interface])
+          if (!parsedLog) {
+            return null
+          }
+          return { ...log, ...parsedLog }
+        })
+        .filter((log: any) => log != null)
+
+      console.log(parsedLogs.length)
       for (const log of parsedLogs) {
         if (!log.args) {
-          console.error("Unparsed log", log);
-          continue;
+          console.error('Unparsed log', log)
+          continue
         }
-  
-        const token = log.address;
-  
+
+        const token = log.address
+
         // ERC-20
         if (TOPICS_20.includes(log.topics[0])) {
           if (TOPICS.Transfer.includes(log.topics[0]) && log.args?.value) {
-            const { from, to, value } = log.args;
+            const { from, to, value } = log.args
             if (value) {
               if (!assets[20].balance[token]) {
-                assets[20].balance[token] = BigNumber.from(0);
+                assets[20].balance[token] = BigNumber.from(0)
               }
-  
+
               if (to === account) {
-                assets[20].balance[token] = assets[20].balance[token].add(value);
+                assets[20].balance[token] = assets[20].balance[token].add(value)
               }
               if (from === account) {
-                assets[20].balance[token] = assets[20].balance[token].sub(value);
+                assets[20].balance[token] = assets[20].balance[token].sub(value)
               }
             }
           }
-  
+
           if (TOPICS.Approval.includes(log.topics[0])) {
-            const { owner, spender, value } = log.args;
+            const { owner, spender, value } = log.args
             if (owner === account) {
-              const allowanceKey = `${token}-${spender}`;
-              assets[20].allowance[allowanceKey] = value;
+              const allowanceKey = `${token}-${spender}`
+              assets[20].allowance[allowanceKey] = value
             }
           }
         }
-  
+
         // ERC-1155
         if (TOPICS_1155.includes(log.topics[0])) {
           if (TOPICS.TransferSingle.includes(log.topics[0])) {
-            const { from, to, id: _id, value } = log.args;
-            const id = _id.toString();
-            const balanceKey = `${token}-${id}`;
-  
+            const { from, to, id: _id, value } = log.args
+            const id = _id.toString()
+            const balanceKey = `${token}-${id}`
+
             if (!assets[1155].balance[balanceKey]) {
-              assets[1155].balance[balanceKey] = BigNumber.from(0);
+              assets[1155].balance[balanceKey] = BigNumber.from(0)
             }
-  
+
             if (to === account) {
-              assets[1155].balance[balanceKey] = assets[1155].balance[balanceKey].add(value);
+              assets[1155].balance[balanceKey] = assets[1155].balance[balanceKey].add(value)
             }
             if (from === account) {
-              assets[1155].balance[balanceKey] = assets[1155].balance[balanceKey].sub(value);
+              assets[1155].balance[balanceKey] = assets[1155].balance[balanceKey].sub(value)
             }
           }
-  
+
           if (TOPICS.TransferBatch.includes(log.topics[0]) && log.args?.values?.length) {
-            const { from, to, ids, values } = log.args;
+            const { from, to, ids, values } = log.args
             for (let i = 0; i < ids.length; ++i) {
-              const value = values[i];
+              const value = values[i]
               if (!value) {
-                continue; // Skip if value is not defined
+                continue // Skip if value is not defined
               }
-              const id = ids[i].toString();
-              const balanceKey = `${token}-${id}`;
-  
+              const id = ids[i].toString()
+              const balanceKey = `${token}-${id}`
+
               if (!assets[1155].balance[balanceKey]) {
-                assets[1155].balance[balanceKey] = BigNumber.from(0);
+                assets[1155].balance[balanceKey] = BigNumber.from(0)
               }
-  
+
               if (to === account) {
-                assets[1155].balance[balanceKey] = assets[1155].balance[balanceKey].add(value);
+                assets[1155].balance[balanceKey] = assets[1155].balance[balanceKey].add(value)
               }
               if (from === account) {
-                assets[1155].balance[balanceKey] = assets[1155].balance[balanceKey].sub(value);
+                assets[1155].balance[balanceKey] = assets[1155].balance[balanceKey].sub(value)
               }
             }
           }
-  
+
           if (TOPICS.ApprovalForAll.includes(log.topics[0])) {
-            const { owner, operator, approved } = log.args;
+            const { owner, operator, approved } = log.args
             if (owner === account) {
-              const allowanceKey = `${token}-${operator}`;
-              assets[1155].allowance[allowanceKey] = approved ? BigNumber.from(ethers.constants.MaxInt256) : BigNumber.from(0);
+              const allowanceKey = `${token}-${operator}`
+              assets[1155].allowance[allowanceKey] = approved ? BigNumber.from(ethers.constants.MaxInt256) : BigNumber.from(0)
             }
           }
         }
-  
+
         // ERC-721
         if (TOPICS_721.includes(log.topics[0])) {
           if (TOPICS.Transfer.includes(log.topics[0]) && log.args?.tokenId) {
-            const { from, to, tokenId } = log.args;
-            const balanceKey = `${token}-${tokenId}`;
-  
+            const { from, to, tokenId } = log.args
+            const balanceKey = `${token}-${tokenId}`
+
             if (to === account) {
-              assets[721].balance[balanceKey] = BigNumber.from(1);
+              assets[721].balance[balanceKey] = BigNumber.from(1)
             }
             if (from === account) {
-              delete assets[721].balance[balanceKey];
+              delete assets[721].balance[balanceKey]
             }
           }
-  
+
           if (TOPICS.Approval.includes(log.topics[0]) && log.args?.tokenId) {
-            const { owner, spender, tokenId } = log.args;
+            const { owner, spender, tokenId } = log.args
             if (owner === account) {
-              const allowanceKey = `${token}-${spender}-${tokenId}`;
-              assets[721].allowance[allowanceKey] = BigNumber.from(1);
+              const allowanceKey = `${token}-${spender}-${tokenId}`
+              assets[721].allowance[allowanceKey] = BigNumber.from(1)
             }
           }
-  
+
           if (TOPICS.ApprovalForAll.includes(log.topics[0])) {
-            const { owner, operator, approved } = log.args;
+            const { owner, operator, approved } = log.args
             if (owner === account) {
-              const allowanceAllKey = `${token}-${operator}`;
-              assets[721].allowanceALl[allowanceAllKey] = approved ? BigNumber.from(ethers.constants.MaxInt256) : BigNumber.from(0);
+              const allowanceAllKey = `${token}-${operator}`
+              assets[721].allowanceALl[allowanceAllKey] = approved ? BigNumber.from(ethers.constants.MaxInt256) : BigNumber.from(0)
             }
           }
         }
       }
       this.assets = assets
 
-      return assets;
+      return assets
     } catch (error) {
-      throw error;
+      throw error
     }
   }
-  
-
 
   getLastBlockCached(account?: string): number {
     if (!this.storage || !this.storage.getItem || !account) return 0
@@ -429,9 +432,7 @@ export class Resource {
       if (!this.storage || !this.storage.getItem) return results
       const logs = this.getCachedLogs(account)
       const accountLogs = this.parseDdlLogs(
-        logs.filter(
-          (data: { topics: Array<string> }) => concat(...Object.values(TOPICS)).includes(data.topics[0]),
-        ),
+        logs.filter((data: { topics: Array<string> }) => concat(...Object.values(TOPICS)).includes(data.topics[0])),
       )
 
       results.swapLogs = accountLogs.filter((log: any) => {
@@ -454,7 +455,7 @@ export class Resource {
             return false
           }
           return TOPICS_1155.includes(eventSig)
-        })
+        }),
       )
 
       const ddlTokenTransferLogs = accountLogs.filter((log: any) => {
@@ -611,7 +612,7 @@ export class Resource {
           if (bnaLogs?.length) {
             result.bnaLogs = bnaLogs
           }
-          if(allLogs?.length){
+          if (allLogs?.length) {
             result.allLogs = allLogs
           }
           const poolAddresses = this.poolHasOpeningPosition(ddlTokenTransferLogs)
@@ -743,30 +744,34 @@ export class Resource {
         }
       }
 
-      const chainlinkPools = _.uniq(Object.values(pools)
-        .filter((p:any) => isChainlink(p))
-        .map((p: any) => p.pair))
+      const chainlinkPools = _.uniq(
+        Object.values(pools)
+          .filter((p: any) => isChainlink(p))
+          .map((p: any) => p.pair),
+      )
 
       const chainlinkFeedsData: IChainLinkFeedsInfo = {}
 
       if (chainlinkPools.length) {
         await multicall(
           this.provider,
-          _.uniq(chainlinkPools).map(p => {
+          _.uniq(chainlinkPools).map((p) => {
             return {
               reference: p,
               contractAddress: p,
               abi: this.profile.getAbi('Chainlink'),
-              calls: [{
-                reference: 'description',
-                methodName: 'description',
-                methodParameters: [],
-              }],
+              calls: [
+                {
+                  reference: 'description',
+                  methodName: 'description',
+                  methodParameters: [],
+                },
+              ],
               context: (callsReturnContext: CallReturnContext[]) => {
                 for (const ret of callsReturnContext) {
                   chainlinkFeedsData[p] = { description: ret.returnValues[0] as string }
                 }
-              }
+              },
             }
           }),
           true,
@@ -774,10 +779,10 @@ export class Resource {
       }
 
       const uni3Pools = Object.values(pools)
-        .filter((p:any) => isUniv3(p))
+        .filter((p: any) => isUniv3(p))
         .map((p: any) => p.pair)
 
-      let pairsInfo: IPairsInfo= {}
+      let pairsInfo: IPairsInfo = {}
       if (uni3Pools.length) {
         pairsInfo = await this.UNIV3PAIR.getPairsInfo({
           pairAddresses: _.uniq(uni3Pools),
@@ -815,41 +820,39 @@ export class Resource {
         const quoteTokenIndex = bn(ORACLE.slice(0, 3)).gt(0) ? 1 : 0
         const pair = ethers.utils.getAddress(`0x${ORACLE.slice(-40)}`)
 
-        let baseToken;
-        let quoteToken;
-        if(isChainlink(pools[i]) && chainlinkFeedsData[pools[i].pair]){
-          const p1 = chainlinkFeedsData[pools[i].pair].description.split("/")[0].replace(" ","")
-          const p2 = chainlinkFeedsData[pools[i].pair].description.split("/")[1].replace(" ","")
+        let baseToken
+        let quoteToken
+        if (isChainlink(pools[i]) && chainlinkFeedsData[pools[i].pair]) {
+          const p1 = chainlinkFeedsData[pools[i].pair].description.split('/')[0].replace(' ', '')
+          const p2 = chainlinkFeedsData[pools[i].pair].description.split('/')[1].replace(' ', '')
           baseToken = {
-            address: "",
+            address: '',
             symbol: p1,
-            name:p1,
-            decimals:0
+            name: p1,
+            decimals: 0,
           }
           quoteToken = {
-            address: "",
+            address: '',
             symbol: p2,
-            name:p2,
-            decimals:0
+            name: p2,
+            decimals: 0,
           }
           pools[i].baseToken = baseToken.address
           pools[i].quoteToken = quoteToken.address
           pools[i].pair = {
             token0: baseToken,
-            token1:quoteToken
+            token1: quoteToken,
           }
-
         }
         console.log(baseToken, quoteToken)
-        if (window.gt(0)){
-          baseToken= quoteTokenIndex === 0 ? pairsInfo[pair].token1 : pairsInfo[pair].token0
-          quoteToken= quoteTokenIndex === 0 ? pairsInfo[pair].token0 : pairsInfo[pair].token1
+        if (window.gt(0)) {
+          baseToken = quoteTokenIndex === 0 ? pairsInfo[pair].token1 : pairsInfo[pair].token0
+          quoteToken = quoteTokenIndex === 0 ? pairsInfo[pair].token0 : pairsInfo[pair].token1
           pools[i].baseToken = baseToken.address
           pools[i].quoteToken = quoteToken.address
         }
 
         const tokenR = tokens.find((t) => t.address === pools[i].TOKEN_R)
-
 
         const k = _k.toNumber()
         const id = this.getPoolGroupId({ pair, quoteTokenIndex, tokenR: pools[i].TOKEN_R })
@@ -907,33 +910,33 @@ export class Resource {
             `${pools[i].poolAddress}-${POOL_IDS.C}`,
           ]
         }
-        if(baseToken){
-        tokens.push(
-          {
-            symbol: `${baseToken.symbol}^${1 + k / 2}`,
-            name: `${baseToken.symbol}^${1 + k / 2}`,
-            decimals: tokenR?.decimals || 18,
-            totalSupply: 0,
-            address: `${pools[i].poolAddress}-${POOL_IDS.A}`,
-          },
-          {
-            symbol: `${baseToken.symbol}^${1 - k / 2}`,
-            name: `${baseToken.symbol}^${1 - k / 2}`,
-            decimals: tokenR?.decimals || 18,
-            totalSupply: 0,
-            address: `${pools[i].poolAddress}-${POOL_IDS.B}`,
-          },
-          {
-            symbol: `DLP-${baseToken.symbol}-${k / 2}`,
-            name: `DLP-${baseToken.symbol}-${k / 2}`,
-            decimals: tokenR?.decimals || 18,
-            totalSupply: 0,
-            address: `${pools[i].poolAddress}-${POOL_IDS.C}`,
-          },
-          baseToken,
-        )
+        if (baseToken) {
+          tokens.push(
+            {
+              symbol: `${baseToken.symbol}^${1 + k / 2}`,
+              name: `${baseToken.symbol}^${1 + k / 2}`,
+              decimals: tokenR?.decimals || 18,
+              totalSupply: 0,
+              address: `${pools[i].poolAddress}-${POOL_IDS.A}`,
+            },
+            {
+              symbol: `${baseToken.symbol}^${1 - k / 2}`,
+              name: `${baseToken.symbol}^${1 - k / 2}`,
+              decimals: tokenR?.decimals || 18,
+              totalSupply: 0,
+              address: `${pools[i].poolAddress}-${POOL_IDS.B}`,
+            },
+            {
+              symbol: `DLP-${baseToken.symbol}-${k / 2}`,
+              name: `DLP-${baseToken.symbol}-${k / 2}`,
+              decimals: tokenR?.decimals || 18,
+              totalSupply: 0,
+              address: `${pools[i].poolAddress}-${POOL_IDS.C}`,
+            },
+            baseToken,
+          )
         }
-        if(quoteToken){
+        if (quoteToken) {
           tokens.push(quoteToken)
         }
       }
@@ -1016,48 +1019,55 @@ export class Resource {
           return _poolGroups
         })
       const pairsInfo: IPairsInfo = {}
-      const chainlinkFeeds = Object.values(poolGroups).filter((p:any) => isChainlink(p.pools[0])).map((pg: { pairAddress: string }) => pg.pairAddress)
-      const promiseChainlink = !chainlinkFeeds.length ? null : multicall(
-        this.provider, chainlinkFeeds.map(feed=>
-        {
-          return {
-            reference: feed,
-            contractAddress: feed,
-            abi: this.profile.getAbi('Chainlink'),
-            calls: [{
-              reference: 'description',
-              methodName: 'description',
-              methodParameters: [],
-            }],
-            context: (callsReturnContext: CallReturnContext[]) => {
-              for (const ret of callsReturnContext) {
-                const [baseSymbol, quoteSymbol] = ret.returnValues[0].split(" / ")
-                const token0 = {
-                  address: "",
-                  symbol: baseSymbol,
-                  name: baseSymbol,
-                  decimals: 0,
-                  reserve: bn(0)
-                }
-                const token1 = {
-                  address: "",
-                  symbol: quoteSymbol,
-                  name: quoteSymbol,
-                  decimals: 0,
-                  reserve: bn(0)
-                }
-                pairsInfo[feed] = {
-                  token0,
-                  token1,
-                }
+      const chainlinkFeeds = Object.values(poolGroups)
+        .filter((p: any) => isChainlink(p.pools[0]))
+        .map((pg: { pairAddress: string }) => pg.pairAddress)
+      const promiseChainlink = !chainlinkFeeds.length
+        ? null
+        : multicall(
+            this.provider,
+            chainlinkFeeds.map((feed) => {
+              return {
+                reference: feed,
+                contractAddress: feed,
+                abi: this.profile.getAbi('Chainlink'),
+                calls: [
+                  {
+                    reference: 'description',
+                    methodName: 'description',
+                    methodParameters: [],
+                  },
+                ],
+                context: (callsReturnContext: CallReturnContext[]) => {
+                  for (const ret of callsReturnContext) {
+                    const [baseSymbol, quoteSymbol] = ret.returnValues[0].split(' / ')
+                    const token0 = {
+                      address: '',
+                      symbol: baseSymbol,
+                      name: baseSymbol,
+                      decimals: 0,
+                      reserve: bn(0),
+                    }
+                    const token1 = {
+                      address: '',
+                      symbol: quoteSymbol,
+                      name: quoteSymbol,
+                      decimals: 0,
+                      reserve: bn(0),
+                    }
+                    pairsInfo[feed] = {
+                      token0,
+                      token1,
+                    }
+                  }
+                },
               }
-            }
-          }
-        }
-        ),
-        true,
-      )
-      const uniPairs = Object.values(poolGroups).filter((p:any) => isUniv3(p)).map((pg: { pairAddress: string }) => pg.pairAddress)
+            }),
+            true,
+          )
+      const uniPairs = Object.values(poolGroups)
+        .filter((p: any) => isUniv3(p))
+        .map((pg: { pairAddress: string }) => pg.pairAddress)
       if (!uniPairs.length) {
         const uniPairsInfo = await this.UNIV3PAIR.getPairsInfo({ pairAddresses: uniPairs })
         Object.assign(pairsInfo, uniPairsInfo)
@@ -1288,13 +1298,19 @@ export class Resource {
       if (maxPremiumRate > 0) {
         if (rA.gt(rB)) {
           const rDiff = rA.sub(rB)
-          const givingRate = rDiff.mul(Math.round(this.unit * maxPremiumRate)).mul(rA.add(rB)).div(R)
+          const givingRate = rDiff
+            .mul(Math.round(this.unit * maxPremiumRate))
+            .mul(rA.add(rB))
+            .div(R)
           sides[A].premium = numDiv(givingRate.div(rA), this.unit)
           sides[B].premium = -numDiv(givingRate.div(rB), this.unit)
           sides[C].premium = 0
         } else if (rB.gt(rA)) {
           const rDiff = rB.sub(rA)
-          const givingRate = rDiff.mul(Math.round(this.unit * maxPremiumRate)).mul(rA.add(rB)).div(R)
+          const givingRate = rDiff
+            .mul(Math.round(this.unit * maxPremiumRate))
+            .mul(rA.add(rB))
+            .div(R)
           sides[B].premium = numDiv(givingRate.div(rB), this.unit)
           sides[A].premium = -numDiv(givingRate.div(rA), this.unit)
           sides[C].premium = 0
@@ -1362,16 +1378,18 @@ export class Resource {
 
   parseDdlLogs(ddlLogs: any): Array<LogType> {
     const eventInterface = new ethers.utils.Interface(this.profile.getAbi('Events'))
-    return ddlLogs.map((log: any) => {
-      const parsedLog = tryParseLog(log, [eventInterface])
-      if (!parsedLog) {
-        return undefined
-      }
-      return {
-        ...log,
-        ...parsedLog,
-      }
-    }).filter((log: any) => log != null)
+    return ddlLogs
+      .map((log: any) => {
+        const parsedLog = tryParseLog(log, [eventInterface])
+        if (!parsedLog) {
+          return undefined
+        }
+        return {
+          ...log,
+          ...parsedLog,
+        }
+      })
+      .filter((log: any) => log != null)
   }
 
   _tokenInRoutes(): Array<string> {

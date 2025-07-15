@@ -17,11 +17,11 @@ export function Interceptor() {
   this.responses = {}
 
   this.setContext = (context: string) => {
-    this.context = (context ?? '').replace(/\s/g, "_");
+    this.context = (context ?? '').replace(/\s/g, '_')
   }
 
   this.orphanedRequests = (): any => {
-    const requests = {...this.requests}
+    const requests = { ...this.requests }
     for (const requestId of Object.keys(this.responses)) {
       delete requests[requestId]
     }
@@ -106,7 +106,7 @@ export function Interceptor() {
         resourceData.body = await response.clone().json()
       } catch (err) {
         if (err.message.includes('in JSON at position')) {
-          resourceData.body = await fetch(request.url).then(r => r.json())
+          resourceData.body = await fetch(request.url).then((r) => r.json())
         } else {
           console.log(err)
         }
@@ -118,7 +118,6 @@ export function Interceptor() {
       }
     } catch (err) {
       console.log(err, request, response)
-      return
     }
   })
 }

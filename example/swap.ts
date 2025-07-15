@@ -1,9 +1,9 @@
-import {Engine} from '../src/engine'
-import {bn, numberToWei, packId} from '../src/utils/helper'
-import {getTestConfigs} from './shared/testConfigs'
-import {NATIVE_ADDRESS, POOL_IDS} from '../src/utils/constant'
+import { Engine } from '../src/engine'
+import { bn, numberToWei, packId } from '../src/utils/helper'
+import { getTestConfigs } from './shared/testConfigs'
+import { NATIVE_ADDRESS, POOL_IDS } from '../src/utils/constant'
 import TokenAbi from '../src/abi/Token.json'
-import {ethers} from "ethers";
+import { ethers } from 'ethers'
 
 const testLocal = async () => {
   const configs = getTestConfigs(56)
@@ -19,7 +19,7 @@ const testLocal = async () => {
   const poolOut = currentPool.poolAddress
   const provider = new ethers.providers.JsonRpcProvider(engine.profile.configs.rpc)
   // @ts-ignore
-  const tokenContract = new ethers.Contract( engine.profile.configs.derivable.token, TokenAbi, provider)
+  const tokenContract = new ethers.Contract(engine.profile.configs.derivable.token, TokenAbi, provider)
   const currentBalanceOut = await tokenContract.balanceOf(configs.account, packId(POOL_IDS.C.toString(), poolOut))
   const steps = [
     {
@@ -28,7 +28,7 @@ const testLocal = async () => {
       tokenOut: poolOut + '-' + POOL_IDS.C,
       amountOutMin: 0,
       currentBalanceOut,
-      useSweep: true
+      useSweep: true,
     },
   ]
 

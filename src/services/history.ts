@@ -171,7 +171,7 @@ export class History {
         }
       }
 
-      Object.keys(positions).map(posKey => {
+      Object.keys(positions).map((posKey) => {
         if (positions[posKey].balanceForPrice.lte(0) || positions[posKey].balanceForPriceR.lte(0)) {
           delete positions[posKey]
         }
@@ -207,7 +207,7 @@ export class History {
         let entryValue
         let entryPrice
         // Note: aggregator's poolIn can be a different token (not native nor TOKEN_R)
-        const pool = [POOL_IDS.R, POOL_IDS.native].includes(sideIn.toNumber()) ? (pools[poolIn] ?? pools[poolOut]) : pools[poolOut]
+        const pool = [POOL_IDS.R, POOL_IDS.native].includes(sideIn.toNumber()) ? pools[poolIn] ?? pools[poolOut] : pools[poolOut]
         const { TOKEN_R, baseToken, quoteToken } = pool
         const {
           derivable: { playToken },

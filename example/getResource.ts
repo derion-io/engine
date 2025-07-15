@@ -1,6 +1,6 @@
 import { Engine } from '../src/engine'
 import { getTestConfigs } from './shared/testConfigs'
-import {LOCALSTORAGE_KEY} from "../src/utils/constant";
+import { LOCALSTORAGE_KEY } from '../src/utils/constant'
 
 const chainId = 42161
 const wallet = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
