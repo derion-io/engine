@@ -29,6 +29,7 @@
     "@zoltu/ethereum-fetch-json-rpc": "^13.1.4",
     "@zoltu/ethereum-types": "^9.0.4",
     "@zoltu/rlp-encoder": "^2.0.6",
+    "derion-sdk": "https://github.com/derion-io/sdk.git#build",
     "assisted-json-rpc-provider": "https://github.com/derion-io/AssistedJsonRpcProvider.git",
     "canonical-weth": "^1.4.0",
     "dotenv": "^16.3.1",

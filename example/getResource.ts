@@ -1,9 +1,10 @@
 import { Engine } from '../src/engine'
 import { getTestConfigs } from './shared/testConfigs'
 import { LOCALSTORAGE_KEY } from '../src/utils/constant'
+import { DerionSDK } from 'derion-sdk'
 
 const chainId = 42161
-const wallet = '0xE61383556642AF1Bd7c5756b13f19A63Dc8601df'
+const wallet = '0x0DbCa96184eEd4C6a1291403c93311ebE6646785'
 const pool = '0x3119808c056f2d4bd430046690b03a5ecf46d5cf'
 
 const testLocal = async () => {
@@ -29,6 +30,19 @@ const testLocal = async () => {
       swapLogs: newResource.swapLogs,
     }),
   )
+
+  const sdk = new DerionSDK({ chainId })
+  await sdk.init()
+  const stateLoader = sdk.getStateLoader(configs.rpcUrl)
+  console.log('=========== stateLoader')
+  console.log(stateLoader)
+
+  const txLogs = newResource.allLogs
+  const { poolAddresses } = sdk.extractLogs([txLogs])
+
+  console.log('=========== poolAddresses')
+  console.log(poolAddresses)
+
   // console.log(whitelistResource)
   // await engine.RESOURCE.loadPoolStates('0xBb8b02f3a4C3598e6830FC6740F57af3a03e2c96')
   // await engine.RESOURCE.searchIndex("PENDLE")
