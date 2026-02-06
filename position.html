@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Derion - Close Position</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; display: flex; justify-content: center; padding: 40px 16px; }
+  .container { max-width: 440px; width: 100%; }
+  h1 { font-size: 20px; margin-bottom: 24px; text-align: center; color: #58a6ff; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  label { display: block; font-size: 13px; color: #8b949e; margin-bottom: 6px; }
+  input, select { width: 100%; padding: 10px 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #e6edf3; font-size: 15px; outline: none; }
+  input:focus, select:focus { border-color: #58a6ff; }
+  select { cursor: pointer; appearance: auto; }
+  .btn { width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-blue { background: #1f6feb; color: #fff; }
+  .btn-green { background: #238636; color: #fff; }
+  .btn-orange { background: #d29922; color: #fff; }
+  .row { display: flex; gap: 8px; align-items: flex-end; }
+  .row > * { flex: 1; }
+  .amount-row { display: flex; gap: 8px; align-items: flex-end; }
+  .amount-row .input-wrap { flex: 1; }
+  .amount-row .btn-max { flex: 0 0 auto; padding: 10px 14px; font-size: 13px; border-radius: 8px; margin-bottom: 0; width: auto; }
+  .info { font-size: 14px; color: #8b949e; padding: 8px 0; }
+  .info span { color: #e6edf3; float: right; font-family: monospace; }
+  .info + .info { border-top: 1px solid #21262d; }
+  .status { margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 13px; word-break: break-all; }
+  .status.error { background: #3d1117; border: 1px solid #f85149; color: #f85149; }
+  .status.success { background: #0d2818; border: 1px solid #238636; color: #3fb950; }
+  .status.pending { background: #1c1d1f; border: 1px solid #d29922; color: #d29922; }
+  .status a { color: inherit; }
+  .side-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .side-tab { flex: 1; padding: 8px; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; color: #8b949e; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; transition: all .15s; }
+  .side-tab:hover { border-color: #58a6ff; }
+  .side-tab.active-A { background: #0e4429; border-color: #238636; color: #3fb950; }
+  .side-tab.active-B { background: #3d1117; border-color: #f85149; color: #f85149; }
+  .side-tab.active-C { background: #1c1d3b; border-color: #8957e5; color: #a371f7; }
+  .hidden { display: none; }
+  .est-out { margin-top: 12px; padding: 12px; background: #0d1117; border-radius: 8px; border: 1px solid #30363d; }
+  .est-out .label { font-size: 12px; color: #8b949e; }
+  .est-out .value { font-size: 20px; font-weight: 600; color: #e6edf3; font-family: monospace; margin-top: 4px; }
+  .est-out .sub { font-size: 12px; color: #8b949e; font-family: monospace; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Derion - Close Position</h1>
+
+  <!-- Connect Wallet -->
+  <div class="card">
+    <button id="connectBtn" class="btn btn-blue" onclick="connectWallet()">Connect Wallet</button>
+    <div id="walletInfo" class="hidden">
+      <div class="info">Account <span id="accountDisplay"></span></div>
+      <div class="info">Network <span id="networkDisplay"></span></div>
+    </div>
+  </div>
+
+  <!-- Pool Address -->
+  <div class="card">
+    <label for="poolInput">Pool Address</label>
+    <div class="row">
+      <input id="poolInput" value="0xF29F4471A263945424D59a99953044D029663C51" spellcheck="false">
+      <button class="btn btn-blue" style="width:auto;padding:10px 16px;font-size:13px" onclick="loadPool()">Load</button>
+    </div>
+  </div>
+
+  <!-- Pool Info -->
+  <div id="poolCard" class="card hidden">
+    <div class="info">TOKEN_R <span id="tokenRDisplay"></span></div>
+    <div class="info">Leverage (K) <span id="kDisplay"></span></div>
+    <div class="info">Total Reserve (R) <span id="reserveDisplay"></span></div>
+
+    <!-- Side Selection -->
+    <label style="margin-top:14px">Position Side</label>
+    <div class="side-tabs">
+      <div class="side-tab" data-side="A" onclick="selectSide('A')">Long (A)</div>
+      <div class="side-tab" data-side="B" onclick="selectSide('B')">Short (B)</div>
+      <div class="side-tab" data-side="C" onclick="selectSide('C')">LP (C)</div>
+    </div>
+
+    <div class="info">Your Balance <span id="balanceDisplay">-</span></div>
+    <div class="info">Total Supply <span id="supplyDisplay">-</span></div>
+    <div class="info">Side Reserve <span id="sideReserveDisplay">-</span></div>
+
+    <!-- Amount Input -->
+    <label style="margin-top:14px">Amount to Close</label>
+    <div class="amount-row">
+      <div class="input-wrap">
+        <input id="amountInput" type="text" placeholder="0.0" oninput="onAmountChange()">
+      </div>
+      <button class="btn btn-orange btn-max" onclick="fillMax()">MAX</button>
+    </div>
+
+    <!-- Estimated Output -->
+    <div class="est-out">
+      <div class="label">Estimated TOKEN_R Out</div>
+      <div class="value" id="estOut">-</div>
+      <div class="sub" id="estOutSub"></div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div id="actionCard" class="card hidden">
+    <button id="approveBtn" class="btn btn-orange hidden" onclick="approveToken()">Approve Token Transfer</button>
+    <button id="closeBtn" class="btn btn-green" onclick="closePosition()" disabled>Close Position</button>
+  </div>
+
+  <!-- Status -->
+  <div id="statusBox" class="hidden"></div>
+</div>
+
+<script>
+// ============================================================
+// Constants
+// ============================================================
+const ARBITRUM_CHAIN_ID = 42161;
+const SIDE = { A: 0x10, B: 0x20, C: 0x30, R: 0x00 };
+const SIDE_LABELS = { A: 'Long (A)', B: 'Short (B)', C: 'LP (C)' };
+const PAYMENT = 0;
+
+// Arbitrum contract addresses
+const ADDR = {
+  UTR:    '0x8Bd6072372189A12A2889a56b6ec982fD02b0B87',
+  HELPER: '0x3be9E00cF66c3ceb129F88172B08888651948D09',
+  TOKEN:  '0x0819281c74BeD5423C1B3283808F8E26AAd18DBe',
+  WETH:   '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+  INDEX_R_POOL: '0xC31E54c7a869B9FcBEcc14363CF510d1c41fa443',
+};
+
+// Minimal ABIs (JSON format for reliable tuple decoding)
+const ABI = {
+  Pool: [
+    {"inputs":[],"name":"loadConfig","outputs":[{"components":[{"name":"FETCHER","type":"address"},{"name":"ORACLE","type":"bytes32"},{"name":"TOKEN_R","type":"address"},{"name":"K","type":"uint256"},{"name":"MARK","type":"uint256"},{"name":"INTEREST_HL","type":"uint256"},{"name":"PREMIUM_HL","type":"uint256"},{"name":"MATURITY","type":"uint256"},{"name":"MATURITY_VEST","type":"uint256"},{"name":"MATURITY_RATE","type":"uint256"},{"name":"OPEN_RATE","type":"uint256"}],"name":"config","type":"tuple"}],"stateMutability":"pure","type":"function"},
+    {"inputs":[],"name":"getStates","outputs":[{"name":"R","type":"uint256"},{"name":"a","type":"uint256"},{"name":"b","type":"uint256"},{"name":"i","type":"uint32"},{"name":"f","type":"uint32"}],"stateMutability":"view","type":"function"},
+  ],
+  Token: [
+    'function balanceOf(address account, uint256 id) view returns (uint256)',
+    'function totalSupply(uint256 id) view returns (uint256)',
+    'function isApprovedForAll(address account, address operator) view returns (bool)',
+    'function setApprovalForAll(address operator, bool approved)',
+  ],
+  ERC20: [
+    'function symbol() view returns (string)',
+    'function decimals() view returns (uint8)',
+  ],
+  Helper: [
+    {"inputs":[{"components":[{"name":"sideIn","type":"uint256"},{"name":"poolIn","type":"address"},{"name":"sideOut","type":"uint256"},{"name":"poolOut","type":"address"},{"name":"amountIn","type":"uint256"},{"name":"payer","type":"bytes"},{"name":"recipient","type":"address"},{"name":"INDEX_R","type":"uint256"}],"name":"params","type":"tuple"}],"name":"swap","outputs":[{"name":"amountOut","type":"uint256"}],"stateMutability":"payable","type":"function"},
+  ],
+  UTR: [
+    {"inputs":[{"components":[{"name":"recipient","type":"address"},{"name":"eip","type":"uint256"},{"name":"token","type":"address"},{"name":"id","type":"uint256"},{"name":"amountOutMin","type":"uint256"}],"name":"outputs","type":"tuple[]"},{"components":[{"components":[{"name":"mode","type":"uint256"},{"name":"recipient","type":"address"},{"name":"eip","type":"uint256"},{"name":"token","type":"address"},{"name":"id","type":"uint256"},{"name":"amountIn","type":"uint256"}],"name":"inputs","type":"tuple[]"},{"name":"code","type":"address"},{"name":"data","type":"bytes"}],"name":"actions","type":"tuple[]"}],"name":"exec","outputs":[],"stateMutability":"payable","type":"function"},
+  ],
+};
+
+// ============================================================
+// State
+// ============================================================
+let provider, signer, account;
+let poolAddress, poolContract, tokenContract;
+let poolConfig, poolStates, tokenRSymbol, tokenRDecimals;
+let selectedSide = 'C';
+let userBalance = ethers.BigNumber.from(0);
+let totalSupplyVal = ethers.BigNumber.from(0);
+let sideReserve = ethers.BigNumber.from(0);
+let totalReserve = ethers.BigNumber.from(0);
+
+// ============================================================
+// Helpers
+// ============================================================
+function packId(side, pool) {
+  return ethers.BigNumber.from(side).shl(160).add(pool);
+}
+
+function fmt(bn, decimals = 18) {
+  return ethers.utils.formatUnits(bn, decimals);
+}
+
+function showStatus(msg, type = 'pending') {
+  const box = document.getElementById('statusBox');
+  box.className = 'status ' + type;
+  box.innerHTML = msg;
+  box.classList.remove('hidden');
+}
+
+function hideStatus() {
+  document.getElementById('statusBox').classList.add('hidden');
+}
+
+// ============================================================
+// Wallet Connection
+// ============================================================
+async function connectWallet() {
+  if (!window.ethereum) { alert('No wallet found. Install MetaMask or Rabby.'); return; }
+  try {
+    provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+    const accounts = await provider.send('eth_requestAccounts', []);
+    account = accounts[0];
+    signer = provider.getSigner();
+
+    const network = await provider.getNetwork();
+    if (network.chainId !== ARBITRUM_CHAIN_ID) {
+      try {
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xa4b1' }] });
+        provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+        signer = provider.getSigner();
+      } catch (e) {
+        showStatus('Please switch to Arbitrum (chain 42161) manually.', 'error');
+        return;
+      }
+    }
+
+    document.getElementById('connectBtn').classList.add('hidden');
+    document.getElementById('walletInfo').classList.remove('hidden');
+    document.getElementById('accountDisplay').textContent = account.slice(0, 6) + '...' + account.slice(-4);
+    document.getElementById('networkDisplay').textContent = 'Arbitrum One';
+
+    // Listen for account/chain changes
+    window.ethereum.on('accountsChanged', (accs) => { account = accs[0]; location.reload(); });
+    window.ethereum.on('chainChanged', () => location.reload());
+
+    hideStatus();
+  } catch (e) {
+    showStatus('Connection failed: ' + e.message, 'error');
+  }
+}
+
+// ============================================================
+// Load Pool
+// ============================================================
+async function loadPool() {
+  if (!signer) { showStatus('Connect wallet first.', 'error'); return; }
+  poolAddress = document.getElementById('poolInput').value.trim();
+  if (!ethers.utils.isAddress(poolAddress)) { showStatus('Invalid pool address.', 'error'); return; }
+
+  showStatus('Loading pool data...');
+  try {
+    poolContract = new ethers.Contract(poolAddress, ABI.Pool, provider);
+    tokenContract = new ethers.Contract(ADDR.TOKEN, ABI.Token, provider);
+
+    const [config, states] = await Promise.all([
+      poolContract.loadConfig(),
+      poolContract.getStates(),
+    ]);
+    poolConfig = config;
+    poolStates = states;
+    totalReserve = states.R;
+
+    // Load TOKEN_R info
+    const tokenR = new ethers.Contract(poolConfig.TOKEN_R, ABI.ERC20, provider);
+    const [sym, dec] = await Promise.all([tokenR.symbol(), tokenR.decimals()]);
+    tokenRSymbol = sym;
+    tokenRDecimals = dec;
+
+    // Display pool info
+    document.getElementById('tokenRDisplay').textContent = tokenRSymbol + ' (' + poolConfig.TOKEN_R.slice(0, 6) + '...' + poolConfig.TOKEN_R.slice(-4) + ')';
+    document.getElementById('kDisplay').textContent = poolConfig.K.toString();
+    document.getElementById('reserveDisplay').textContent = fmt(totalReserve, tokenRDecimals) + ' ' + tokenRSymbol;
+
+    document.getElementById('poolCard').classList.remove('hidden');
+    document.getElementById('actionCard').classList.remove('hidden');
+
+    // Default to side C
+    selectSide(selectedSide);
+    hideStatus();
+  } catch (e) {
+    showStatus('Failed to load pool: ' + e.message, 'error');
+  }
+}
+
+// ============================================================
+// Side Selection
+// ============================================================
+async function selectSide(side) {
+  selectedSide = side;
+
+  // Update tabs
+  document.querySelectorAll('.side-tab').forEach(tab => {
+    tab.className = 'side-tab' + (tab.dataset.side === side ? ' active-' + side : '');
+  });
+
+  if (!poolContract) return;
+
+  const tokenId = packId(SIDE[side], poolAddress);
+  showStatus('Loading ' + SIDE_LABELS[side] + ' data...');
+
+  try {
+    const [bal, supply] = await Promise.all([
+      tokenContract.balanceOf(account, tokenId),
+      tokenContract.totalSupply(tokenId),
+    ]);
+    userBalance = bal;
+    totalSupplyVal = supply;
+
+    // Estimate side reserve: rSide = R * supply_side_share
+    // Simple approximation: use raw pool states to compute reserve per side
+    // For a more accurate estimate we compute proportionally from total reserve
+    // The on-chain getStates gives us R, a, b but not rA, rB, rC directly
+    // We use the approximation that closing returns proportional reserve
+    sideReserve = totalSupplyVal.gt(0) ? totalReserve : ethers.BigNumber.from(0);
+
+    document.getElementById('balanceDisplay').textContent = ethers.utils.formatUnits(userBalance, 18) + ' tokens';
+    document.getElementById('supplyDisplay').textContent = fmt(totalSupplyVal, 18) + ' tokens';
+    document.getElementById('sideReserveDisplay').textContent = fmt(totalReserve, tokenRDecimals) + ' ' + tokenRSymbol + ' (total)';
+
+    // Update amount and estimate
+    onAmountChange();
+    await checkApproval();
+    hideStatus();
+  } catch (e) {
+    showStatus('Failed to load side data: ' + e.message, 'error');
+  }
+}
+
+// ============================================================
+// Amount / Estimation
+// ============================================================
+function fillMax() {
+  if (userBalance.gt(0)) {
+    document.getElementById('amountInput').value = ethers.utils.formatUnits(userBalance, 18);
+    onAmountChange();
+  }
+}
+
+function onAmountChange() {
+  const raw = document.getElementById('amountInput').value.trim();
+  const closeBtn = document.getElementById('closeBtn');
+
+  if (!raw || !poolConfig) {
+    document.getElementById('estOut').textContent = '-';
+    document.getElementById('estOutSub').textContent = '';
+    closeBtn.disabled = true;
+    return;
+  }
+
+  try {
+    const amountIn = ethers.utils.parseUnits(raw, 18);
+    if (amountIn.lte(0) || amountIn.gt(userBalance)) {
+      document.getElementById('estOut').textContent = amountIn.gt(userBalance) ? 'Exceeds balance' : '-';
+      document.getElementById('estOutSub').textContent = '';
+      closeBtn.disabled = true;
+      return;
+    }
+
+    // Proportional estimate: amountOut ~ amountIn / totalSupply * totalReserve
+    // This is approximate; actual output depends on on-chain swap logic
+    if (totalSupplyVal.gt(0)) {
+      const estAmount = amountIn.mul(totalReserve).div(totalSupplyVal);
+      document.getElementById('estOut').textContent = fmt(estAmount, tokenRDecimals) + ' ' + tokenRSymbol;
+      document.getElementById('estOutSub').textContent = '(approximate - actual may differ due to fees & slippage)';
+    } else {
+      document.getElementById('estOut').textContent = '0';
+      document.getElementById('estOutSub').textContent = '';
+    }
+
+    closeBtn.disabled = false;
+  } catch (e) {
+    document.getElementById('estOut').textContent = 'Invalid amount';
+    document.getElementById('estOutSub').textContent = '';
+    closeBtn.disabled = true;
+  }
+}
+
+// ============================================================
+// Approval
+// ============================================================
+async function checkApproval() {
+  if (!account || !tokenContract) return;
+  const approved = await tokenContract.isApprovedForAll(account, ADDR.UTR);
+  const btn = document.getElementById('approveBtn');
+  if (approved) {
+    btn.classList.add('hidden');
+  } else {
+    btn.classList.remove('hidden');
+  }
+}
+
+async function approveToken() {
+  showStatus('Requesting approval...');
+  try {
+    const tx = await tokenContract.connect(signer).setApprovalForAll(ADDR.UTR, true);
+    showStatus('Approval tx sent: <a href="https://arbiscan.io/tx/' + tx.hash + '" target="_blank">' + tx.hash.slice(0, 14) + '...</a>', 'pending');
+    await tx.wait(1);
+    showStatus('Approved!', 'success');
+    document.getElementById('approveBtn').classList.add('hidden');
+  } catch (e) {
+    showStatus('Approval failed: ' + (e.reason || e.message), 'error');
+  }
+}
+
+// ============================================================
+// Close Position
+// ============================================================
+async function closePosition() {
+  if (!signer || !poolConfig) return;
+
+  const raw = document.getElementById('amountInput').value.trim();
+  const amountIn = ethers.utils.parseUnits(raw, 18);
+  if (amountIn.lte(0)) return;
+
+  showStatus('Building transaction...');
+  try {
+    // Build INDEX_R
+    // For WETH on Arbitrum: route pool 0xC31E54c7a869B9FcBEcc14363CF510d1c41fa443
+    // WETH < USDC alphabetically, so quoteTokenIndex = 1
+    // INDEX_R = (1 << 255) | routePoolAddress
+    const INDEX_R = ethers.BigNumber.from(1).shl(255).add(ADDR.INDEX_R_POOL);
+
+    const sideVal = SIDE[selectedSide];
+    const tokenId = packId(sideVal, poolAddress);
+
+    // Encode Helper.swap calldata
+    const helperIface = new ethers.utils.Interface(ABI.Helper);
+    const swapData = helperIface.encodeFunctionData('swap', [{
+      sideIn:    sideVal,
+      poolIn:    poolAddress,
+      sideOut:   SIDE.R,
+      poolOut:   poolAddress,
+      amountIn:  amountIn,
+      payer:     account,
+      recipient: account,
+      INDEX_R:   INDEX_R,
+    }]);
+
+    // Estimate output and set 1% slippage
+    let amountOutMin = ethers.BigNumber.from(0);
+    if (totalSupplyVal.gt(0)) {
+      const estOut = amountIn.mul(totalReserve).div(totalSupplyVal);
+      amountOutMin = estOut.mul(99).div(100);
+    }
+
+    // Build UTR.exec params
+    const outputs = [{
+      recipient:    account,
+      eip:          20,
+      token:        poolConfig.TOKEN_R,
+      id:           0,
+      amountOutMin: amountOutMin,
+    }];
+
+    const actions = [{
+      inputs: [{
+        mode:      PAYMENT,
+        recipient: poolAddress,
+        eip:       1155,
+        token:     ADDR.TOKEN,
+        id:        tokenId,
+        amountIn:  amountIn,
+      }],
+      code: ADDR.HELPER,
+      data: swapData,
+    }];
+
+    // Send transaction
+    const utrIface = new ethers.utils.Interface(ABI.UTR);
+    const calldata = utrIface.encodeFunctionData('exec', [outputs, actions]);
+
+    showStatus('Confirm in your wallet...');
+    const tx = await signer.sendTransaction({
+      to: ADDR.UTR,
+      data: calldata,
+      value: 0,
+    });
+
+    showStatus('Transaction sent: <a href="https://arbiscan.io/tx/' + tx.hash + '" target="_blank">' + tx.hash.slice(0, 14) + '...</a><br>Waiting for confirmation...', 'pending');
+    const receipt = await tx.wait(1);
+
+    if (receipt.status === 1) {
+      showStatus('Position closed! <a href="https://arbiscan.io/tx/' + tx.hash + '" target="_blank">View on Arbiscan</a>', 'success');
+      // Refresh balances
+      selectSide(selectedSide);
+    } else {
+      showStatus('Transaction reverted. <a href="https://arbiscan.io/tx/' + tx.hash + '" target="_blank">View on Arbiscan</a>', 'error');
+    }
+  } catch (e) {
+    const msg = e.reason || e.data?.message || e.message || 'Unknown error';
+    showStatus('Transaction failed: ' + msg, 'error');
+  }
+}
+</script>
+</body>
+</html>
