@@ -1234,55 +1234,36 @@ export class Resource {
   }
 
   calcPoolInfo(pool: PoolType): CalcPoolInfoReturnType {
-    const { MARK, states, FETCHER } = pool
-    const { R, rA, rB, rC, a, b, spot } = states
-    const exp = this.profile.getExp(FETCHER)
-    const k = pool.k.toNumber()
-
-    // Engine-specific risk metrics not in SDK
-    const riskFactor = rC.gt(0) ? div(rA.sub(rB), rC) : '0'
-    const deleverageRiskA = R.isZero()
-      ? 0
-      : rA
-          .mul(2 * this.unit)
-          .div(R)
-          .toNumber() / this.unit
-    const deleverageRiskB = R.isZero()
-      ? 0
-      : rB
-          .mul(2 * this.unit)
-          .div(R)
-          .toNumber() / this.unit
+    const { states } = pool
+    const { R, rA, rB, rC } = states
 
     // Convert engine PoolType → SDK Pool format
     const sdkPool: Pool = {
       address: pool.poolAddress,
       config: {
-        FETCHER,
+        FETCHER: pool.FETCHER,
         ORACLE: pool.ORACLE,
         TOKEN_R: pool.TOKEN_R,
-        K: k,
-        MARK,
+        K: pool.k.toNumber(),
+        MARK: pool.MARK,
         INTEREST_HL: pool.INTEREST_HL.toNumber(),
         PREMIUM_HL: pool.PREMIUM_HL.toNumber(),
         OPEN_RATE: pool.OPEN_RATE,
         R_DT: 0,
-        exp,
+        exp: this.profile.getExp(pool.FETCHER),
       },
-      state: { R, a, b },
-      view: { sA: states.sA, sB: states.sB, sC: states.sC, rA, rB, rC, twap: states.twap, spot },
+      state: { R, a: states.a, b: states.b },
+      view: { sA: states.sA, sB: states.sB, sC: states.sC, rA, rB, rC, twap: states.twap, spot: states.spot },
     }
 
     const { sides, interestRate, maxPremiumRate } = sdkCalcPoolInfo(sdkPool)
 
-    return {
-      sides,
-      riskFactor,
-      deleverageRiskA,
-      deleverageRiskB,
-      interestRate,
-      maxPremiumRate,
-    }
+    // Engine-specific risk metrics consumed by engine clients
+    const riskFactor = rC.gt(0) ? div(rA.sub(rB), rC) : '0'
+    const deleverageRiskA = R.isZero() ? 0 : rA.mul(2 * this.unit).div(R).toNumber() / this.unit
+    const deleverageRiskB = R.isZero() ? 0 : rB.mul(2 * this.unit).div(R).toNumber() / this.unit
+
+    return { sides, riskFactor, deleverageRiskA, deleverageRiskB, interestRate, maxPremiumRate }
   }
 
   getRdc(pools: any): GetRDCReturnType {
