@@ -14,7 +14,7 @@ import {CallReturnContext} from 'ethereum-multicall'
 import INONFUNGIBLE_POSITION_MANAGER from '../abi/NonfungiblePositionManager.json'
 import Events721Abi from '../abi/Events721.json'
 import IUniswapV3PoolABI from '../abi/IUniswapV3PoolABI.json'
-import { packPosId } from 'derion-sdk'
+import { packPosId } from '@derion/sdk'
 
 const TOPICS = getTopics()
 

@@ -1,4 +1,4 @@
-import { Profile as SdkProfile } from 'derion-sdk'
+import { Profile as SdkProfile } from '@derion/sdk'
 import { IEngineConfig, INetworkConfig } from './utils/configs'
 import { EventDataAbis } from './utils/constant'
 import BnA from './abi/BnA.json'

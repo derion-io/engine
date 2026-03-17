@@ -2,10 +2,10 @@ import { Storage } from '../types'
 import { ethers } from 'ethers'
 
 // Re-export shared config types from SDK
-export type { DerionConfigs, IHelperContract, IDerivableContractAddress } from 'derion-sdk/type'
+export type { DerionConfigs, IHelperContract, IDerivableContractAddress } from '@derion/sdk/type'
 
 // Engine uses DerionConfigs as INetworkConfig (with engine-specific additions)
-import type { DerionConfigs } from 'derion-sdk/type'
+import type { DerionConfigs } from '@derion/sdk/type'
 
 export interface INetworkConfig extends DerionConfigs {
   // Engine-specific fields not in SDK's DerionConfigs

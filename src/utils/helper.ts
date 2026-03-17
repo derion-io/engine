@@ -1,5 +1,5 @@
 // Re-export from SDK utils
-export { bn, isPosId, packPosId, unpackPosId, sideFromToken, addressFromToken } from 'derion-sdk'
+export { bn, isPosId, packPosId, unpackPosId, sideFromToken, addressFromToken } from '@derion/sdk'
 
 // Re-export from SDK helper
 export {
@@ -31,11 +31,11 @@ export {
   DIV,
   compareLog,
   mergeTwoUniqSortedLogs,
-} from 'derion-sdk/utils/helper'
+} from '@derion/sdk/utils/helper'
 
 // Engine-only utilities
 import { BigNumber, ethers } from 'ethers'
-import { weiToNumber, numberToWei, formatFloat } from 'derion-sdk/utils/helper'
+import { weiToNumber, numberToWei, formatFloat } from '@derion/sdk/utils/helper'
 import { LogType, PoolType, TokenType } from '../types'
 import EventsAbi from '../abi/Events.json'
 import { FeeAmount, POOL_INIT_CODE_HASH, ZERO_ADDRESS } from './constant'
@@ -146,4 +146,4 @@ export function oracleWindow(ORACLE: string): number {
 }
 
 // Re-export route utilities from SDK
-export { getSingleRouteToUSD, getIndexR } from 'derion-sdk/utils/routes'
+export { getSingleRouteToUSD, getIndexR } from '@derion/sdk/utils/routes'

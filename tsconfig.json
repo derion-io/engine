@@ -21,8 +21,8 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "derion-sdk": ["../sdk/src"],
-      "derion-sdk/*": ["../sdk/src/*"]
+      "@derion/sdk": ["../sdk/src"],
+      "@derion/sdk/*": ["../sdk/src/*"]
     },
     "types": ["jest"]
   },

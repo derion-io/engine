@@ -3,7 +3,11 @@
   "compilerOptions": {
     "rootDir": "src",
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "paths": {
+      "@derion/sdk": ["../sdk/dist"],
+      "@derion/sdk/*": ["../sdk/dist/*"]
+    }
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "test", "example"]

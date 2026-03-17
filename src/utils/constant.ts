@@ -12,7 +12,7 @@ export {
   PARA_DATA_BASE_URL,
   PARA_VERSION,
   PARA_BUILD_TX_BASE_URL,
-} from 'derion-sdk/utils/constant'
+} from '@derion/sdk/utils/constant'
 
 // Engine-only constants
 export const POOL_INIT_CODE_HASH = '0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54'

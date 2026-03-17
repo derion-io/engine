@@ -1,13 +1,13 @@
 import { BigNumber } from 'ethers'
 
 // Re-export shared types from SDK
-export type { LogType } from 'derion-sdk'
+export type { LogType } from '@derion/sdk'
 export type {
   SwapStepType,
   PendingSwapTransactionType,
   SwapAndOpenAggregatorType,
-} from 'derion-sdk'
-export { type rateDataAggregatorType } from 'derion-sdk/swapper'
+} from '@derion/sdk'
+export { type rateDataAggregatorType } from '@derion/sdk/swapper'
 
 // Engine-only types
 export type Storage = {
