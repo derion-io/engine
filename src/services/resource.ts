@@ -2,7 +2,7 @@ import { BigNumber, Contract, ethers } from 'ethers'
 import { LOCALSTORAGE_KEY, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
 import { CallReturnContext, ContractCallContext, Multicall } from 'ethereum-multicall'
 import { LogType, PoolGroupsType, PoolsType, PoolType, Storage, TokenType } from '../types'
-import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, parsePrice, mergeTwoUniqSortedLogs, tryParseLog, oracleWindow, isUniv3, isChainlink, getSingleRouteToUSD } from '../utils/helper'
+import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, parsePrice, mergeTwoUniqSortedLogs, tryParseLog, oracleWindow, isUniv3, isChainlink } from '../utils/helper'
 import { calcPoolInfo as sdkCalcPoolInfo } from 'derion-sdk'
 import type { Pool } from 'derion-sdk/type'
 import { JsonRpcProvider } from '@ethersproject/providers'
@@ -42,8 +42,6 @@ export type GetPoolGroupIdParameterType = {
   tokenR: string
 }
 
-// SingleRouteToUSDReturnType re-exported from helper
-export type { SingleRouteToUSDReturnType } from '../utils/helper'
 
 export type GetPriceReturnType = {
   poolAddress: string

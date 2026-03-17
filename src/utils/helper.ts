@@ -145,47 +145,5 @@ export function oracleWindow(ORACLE: string): number {
   return parseInt(ORACLE.substring(10, 18), 16)
 }
 
-export type SingleRouteToUSDReturnType = {
-  quoteTokenIndex: number
-  stablecoin: string
-  address: string
-}
-
-export function getSingleRouteToUSD(
-  profile: { routes: any; configs: { stablecoins: string[] } },
-  token: string,
-  types: Array<string> = ['uniswap3'],
-): SingleRouteToUSDReturnType | undefined {
-  const { routes, configs: { stablecoins } } = profile
-  for (const stablecoin of stablecoins) {
-    for (const asSecond of [false, true]) {
-      const key = asSecond ? `${stablecoin}-${token}` : `${token}-${stablecoin}`
-      const route = routes[key]
-      if (route?.length != 1) {
-        continue
-      }
-      const { type, address } = route[0]
-      if (!types.includes(type)) {
-        continue
-      }
-      const quoteTokenIndex = token.localeCompare(stablecoin, undefined, { sensitivity: 'accent' }) < 0 ? 1 : 0
-      return {
-        quoteTokenIndex,
-        stablecoin,
-        address,
-      }
-    }
-  }
-  return undefined
-}
-
-export function getIndexR(
-  profile: { routes: any; configs: { stablecoins: string[] } },
-  tokenR: string,
-): BigNumber {
-  const { quoteTokenIndex, address } = getSingleRouteToUSD(profile, tokenR) ?? {}
-  if (!address) {
-    return BigNumber.from(0)
-  }
-  return BigNumber.from(ethers.utils.hexZeroPad(BigNumber.from(quoteTokenIndex).shl(255).add(address).toHexString(), 32))
-}
+// Re-export route utilities from SDK
+export { getSingleRouteToUSD, getIndexR } from 'derion-sdk/utils/routes'
