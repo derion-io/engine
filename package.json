@@ -25,6 +25,7 @@
     "record": "RECORD=1 jest",
     "trace": "TRACE=1 RECORD=1 jest",
     "test": "jest",
+    "prepare": "npm run build",
     "prepublishOnly": "npm run build"
   },
   "author": "Derion Labs",
