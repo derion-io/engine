@@ -1,10 +1,15 @@
 {
-  "name": "derivable-engine",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@derion/engine",
+  "version": "3.0.0",
+  "description": "Stateful client engine for the Derion DeFi protocol",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc",
     "example:getResource": "npx ts-node --files ./example/getResource.ts",
     "example:getBnA": "npx ts-node --files ./example/getBalanceAndAllowance.ts",
     "example:getPairDetail": "npx ts-node --files ./example/getPairDetail.ts",
@@ -19,12 +24,17 @@
     "pretty": "prettier --write \"./src/**/*.ts\"",
     "record": "RECORD=1 jest",
     "trace": "TRACE=1 RECORD=1 jest",
-    "test": "jest"
+    "test": "jest",
+    "prepublishOnly": "npm run build"
   },
   "author": "Derivable Labs",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/derion-io/engine.git"
+  },
   "dependencies": {
-    "derion-sdk": "github:derion-io/sdk#v3-dev",
+    "derion-sdk": "npm:@derion/sdk@3.0.1",
     "@ethersproject/providers": "https://gitpkg.now.sh/derion-io/ethers.js/packages/providers?v5.3.5.0",
     "@zoltu/ethereum-crypto": "^2.3.0",
     "@zoltu/ethereum-fetch-json-rpc": "^13.1.4",
