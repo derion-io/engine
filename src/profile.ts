@@ -66,8 +66,4 @@ export class Profile extends SdkProfile {
   getEventDataAbi() {
     return EventDataAbis
   }
-
-  getExp(fetcher: string): number {
-    return this.configs?.fetchers?.[fetcher]?.type?.endsWith('3') ? 2 : 1
-  }
 }
