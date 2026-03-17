@@ -18,8 +18,14 @@
     "noUnusedParameters": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "derion-sdk": ["../sdk/src"],
+      "derion-sdk/*": ["../sdk/src/*"]
+    },
     "types": ["jest"]
   },
-  "include": ["src"],
+  "include": ["src", "../sdk/src"],
   "exclude": ["node_modules", "dist", "test"]
 }

@@ -1,4 +1,0 @@
-[submodule "sdk"]
-	path = sdk
-	url = https://github.com/derion-io/sdk.git
-	branch = v3-dev
