@@ -1,4 +1,4 @@
-import { bn, computePoolAddress, getTopics, isErc1155Address, sortsBefore, tryParseLog } from '../utils/helper'
+import { bn, computePoolAddress, getTopics, isPosId, unpackPosId, sortsBefore, tryParseLog } from '../utils/helper'
 import { BigNumber } from 'ethers'
 import { LARGE_VALUE, NATIVE_ADDRESS } from '../utils/constant'
 import BnAAbi from '../abi/BnA.json'
@@ -8,20 +8,22 @@ import { JsonRpcProvider } from '@ethersproject/providers'
 import { Profile } from '../profile'
 import { Assets, Resource } from './resource'
 import _ from 'lodash'
-import { getAddress, Interface } from 'ethers/lib/utils'
+import { getAddress, hexDataSlice, Interface } from 'ethers/lib/utils'
 import {multicall} from '../utils/multicall'
 import {CallReturnContext} from 'ethereum-multicall'
 import INONFUNGIBLE_POSITION_MANAGER from '../abi/NonfungiblePositionManager.json'
 import Events721Abi from '../abi/Events721.json'
 import IUniswapV3PoolABI from '../abi/IUniswapV3PoolABI.json'
+import { packPosId } from 'derion-sdk'
 
 const TOPICS = getTopics()
 
-export function keyFromTokenId(id: BigNumber): string {
+/** Convert on-chain ERC-1155 token ID (BigNumber) to SDK position ID (66-char hex) */
+function posIdFromTokenId(id: BigNumber): string {
   const s = id.toHexString()
   const side = Number.parseInt(s.substring(2, 4), 16)
   const pool = getAddress('0x' + s.substring(4))
-  return pool + '-' + side
+  return packPosId(pool, side)
 }
 
 export type BnAReturnType = {
@@ -124,7 +126,7 @@ export class BnA {
         }
         if (TOPICS.TransferSingle.includes(log.topics[0])) {
           const { from, to, id, value } = log.args
-          const key = keyFromTokenId(id)
+          const key = posIdFromTokenId(id)
           allowances[key] = bn(LARGE_VALUE)
           if (to == account) {
             balances[key] = (balances[key] ?? bn(0)).add(value)
@@ -143,7 +145,7 @@ export class BnA {
           const values = log.args['4']
           for (let i = 0; i < ids.length; ++i) {
             const value = values[i]
-            const key = keyFromTokenId(ids[i])
+            const key = posIdFromTokenId(ids[i])
             allowances[key] = bn(LARGE_VALUE)
             if (to == account) {
               balances[key] = (balances[key] ?? bn(0)).add(value)
@@ -161,12 +163,12 @@ export class BnA {
           // TODO: handle 1155 Approval events
         }
       }
-      // calculate the MATURITY assume that each 
+      // calculate the MATURITY
       for (const key of Object.keys(balances)) {
-        if (!isErc1155Address(key)) {
+        if (!isPosId(key)) {
           continue
         }
-        const [poolAddress] = key.split('-')
+        const [poolAddress] = unpackPosId(key)
         const MATURIY = this.RESOURCE.pools[poolAddress]?.MATURITY
         if (MATURIY) {
           maturities[key] = MATURIY.add(maturities[key] ?? 0)
@@ -195,7 +197,6 @@ export class BnA {
     const factoryAddress = uniswapV3FactoryOverride || Object.keys(this.profile.configs.factory).filter(
       (facAddress) => this.profile.configs.factory[facAddress].type === 'uniswap3'
     )?.[0]
-    // const uniPosV3 = Object.keys(assets[721].balance).map(key721 => key721.split('-')).filter(keyWithId => keyWithId[0] === this.profile.configs.uniswap.v3Pos)
     const uniPosV3Data: {[posKey: string]: IUniPosV3} = {}
     const uniPoolV3Data: {[poolAddress: string]: IUniPoolV3} = {}
 
@@ -221,7 +222,7 @@ export class BnA {
           tokenB = sameReceiveUniPosLogs[0]?.address
           poolAddress = sameReceiveUniPosLogs[0].args.to
         }
-        const [token0, token1] = sortsBefore(tokenA, tokenB) ? [tokenA, tokenB] : [tokenB, tokenA] // does safety checks
+        const [token0, token1] = sortsBefore(tokenA, tokenB) ? [tokenA, tokenB] : [tokenB, tokenA]
         return {
           token0,
           token1,
@@ -234,7 +235,6 @@ export class BnA {
         return;
       }
     }).filter(l => l?.uni3PosAddress && l?.uni3PosId)
-    // console.log(uni3PosFromLogs, assets)
 
     await multicall(
       this.RESOURCE.provider,
@@ -266,8 +266,6 @@ export class BnA {
                 tokensOwed1: BigNumber.from(values[11].hex).toString(),
                 token0: values[2],
                 token1: values[3],
-                // slot0: '',
-                // tick: '',
                 token0Data,
                 token1Data,
                 poolAddress,
@@ -292,7 +290,6 @@ export class BnA {
             },
           ], context: (callsReturnContext: CallReturnContext[]) => {
             for (const ret of callsReturnContext) {
-              // uniPosV3Data[[uni3PosAddress, uni3PosId].join('-')][ret.reference] = ret.returnValues
               if (ret.reference === 'slot0') {
                 const [
                   sqrtPriceX96,
@@ -303,7 +300,7 @@ export class BnA {
                   feeProtocol,
                   unlocked,
                 ] = ret.returnValues as [BigNumber, number, number, number, number, number, boolean];
-    
+
                 if(!uniPoolV3Data[poolAddress]) uniPoolV3Data[poolAddress] = {}
                 uniPoolV3Data[poolAddress][ret.reference] = {
                   sqrtPriceX96,

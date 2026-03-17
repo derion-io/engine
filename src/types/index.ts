@@ -1,31 +1,18 @@
 import { BigNumber } from 'ethers'
 
+// Re-export shared types from SDK
+export type { LogType } from 'derion-sdk'
+export type {
+  SwapStepType,
+  PendingSwapTransactionType,
+  SwapAndOpenAggregatorType,
+} from 'derion-sdk'
+export { type rateDataAggregatorType } from 'derion-sdk/swapper'
+
+// Engine-only types
 export type Storage = {
   setItem?: (itemName: string, value: string) => void
   getItem?: (itemName: string) => string
-}
-
-// export type ParseLogType = {
-//   address: string
-//   contractAddress: string
-//   name: string
-//   topic: string
-//   args: any
-//   topics: string[]
-// }
-
-export type LogType = {
-  contractAddress: string
-  address: string
-  timeStamp: number
-  transactionHash: string
-  blockNumber: number
-  index: number
-  logIndex: number
-  name: string
-  topics: string[]
-  data: string
-  args: any
 }
 
 export type StatesType = {
@@ -122,7 +109,6 @@ export type SwapLog = {
   address: string
   args: any[]
   name: string
-  // ...
 }
 
 export type PoolsType = { [key: string]: PoolType }
@@ -132,7 +118,7 @@ export type TokenType = {
   decimals: number
   name: string
   symbol: string
-  totalSupply?:any
+  totalSupply?: any
   icon?: string
 }
 
@@ -154,42 +140,4 @@ export type StepType = {
   useSweep?: boolean
   amountOutMin?: number
   currentBalanceOut?: BigNumber
-}
-
-export type SwapStepType = {
-  tokenIn: string
-  tokenOut: string
-  amountIn: BigNumber
-  payloadAmountIn?: BigNumber
-  amountOutMin: BigNumber | string | number
-  useSweep?: boolean
-  currentBalanceOut?: BigNumber
-  uniPool?: string
-}
-
-export type rateDataAggregatorType = {
-   userAddress: string
-   ignoreChecks: boolean
-   srcToken: string
-   srcDecimals: number
-   srcAmount?: string,
-   destAmount?: string,
-   destToken: string,
-   destDecimals: number,
-   partner: string,
-   side: string,
-   excludeDirectContractMethods?:boolean,
-   otherExchangePrices?: boolean,
-   ignoreGasEstimate?: boolean
-   ignoreAllowance?: boolean 
-}
-
-export type SwapAndOpenAggregatorType = { 
-  poolAddress: string,
-  poolId: number
-}
-
-export type PendingSwapTransactionType = {
-  hash: string
-  steps: SwapStepType[]
 }

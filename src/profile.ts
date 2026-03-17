@@ -1,3 +1,4 @@
+import { Profile as SdkProfile } from 'derion-sdk'
 import { IEngineConfig, INetworkConfig } from './utils/configs'
 import { EventDataAbis } from './utils/constant'
 import BnA from './abi/BnA.json'
@@ -18,10 +19,9 @@ import FetcherV2 from './abi/FetcherV2.json'
 import UTROverride from './abi/UTROverride.json'
 import FetcherV2Override from './abi/FetcherV2Override.json'
 import Chainlink from "./abi/ChainLinkPriceFeed.json"
-import fetch from 'node-fetch'
-import { PoolType } from './types'
 
-const abis = {
+// Engine-specific ABIs (superset of SDK's 3 ABIs)
+const engineAbis: any = {
   BnA,
   FetcherV2,
   ERC20,
@@ -42,47 +42,25 @@ const abis = {
   Chainlink
 }
 
-const DDL_CONFIGS_URL = {
-  development: `https://raw.githubusercontent.com/derion-io/configs/v2-dev/`,
-  production: `https://raw.githubusercontent.com/derion-io/configs/v2/`,
-}
-
-// TODO: Change name from profile to ...
-export class Profile {
-  chainId: number
-  env: 'development' | 'production'
-  configs: INetworkConfig
-  routes: {
-    [key: string]: { type: string; address: string }[]
-  }
-  whitelistPools: string[]
+export class Profile extends SdkProfile {
+  // Override configs type to include engine-specific fields (v3Pos, etc.)
+  declare configs: INetworkConfig
 
   constructor(engineConfig: IEngineConfig) {
-    this.chainId = engineConfig.chainId
-    this.env = engineConfig.env || 'production'
+    super({
+      chainId: engineConfig.chainId,
+      env: engineConfig.env || 'production',
+    })
   }
 
-  async loadConfig() {
-    const [networkConfig, uniV3Pools, whitelistPools] = await Promise.all([
-      fetch(DDL_CONFIGS_URL[this.env] + this.chainId + '/network.json')
-        .then((r) => r.json())
-        .catch(() => []),
-      fetch(DDL_CONFIGS_URL[this.env] + this.chainId + '/routes.json')
-        .then((r) => r.json())
-        .catch(() => []),
-      fetch(DDL_CONFIGS_URL[this.env] + this.chainId + '/pools.json')
-        .then((r) => r.json())
-        .catch(() => []),
-    ])
-    this.configs = networkConfig
-    this.routes = uniV3Pools
-    this.whitelistPools = whitelistPools
-    // this.configs.helperContract.utr = '0x2222C5F0999E74D8D88F7bbfE300147d34c22222'
-  }
-
+  // Override to include engine-specific ABIs alongside SDK ABIs
   getAbi(name: string) {
-    //@ts-ignore
-    return abis[name] ? abis[name] : abis[this.chainId][name] || []
+    // Check engine ABIs first (superset)
+    if (engineAbis[name]) {
+      return engineAbis[name]
+    }
+    // Fall back to SDK ABIs (Helper, View, UTROverride)
+    return super.getAbi(name)
   }
 
   getEventDataAbi() {

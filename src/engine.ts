@@ -11,7 +11,6 @@ import { CreatePool } from './services/createPool'
 import { UniV3Pair } from './services/uniV3Pair'
 import { IEngineConfig } from './utils/configs'
 import { Profile } from './profile'
-import { Aggregator } from './services/aggregator'
 
 export class Engine {
   chainId: number
@@ -30,13 +29,11 @@ export class Engine {
   SWAP: Swap
   CURRENT_POOL: CurrentPool
   CREATE_POOL: CreatePool
-  AGGREGATOR: Aggregator
   enginConfigs: IEngineConfig
 
   constructor(enginConfigs: IEngineConfig, profile = Profile) {
     this.enginConfigs = enginConfigs
     this.account = enginConfigs.account
-    // this.providerToGetLog = this.config.providerToGetLog
     this.profile = new profile(enginConfigs)
   }
 
@@ -57,8 +54,7 @@ export class Engine {
     this.BNA = new BnA(configs, this.profile)
     this.PRICE = new Price(configs, this.profile)
     this.HISTORY = new History(configs, this.profile)
-    this.AGGREGATOR = new Aggregator(configs, this.profile)
-    this.SWAP = new Swap({ ...configs, AGGREGATOR: this.AGGREGATOR }, this.profile)
+    this.SWAP = new Swap(configs, this.profile)
   }
 
   setCurrentPool(poolData: any) {

@@ -11,7 +11,7 @@ import { defaultAbiCoder, hexZeroPad } from 'ethers/lib/utils'
 import { Profile } from '../profile'
 import * as OracleSdk from '../utils/OracleSdk'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
-import { unpackId } from '../utils/number'
+import { unpackPosId } from '../utils/helper'
 import Events721Abi from '../abi/Events721.json'
 import { multicall } from '../utils/multicall'
 
@@ -100,8 +100,7 @@ export type LoadInitPoolDataReturnType = {
 
 const { AssistedJsonRpcProvider } = require('assisted-json-rpc-provider')
 const MAX_BLOCK = 4294967295
-export const Q128 = bn(1).shl(128)
-export const M256 = bn(1).shl(256).sub(1)
+// Q128 and M256 now imported from '../utils/constant' (re-exported from SDK)
 
 const { A, B, C } = POOL_IDS
 
@@ -1518,7 +1517,7 @@ export class Resource {
     })
 
     // unpack id to get Pool address
-    return _.uniq(Object.keys(balances).map((id) => unpackId(bn(id)).p))
+    return _.uniq(Object.keys(balances).map((id) => unpackPosId(hexZeroPad(bn(id).toHexString(), 32))[0]))
   }
 
   getPoolGroupId({ pair, quoteTokenIndex, tokenR }: GetPoolGroupIdParameterType): string {

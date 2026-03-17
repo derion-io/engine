@@ -1,10 +1,10 @@
 import { BigNumber, ethers } from 'ethers'
 import { LogType, TokenType } from '../types'
-import { NATIVE_ADDRESS, POOL_IDS } from '../utils/constant'
-import { BIG, DIV, IEW, WEI, add, bn, div, getTopics, max, mul, numberToWei, parsePrice, sub, weiToNumber } from '../utils/helper'
+import { NATIVE_ADDRESS, POOL_IDS, M256 } from '../utils/constant'
+import { BIG, DIV, IEW, WEI, add, bn, div, getTopics, max, mul, numberToWei, parsePrice, sub, weiToNumber, packPosId } from '../utils/helper'
 import { Profile } from '../profile'
 import { IEngineConfig } from '../utils/configs'
-import { M256, Resource } from './resource'
+import { Resource } from './resource'
 import Erc20 from '../abi/ERC20.json'
 import { Result } from 'ethers/lib/utils'
 
@@ -308,18 +308,14 @@ export class History {
   }
 
   getTokenAddressByPoolAndSide(poolAddress: string, side: BigNumber): string {
-    try {
-      const pool = this.RESOURCE.pools[poolAddress]
-      if (side.eq(POOL_IDS.native)) {
-        return NATIVE_ADDRESS
-      }
-      if (side.eq(POOL_IDS.R)) {
-        return pool?.TOKEN_R || NATIVE_ADDRESS
-      }
-      return `${poolAddress}-${side.toString()}`
-    } catch (error) {
-      throw error
+    const pool = this.RESOURCE.pools[poolAddress]
+    if (side.eq(POOL_IDS.native)) {
+      return NATIVE_ADDRESS
     }
+    if (side.eq(POOL_IDS.R)) {
+      return pool?.TOKEN_R || NATIVE_ADDRESS
+    }
+    return packPosId(poolAddress, side.toNumber())
   }
 
   getSwapAbi(topic0: string): any {
