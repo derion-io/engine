@@ -36,7 +36,7 @@
     "url": "git+https://github.com/derion-io/engine.git"
   },
   "dependencies": {
-    "@derion/sdk": "3.0.1",
+    "@derion/sdk": "3.0.2",
     "@ethersproject/providers": "^5.7.2",
     "@zoltu/ethereum-crypto": "^2.3.0",
     "@zoltu/ethereum-fetch-json-rpc": "^13.1.4",
