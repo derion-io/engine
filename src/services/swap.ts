@@ -158,14 +158,6 @@ export class Swap {
     }
   }
 
-  async callStaticMultiSwap({ params, value, gasLimit }: any): Promise<any> {
-    const contract = this.getRouterContract(this.signer)
-    return await contract.callStatic.exec(...params, {
-      value: value || bn(0),
-      gasLimit: gasLimit || undefined,
-    })
-  }
-
   async convertStepToActions({
     steps,
     submitFetcherV2,

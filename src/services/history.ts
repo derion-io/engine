@@ -1,7 +1,7 @@
 import { BigNumber, ethers } from 'ethers'
 import { LogType, TokenType } from '../types'
 import { NATIVE_ADDRESS, POOL_IDS, M256 } from '../utils/constant'
-import { BIG, DIV, IEW, WEI, add, bn, div, getTopics, max, mul, numberToWei, parsePrice, sub, weiToNumber, packPosId } from '../utils/helper'
+import { BIG, DIV, IEW, WEI, add, bn, div, getTopics, max, mul, numberToWei, parsePrice, sub, weiToNumber, packPosId, getSingleRouteToUSD } from '../utils/helper'
 import { Profile } from '../profile'
 import { IEngineConfig } from '../utils/configs'
 import { Resource } from './resource'
@@ -283,7 +283,7 @@ export class History {
 
   extractPriceR(tokenR: TokenType, tokens: Array<TokenType>, priceR: any, log: LogType): string | undefined {
     try {
-      const { address, stablecoin } = this.RESOURCE.getSingleRouteToUSD(tokenR.address) ?? {}
+      const { address, stablecoin } = getSingleRouteToUSD(this.profile, tokenR.address) ?? {}
       if (!address) {
         console.warn('missing route to USD', tokenR)
         return undefined

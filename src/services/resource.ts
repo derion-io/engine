@@ -2,7 +2,9 @@ import { BigNumber, Contract, ethers } from 'ethers'
 import { LOCALSTORAGE_KEY, POOL_IDS, ZERO_ADDRESS } from '../utils/constant'
 import { CallReturnContext, ContractCallContext, Multicall } from 'ethereum-multicall'
 import { LogType, PoolGroupsType, PoolsType, PoolType, Storage, TokenType } from '../types'
-import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, kx, rateFromHL, parsePrice, mergeTwoUniqSortedLogs, tryParseLog, oracleWindow, isUniv3, isChainlink } from '../utils/helper'
+import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, parsePrice, mergeTwoUniqSortedLogs, tryParseLog, oracleWindow, isUniv3, isChainlink, getSingleRouteToUSD } from '../utils/helper'
+import { calcPoolInfo as sdkCalcPoolInfo } from 'derion-sdk'
+import type { Pool } from 'derion-sdk/type'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import _, { concat, uniqBy } from 'lodash'
 import { IChainLinkFeedsInfo, IPairInfo, IPairsInfo, UniV3Pair } from './uniV3Pair'
@@ -40,11 +42,8 @@ export type GetPoolGroupIdParameterType = {
   tokenR: string
 }
 
-export type SingleRouteToUSDReturnType = {
-  quoteTokenIndex: number
-  stablecoin: string
-  address: string
-}
+// SingleRouteToUSDReturnType re-exported from helper
+export type { SingleRouteToUSDReturnType } from '../utils/helper'
 
 export type GetPriceReturnType = {
   poolAddress: string
@@ -103,17 +102,6 @@ const MAX_BLOCK = 4294967295
 // Q128 and M256 now imported from '../utils/constant' (re-exported from SDK)
 
 const { A, B, C } = POOL_IDS
-
-function numDiv(b: BigNumber, unit: number = 1): number {
-  try {
-    return b.toNumber() / unit
-  } catch (err) {
-    if (err.reason == 'overflow') {
-      return Infinity
-    }
-    throw err
-  }
-}
 
 type ResourceData = {
   pools: PoolsType
@@ -1248,84 +1236,53 @@ export class Resource {
   }
 
   calcPoolInfo(pool: PoolType): CalcPoolInfoReturnType {
-    try {
-      const { MARK, states, FETCHER } = pool
-      const { R, rA, rB, rC, a, b, spot } = states
-      const exp = this.profile.getExp(FETCHER)
-      const riskFactor = rC.gt(0) ? div(rA.sub(rB), rC) : '0'
-      const deleverageRiskA = R.isZero()
-        ? 0
-        : rA
-            .mul(2 * this.unit)
-            .div(R)
-            .toNumber() / this.unit
-      const deleverageRiskB = R.isZero()
-        ? 0
-        : rB
-            .mul(2 * this.unit)
-            .div(R)
-            .toNumber() / this.unit
-      const k = pool.k.toNumber()
-      const power = k / exp
-      const sides = {
-        [A]: {} as any,
-        [B]: {} as any,
-        [C]: {} as any,
-      }
-      sides[A].k = Math.min(k, kx(k, R, a, spot, MARK))
-      sides[B].k = Math.min(k, kx(-k, R, b, spot, MARK))
-      sides[C].k = numDiv(
-        rA
-          .mul(Math.round(sides[A].k * this.unit))
-          .add(rB.mul(Math.round(sides[B].k * this.unit)))
-          .div(rA.add(rB)),
-        this.unit,
-      )
+    const { MARK, states, FETCHER } = pool
+    const { R, rA, rB, rC, a, b, spot } = states
+    const exp = this.profile.getExp(FETCHER)
+    const k = pool.k.toNumber()
 
-      const interestRate = rateFromHL(pool.INTEREST_HL.toNumber(), power)
-      const maxPremiumRate = rateFromHL(pool.PREMIUM_HL.toNumber(), power)
-      if (maxPremiumRate > 0) {
-        if (rA.gt(rB)) {
-          const rDiff = rA.sub(rB)
-          const givingRate = rDiff.mul(Math.round(this.unit * maxPremiumRate)).mul(rA.add(rB)).div(R)
-          sides[A].premium = numDiv(givingRate.div(rA), this.unit)
-          sides[B].premium = -numDiv(givingRate.div(rB), this.unit)
-          sides[C].premium = 0
-        } else if (rB.gt(rA)) {
-          const rDiff = rB.sub(rA)
-          const givingRate = rDiff.mul(Math.round(this.unit * maxPremiumRate)).mul(rA.add(rB)).div(R)
-          sides[B].premium = numDiv(givingRate.div(rB), this.unit)
-          sides[A].premium = -numDiv(givingRate.div(rA), this.unit)
-          sides[C].premium = 0
-        } else {
-          sides[A].premium = 0
-          sides[B].premium = 0
-          sides[C].premium = 0
-        }
-      }
+    // Engine-specific risk metrics not in SDK
+    const riskFactor = rC.gt(0) ? div(rA.sub(rB), rC) : '0'
+    const deleverageRiskA = R.isZero()
+      ? 0
+      : rA
+          .mul(2 * this.unit)
+          .div(R)
+          .toNumber() / this.unit
+    const deleverageRiskB = R.isZero()
+      ? 0
+      : rB
+          .mul(2 * this.unit)
+          .div(R)
+          .toNumber() / this.unit
 
-      // decompound the interest
-      for (const side of [A, B]) {
-        sides[side].interest = (interestRate * k) / sides[side].k
-      }
-      sides[C].interest = numDiv(
-        rA
-          .add(rB)
-          .mul(Math.round(this.unit * interestRate))
-          .div(rC),
-        this.unit,
-      )
+    // Convert engine PoolType → SDK Pool format
+    const sdkPool: Pool = {
+      address: pool.poolAddress,
+      config: {
+        FETCHER,
+        ORACLE: pool.ORACLE,
+        TOKEN_R: pool.TOKEN_R,
+        K: k,
+        MARK,
+        INTEREST_HL: pool.INTEREST_HL.toNumber() / exp,
+        PREMIUM_HL: pool.PREMIUM_HL.toNumber() / exp,
+        OPEN_RATE: pool.OPEN_RATE,
+        R_DT: 0,
+      },
+      state: { R, a, b },
+      view: { sA: states.sA, sB: states.sB, sC: states.sC, rA, rB, rC, twap: states.twap, spot },
+    }
 
-      return {
-        sides,
-        riskFactor,
-        deleverageRiskA,
-        deleverageRiskB,
-        interestRate,
-        maxPremiumRate,
-      }
-    } catch (error) {
-      throw error
+    const { sides, interestRate, maxPremiumRate } = sdkCalcPoolInfo(sdkPool)
+
+    return {
+      sides,
+      riskFactor,
+      deleverageRiskA,
+      deleverageRiskB,
+      interestRate,
+      maxPremiumRate,
     }
   }
 
@@ -1450,48 +1407,6 @@ export class Resource {
     }
   }
 
-  getIndexR(tokenR: string): BigNumber {
-    try {
-      const { quoteTokenIndex, address } = this.getSingleRouteToUSD(tokenR) ?? {}
-      if (!address) {
-        return bn(0)
-      }
-      return bn(ethers.utils.hexZeroPad(bn(quoteTokenIndex).shl(255).add(address).toHexString(), 32))
-    } catch (error) {
-      throw error
-    }
-  }
-
-  getSingleRouteToUSD(token: string, types: Array<string> = ['uniswap3']): SingleRouteToUSDReturnType | undefined {
-    try {
-      const {
-        routes,
-        configs: { stablecoins },
-      } = this.profile
-      for (const stablecoin of stablecoins) {
-        for (const asSecond of [false, true]) {
-          const key = asSecond ? `${stablecoin}-${token}` : `${token}-${stablecoin}`
-          const route = routes[key]
-          if (route?.length != 1) {
-            continue
-          }
-          const { type, address } = route[0]
-          if (!types.includes(type)) {
-            continue
-          }
-          const quoteTokenIndex = token.localeCompare(stablecoin, undefined, { sensitivity: 'accent' }) < 0 ? 1 : 0
-          return {
-            quoteTokenIndex,
-            stablecoin,
-            address,
-          }
-        }
-      }
-      return undefined
-    } catch (error) {
-      throw error
-    }
-  }
 
   poolHasOpeningPosition(tokenTransferLogs: Array<LogType>): Array<string> {
     const balances: { [id: string]: BigNumber } = {}
