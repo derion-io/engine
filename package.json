@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "vendor"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -25,7 +26,7 @@
     "record": "RECORD=1 jest",
     "trace": "TRACE=1 RECORD=1 jest",
     "test": "jest",
-    "prepare": "npm run build",
+    "prepare": "node scripts/patch-providers.js && npm run build",
     "prepublishOnly": "npm run build"
   },
   "author": "Derion Labs",
@@ -36,7 +37,7 @@
   },
   "dependencies": {
     "@derion/sdk": "3.0.1",
-    "@ethersproject/providers": "https://gitpkg.now.sh/derion-io/ethers.js/packages/providers?v5.3.5.0",
+    "@ethersproject/providers": "^5.7.2",
     "@zoltu/ethereum-crypto": "^2.3.0",
     "@zoltu/ethereum-fetch-json-rpc": "^13.1.4",
     "@zoltu/ethereum-types": "^9.0.4",
