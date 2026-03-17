@@ -1,6 +1,6 @@
 {
   "name": "@derion/engine",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Stateful client engine for the Derion DeFi protocol",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
