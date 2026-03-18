@@ -4,7 +4,7 @@ import { CallReturnContext, ContractCallContext, Multicall } from 'ethereum-mult
 import { LogType, PoolGroupsType, PoolsType, PoolType, Storage, TokenType } from '../types'
 import { bn, div, formatMultiCallBignumber, getNormalAddress, getTopics, parsePrice, mergeTwoUniqSortedLogs, tryParseLog, oracleWindow, isUniv3, isChainlink } from '../utils/helper'
 import { calcPoolInfo as sdkCalcPoolInfo } from '@derion/sdk'
-import type { Pool } from '@derion/sdk/type'
+import type { Pool } from '@derion/sdk/dist/type'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import _, { concat, uniqBy } from 'lodash'
 import { IChainLinkFeedsInfo, IPairInfo, IPairsInfo, UniV3Pair } from './uniV3Pair'

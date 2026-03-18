@@ -9,7 +9,7 @@ import { IDerivableContractAddress, IEngineConfig } from '../utils/configs'
 import { Resource } from './resource'
 import * as OracleSdkAdapter from '../utils/OracleSdkAdapter'
 import * as OracleSdk from '../utils/OracleSdk'
-import { Swapper, type rateDataAggregatorType, type SwapAndOpenAggregatorType } from '@derion/sdk/swapper'
+import { Swapper, type rateDataAggregatorType, type SwapAndOpenAggregatorType } from '@derion/sdk/dist/swapper'
 import { ParaswapClient } from '@derion/sdk'
 
 export type SwapStepType = {

@@ -7,7 +7,7 @@ export type {
   PendingSwapTransactionType,
   SwapAndOpenAggregatorType,
 } from '@derion/sdk'
-export { type rateDataAggregatorType } from '@derion/sdk/swapper'
+export { type rateDataAggregatorType } from '@derion/sdk/dist/swapper'
 
 // Engine-only types
 export type Storage = {

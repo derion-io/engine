@@ -21,11 +21,11 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@derion/sdk": ["../sdk/src"],
-      "@derion/sdk/*": ["../sdk/src/*"]
+      "@derion/sdk": ["../sdk/dist"],
+      "@derion/sdk/*": ["../sdk/*"]
     },
     "types": ["jest"]
   },
-  "include": ["src", "../sdk/src"],
+  "include": ["src"],
   "exclude": ["node_modules", "dist", "test"]
 }
