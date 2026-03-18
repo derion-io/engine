@@ -275,7 +275,7 @@
   resolved "https://registry.yarnpkg.com/@derion/sdk/-/sdk-3.0.2.tgz#47ecc7f9fca0fb9f4f2a1c18ba82261663ee40f7"
   integrity sha512-gC4kDKD+rj7sXN4bnGGEGHX2kGjsAwSn3pikwRb6yeCwUmEbKPfcTVlA6beYt1B2xsMCeS7OybZjvRGwzQTpKA==
   dependencies:
-    "@ethersproject/providers" "file:../../../../Library/Caches/Yarn/v6/npm-@derion-sdk-3.0.2-47ecc7f9fca0fb9f4f2a1c18ba82261663ee40f7-integrity/node_modules/@derion/sdk/vendor/providers"
+    "@ethersproject/providers" "file:vendor/providers"
     ethereum-multicall "^2.15.0"
     ethers "^5.5.4"
     move-decimal-point "^0.0.4"
@@ -612,7 +612,7 @@
     bech32 "1.1.4"
     ws "7.4.6"
 
-"@ethersproject/providers@^5.0.10", "@ethersproject/providers@^5.7.2", "@ethersproject/providers@file:../../../../Library/Caches/Yarn/v6/npm-@derion-sdk-3.0.2-47ecc7f9fca0fb9f4f2a1c18ba82261663ee40f7-integrity/node_modules/@derion/sdk/vendor/providers":
+"@ethersproject/providers@^5.0.10", "@ethersproject/providers@^5.7.2", "@ethersproject/providers@file:vendor/providers":
   version "5.8.0"
   dependencies:
     "@ethersproject/abstract-provider" "^5.8.0"
